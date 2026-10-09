@@ -8,7 +8,8 @@
 # userspace with bubblewrap).
 #
 # Usage:  ./build-appimage.sh
-# Result: dist/lifting-plan-calculator-V<version>.appimage
+# Result: dist/Lifting-Plan-Calculator-<version>-linux-x86_64.AppImage
+#         dist/Lifting-Plan-Calculator-<version>-linux-x86_64.AppImage.zsync
 
 set -euo pipefail
 
@@ -35,20 +36,24 @@ OUT_DIR="$REPO_ROOT/dist"
 mkdir -p "$OUT_DIR"
 
 # The bundler names the file after the product ("Lifting Plan Calculator_x.y.z_amd64.AppImage");
-# the dist copy uses the project's own lowercase naming.
+# the dist copy uses the project's own convention.
 SOURCE="$(find "$BUNDLE_DIR" -maxdepth 1 -name '*.AppImage' | head -1)"
 if [ -z "$SOURCE" ]; then
   echo "==> ERROR: no AppImage was produced under $BUNDLE_DIR" >&2
   exit 1
 fi
-OUT="$OUT_DIR/lifting-plan-calculator-V${VERSION}.appimage"
+ASSET="Lifting-Plan-Calculator-${VERSION}-linux-x86_64.AppImage"
+OUT="$OUT_DIR/$ASSET"
 cp "$SOURCE" "$OUT"
 chmod +x "$OUT"
 
 echo "==> Built $OUT"
 python3 - "$OUT" <<'PY'
-import hashlib, sys
+import hashlib, os, sys
 path = sys.argv[1]
-print("size:", f"{__import__('os').path.getsize(path) / 1048576:.1f} MB")
+print("size:", f"{os.path.getsize(path) / 1048576:.1f} MB")
 print("sha256:", hashlib.sha256(open(path, "rb").read()).hexdigest())
 PY
+
+# Delta-update sidecar (used by AppImageUpdate / appimageupdatetool).
+"$REPO_ROOT/packaging/make-zsync.sh" "$OUT" "$VERSION"

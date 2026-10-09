@@ -3,13 +3,13 @@
 [![CI](https://github.com/zhafribs/lifting-plan-calculator/actions/workflows/ci.yml/badge.svg)](https://github.com/zhafribs/lifting-plan-calculator/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/zhafribs/lifting-plan-calculator?sort=semver)](https://github.com/zhafribs/lifting-plan-calculator/releases/latest)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
-[![Platform: Linux](https://img.shields.io/badge/platform-Linux-333)](#install)
+[![Platform: Linux | Windows](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-333)](#install)
 [![Rust](https://img.shields.io/badge/rust-1.85%2B-orange?logo=rust)](https://www.rust-lang.org/)
 [![Tauri 2](https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri)](https://tauri.app/)
 
-A Linux desktop build of the Lifting Plan Calculator, written in Rust with a
-Tauri 2 shell and shipped as a single **AppImage** — one file that runs on
-Ubuntu, Fedora and Arch.
+A desktop build of the Lifting Plan Calculator, written in Rust with a Tauri 2
+shell and shipped as a single **AppImage** for Linux (Ubuntu, Fedora and Arch)
+and as **MSI / NSIS installers** for Windows.
 
 Every figure is solved by the Rust engine (ported line-for-line from the
 Android Kotlin source) and covered by a test suite ported from the Kotlin unit
@@ -50,15 +50,16 @@ Every screen below is a live capture of the running app with an example lift
 
 ## Install
 
-### AppImage (recommended)
+### Linux (AppImage, recommended)
 
-Download the latest `lifting-plan-calculator-V*.appimage` from the
+Download the latest
+`Lifting-Plan-Calculator-<version>-linux-x86_64.AppImage` from the
 [Releases page](https://github.com/zhafribs/lifting-plan-calculator/releases/latest),
 then:
 
 ```bash
-chmod +x lifting-plan-calculator-V2.1.5.appimage
-./lifting-plan-calculator-V2.1.5.appimage
+chmod +x Lifting-Plan-Calculator-2.2.0-linux-x86_64.AppImage
+./Lifting-Plan-Calculator-2.2.0-linux-x86_64.AppImage
 ```
 
 The portable release is built inside an Ubuntu 22.04 userspace, so its glibc
@@ -66,6 +67,21 @@ floor is 2.35 and it runs on **Ubuntu 22.04+, Fedora 36+ and Arch**. It bundles
 the GTK 3 and WebKitGTK 4.1 stack it needs; nothing app-specific has to be
 installed on the target machine. Verify it against the `SHA256SUMS.txt`
 attached to the release if you like.
+
+Every release also ships a matching `.AppImage.zsync` sidecar, so an older
+AppImage can update by fetching only the blocks that changed (via
+`appimageupdatetool` from AppImageUpdate):
+
+```bash
+appimageupdatetool Lifting-Plan-Calculator-2.1.5-linux-x86_64.AppImage \
+  https://github.com/zhafribs/lifting-plan-calculator/releases/download/v2.2.0/Lifting-Plan-Calculator-2.2.0-linux-x86_64.AppImage.zsync
+```
+
+### Windows
+
+Download `Lifting-Plan-Calculator-<version>-windows-x86_64.msi` and run it, or
+the `-windows-x86_64-setup.exe` (NSIS) installer. Windows 10 or 11 with the
+WebView2 runtime is required; the installer ships the bootstrapper.
 
 ### From source
 
@@ -89,7 +105,9 @@ there is no Node.js build step and no npm dependency.
                                # Ubuntu 22.04+, Fedora 36+ and Arch
 ```
 
-Both write `dist/lifting-plan-calculator-V<version>.appimage`.
+Both write `dist/Lifting-Plan-Calculator-<version>-linux-x86_64.AppImage` plus
+its `.AppImage.zsync` delta-update sidecar (the sidecar step needs the `zsync`
+package; it is skipped with a notice if `zsyncmake` is missing).
 
 Requirements: Rust (cargo), and a system with `webkit2gtk-4.1`, `gtk3` and
 `librsvg` development packages. The scripts install the Tauri CLI if missing.
@@ -140,8 +158,9 @@ src-tauri/          the Rust crate
 ui/                 the frontend (plain ES modules; no build step)
   js/screens/       one module per screen
   vendor/katex/     bundled KaTeX (report typesetting)
-build-appimage.sh            host AppImage build
+build-appimage.sh            host AppImage build (+ .zsync sidecar)
 build-appimage-portable.sh   Ubuntu 22.04 userspace build (widest compatibility)
+packaging/make-zsync.sh      writes the AppImage delta-update sidecar
 packaging/Dockerfile         the same, for Docker users
 ```
 

@@ -290,8 +290,22 @@ pub async fn save_report(
 /// Open a saved report in the desktop's own browser.
 #[tauri::command]
 pub fn open_report_file(path: String) -> Result<(), String> {
-    std::process::Command::new("xdg-open")
-        .arg(&path)
+    // The desktop opener differs per platform: `xdg-open` on Linux, `start` on
+    // Windows. `start` needs an explicit window-title argument (the empty
+    // string) or it treats the first quoted token of the path as the title.
+    #[cfg(target_os = "windows")]
+    let mut command = {
+        let mut command = std::process::Command::new("cmd");
+        command.args(["/C", "start", "", path.as_str()]);
+        command
+    };
+    #[cfg(not(target_os = "windows"))]
+    let mut command = {
+        let mut command = std::process::Command::new("xdg-open");
+        command.arg(&path);
+        command
+    };
+    command
         .spawn()
         .map(|_| ())
         .map_err(|error| format!("No application could open that file: {error}"))

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-10-09
+
+### Added
+
+- **Windows installers.** The release workflow now builds a Windows MSI and an
+  NSIS `setup.exe` from the same Tauri source and attaches them to each release.
+  The saved-report opener now uses `start` on Windows instead of `xdg-open`.
+- **AppImage delta updates.** Every AppImage release ships a matching
+  `.AppImage.zsync` sidecar (built with `zsyncmake`), so `appimageupdatetool`
+  can download only the blocks that changed between versions.
+
+### Changed
+
+- **Standardised release asset names.** Linux is now
+  `Lifting-Plan-Calculator-<version>-linux-x86_64.AppImage` (plus `.zsync`) and
+  Windows is `Lifting-Plan-Calculator-<version>-windows-x86_64.msi` (plus
+  `-setup.exe`). Assets from earlier releases keep their old names.
+
 ## [2.1.5] - 2026-10-09
 
 ### Fixed

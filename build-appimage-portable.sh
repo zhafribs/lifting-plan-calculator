@@ -13,7 +13,8 @@
 # run. No root and no Docker needed.
 #
 # Usage:  ./build-appimage-portable.sh
-# Result: dist/lifting-plan-calculator-V<version>.appimage
+# Result: dist/Lifting-Plan-Calculator-<version>-linux-x86_64.AppImage
+#         dist/Lifting-Plan-Calculator-<version>-linux-x86_64.AppImage.zsync
 #
 # (A Dockerfile that does the same thing is in packaging/Dockerfile for
 #  environments where Docker is preferred.)
@@ -107,7 +108,8 @@ if [ -z "$SOURCE" ]; then
   exit 1
 fi
 mkdir -p "$REPO_ROOT/dist"
-OUT="$REPO_ROOT/dist/lifting-plan-calculator-V${VERSION}.appimage"
+ASSET="Lifting-Plan-Calculator-${VERSION}-linux-x86_64.AppImage"
+OUT="$REPO_ROOT/dist/$ASSET"
 cp "$SOURCE" "$OUT"
 chmod +x "$OUT"
 
@@ -118,3 +120,6 @@ path = sys.argv[1]
 print("size:", f"{os.path.getsize(path) / 1048576:.1f} MB")
 print("sha256:", hashlib.sha256(open(path, "rb").read()).hexdigest())
 PY
+
+# Delta-update sidecar (used by AppImageUpdate / appimageupdatetool).
+"$REPO_ROOT/packaging/make-zsync.sh" "$OUT" "$VERSION"

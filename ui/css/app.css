@@ -78,6 +78,11 @@ input, select, button, textarea { font: inherit; color: inherit; }
 .app {
   display: grid;
   grid-template-columns: var(--rail-w) 1fr;
+  /* minmax(0, 1fr), not an implicit auto row: the rail's nav can be taller
+     than a short window, and an auto row would grow to fit it, pushing the
+     pinned footer (name, version, contact) below the window. Forcing the row
+     to the viewport keeps the rail height bounded so .rail-nav scrolls. */
+  grid-template-rows: minmax(0, 1fr);
   height: 100vh;
 }
 
@@ -116,6 +121,11 @@ input, select, button, textarea { font: inherit; color: inherit; }
   flex-direction: column;
   padding: 18px 12px 14px;
   gap: 6px;
+  /* Same guard as .main: without it the rail is sized by its content, so a
+     tall nav in a short window would push the footer out of view instead of
+     letting .rail-nav scroll. */
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* The nav list is the only part that scrolls, so the footer below it stays

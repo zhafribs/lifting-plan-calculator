@@ -118,6 +118,19 @@ input, select, button, textarea { font: inherit; color: inherit; }
   gap: 6px;
 }
 
+/* The nav list is the only part that scrolls, so the footer below it stays
+   pinned and visible in every window size. */
+.rail-nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  scrollbar-color: #2b3a52 transparent;
+}
+
 .rail-logo {
   display: flex;
   align-items: center;
@@ -200,7 +213,7 @@ input, select, button, textarea { font: inherit; color: inherit; }
 }
 
 .rail-foot {
-  margin-top: auto;
+  flex: 0 0 auto;
   padding: 10px 10px 0;
   border-top: 1px solid var(--border-soft);
   color: var(--faint);
@@ -208,6 +221,7 @@ input, select, button, textarea { font: inherit; color: inherit; }
   display: flex;
   flex-direction: column;
   gap: 6px;
+  overflow-wrap: anywhere;
 }
 
 .rail-foot .brand { color: var(--muted); font-weight: 600; }
@@ -891,6 +905,79 @@ table.grid td.num { text-align: right; }
   .graph-layout { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* Split screens (uniform, nonuniform, tandem, graph): when the window is wide
+   enough for two columns, each column scrolls on its own so the results (or
+   the working range diagram) stay put while the other column moves. Stacked,
+   the page falls back to the single scroll it had before. The `split-screen`
+   class is put on the shared #screen element by app.js when one of these
+   screens is shown. */
+@media (min-width: 1001px) {
+  .screen.split-screen {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-bottom: 14px;
+  }
+
+  .screen.split-screen .page {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .screen.split-screen .grid-main,
+  .screen.split-screen .graph-layout {
+    flex: 1 1 auto;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .screen.split-screen .grid-main > .pane,
+  .screen.split-screen .graph-layout > .pane {
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+    scrollbar-color: #2b3a52 transparent;
+  }
+
+  /* The diagram fills its pane and rescales (the ResizeObserver redraws it)
+     instead of scrolling out of view behind the controls. */
+  .screen.split-screen .graph-layout > .graph-pane {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .screen.split-screen .graph-pane > .card {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .screen.split-screen .graph-pane > .card > .card-body {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .screen.split-screen .graph-pane .graph-canvas-wrap {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .screen.split-screen .graph-pane .graph-canvas {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 220px;
+    max-height: none;
+  }
+}
+
 .graph-canvas {
   display: block;
   width: 100%;
@@ -962,10 +1049,9 @@ table.grid td.num { text-align: right; }
 @media (max-width: 1099px) {
   :root { --rail-w: 64px; }
 
-  .rail { padding: 14px 8px 12px; }
+  .rail { padding: 14px 5px 12px; }
 
-  .nav-group,
-  .rail-foot { display: none; }
+  .nav-group { display: none; }
 
   .nav-item {
     justify-content: center;
@@ -975,6 +1061,17 @@ table.grid td.num { text-align: right; }
 
   /* Hide the label and the Ctrl+N chip; the icon stays. */
   .nav-item span { display: none; }
+
+  /* The footer stays even in the icon strip: the product identity (name,
+     version, contact) is never hidden in a small window. It wraps into a
+     compact stack under the icons. */
+  .rail-foot {
+    padding: 8px 1px 0;
+    font-size: 8.5px;
+    line-height: 1.25;
+    text-align: center;
+    gap: 4px;
+  }
 
   .topbar { padding: 0 14px; gap: 12px; }
   .screen { padding: 14px 14px 40px; }

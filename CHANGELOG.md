@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-10-09
+
+A usability release that keeps the important things in view at any window
+size, with no change to the calculations.
+
+### Added
+
+- **Independent scroll panes on wide windows**: Uniform Load, Nonuniform Load
+  and Tandem each split into a form column and a results column that scroll on
+  their own, so one side keeps its place while the other moves. Stacked
+  (narrow) windows keep the single scroll they had before.
+- **Always-visible working range diagram**: on the Graph tab the diagram fills
+  its column and rescales, so it stays in view while the boom configuration,
+  boom angle and envelope, and readout scroll beside it.
+
+### Fixed
+
+- **Rail footer**: the app name, version and contact are no longer hidden when
+  the window is at its smallest size. The footer stays pinned beneath the icon
+  rail and the navigation list scrolls on its own, so the product identity is
+  visible at every window size.
+
 ## [2.0.0] - 2026-10-09
 
 The first public release: a Linux desktop build of the Lifting Plan Calculator,

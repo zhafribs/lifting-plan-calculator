@@ -57,8 +57,8 @@ Download the latest `lifting-plan-calculator-V*.appimage` from the
 then:
 
 ```bash
-chmod +x lifting-plan-calculator-V2.0.0.appimage
-./lifting-plan-calculator-V2.0.0.appimage
+chmod +x lifting-plan-calculator-V2.1.0.appimage
+./lifting-plan-calculator-V2.1.0.appimage
 ```
 
 The portable release is built inside an Ubuntu 22.04 userspace, so its glibc

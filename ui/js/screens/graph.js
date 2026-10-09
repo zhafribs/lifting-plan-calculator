@@ -863,7 +863,7 @@ export function createGraphScreen(ctx) {
       { class: "graph-layout" },
       el(
         "div",
-        { class: "stack" },
+        { class: "stack pane graph-pane" },
         card({
           title: "Working range diagram",
           note: "Drawn to scale, metres",
@@ -876,7 +876,7 @@ export function createGraphScreen(ctx) {
           }),
         }),
       ),
-      el("div", { class: "stack" }, configCard, angleCard, craneCard, readoutCard),
+      el("div", { class: "stack pane" }, configCard, angleCard, craneCard, readoutCard),
     ),
   );
 

@@ -65,7 +65,7 @@ export function createNonuniformScreen(ctx) {
       { class: "grid-main" },
       el(
         "div",
-        { class: "stack" },
+        { class: "stack pane" },
         card({
           title: "2-Leg Asymmetric (Shortening Grab Hook)",
           note: "The COG may be measured from either pick point",
@@ -92,7 +92,7 @@ export function createNonuniformScreen(ctx) {
       ),
       el(
         "div",
-        { class: "stack sticky" },
+        { class: "stack sticky pane" },
         errorText,
         card({ title: "Bridle result", body: el("div", {}, badge, geometryRows) }),
         card({ title: "Sling comparison", body: comparisonRows }),

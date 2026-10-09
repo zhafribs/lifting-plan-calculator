@@ -47,6 +47,10 @@ const NAV = [
 
 const ORDER = NAV.flatMap((group) => group.items).map((item) => item.key);
 
+// Screens whose wide layout splits into two independently scrolling panes:
+// the form column and the results column each keep their own scroll position.
+const SPLIT_KEYS = new Set(["uniform", "nonuniform", "tandem", "graph"]);
+
 async function main() {
   window.uilog && window.uilog("app main start");
   const rail = document.getElementById("rail");
@@ -90,9 +94,12 @@ async function main() {
   let current = null;
 
   // --- rail ----------------------------------------------------------------
+  // The nav list scrolls on its own so the footer (name, version, contact)
+  // stays pinned and visible even in the smallest window.
+  const railNav = el("nav", { class: "rail-nav" });
   const navButtons = {};
   for (const group of NAV) {
-    rail.append(el("div", { class: "nav-group", text: group.group }));
+    railNav.append(el("div", { class: "nav-group", text: group.group }));
     for (const item of group.items) {
       const button = el(
         "button",
@@ -107,11 +114,12 @@ async function main() {
         item.shortcut ? el("span", { class: "key", text: `Ctrl+${item.shortcut}` }) : null,
       );
       navButtons[item.key] = button;
-      rail.append(button);
+      railNav.append(button);
     }
   }
 
   rail.append(
+    railNav,
     el(
       "div",
       { class: "rail-foot" },
@@ -154,6 +162,7 @@ async function main() {
     title.textContent = meta.title;
     subtitle.textContent = meta.subtitle;
     screenEl.replaceChildren(current.root);
+    screenEl.classList.toggle("split-screen", SPLIT_KEYS.has(key));
     screenEl.scrollTop = 0;
     if (current.sync) current.sync(store.state);
     if (current.render) current.render(store.solved);

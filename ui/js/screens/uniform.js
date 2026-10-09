@@ -104,7 +104,7 @@ export function createUniformScreen(ctx) {
       { class: "grid-main" },
       el(
         "div",
-        { class: "stack" },
+        { class: "stack pane" },
         card({
           title: "Sling",
           body: el("div", { class: "fields" }, field({ label: "Arrangement", input: hitchInput }), field({ label: "Sling total length", unit: "m", input: lengthInput })),
@@ -117,7 +117,7 @@ export function createUniformScreen(ctx) {
       ),
       el(
         "div",
-        { class: "stack sticky" },
+        { class: "stack sticky pane" },
         errorText,
         resultCard,
         tagResultCard,

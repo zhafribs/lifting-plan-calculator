@@ -80,7 +80,7 @@ export function createTandemScreen(ctx) {
       { class: "grid-main" },
       el(
         "div",
-        { class: "stack" },
+        { class: "stack pane" },
         methodCard,
         card({
           title: "Lift",
@@ -99,7 +99,7 @@ export function createTandemScreen(ctx) {
       ),
       el(
         "div",
-        { class: "stack sticky" },
+        { class: "stack sticky pane" },
         errorText,
         card({ title: "Tilted geometry", body: el("div", {}, badge, geomRows) }),
         card({ title: "Case A — level baseline", body: caseA }),

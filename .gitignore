@@ -1,0 +1,16 @@
+# Build output
+/dist/
+/src-tauri/target/
+/src-tauri/target-ubuntu/
+
+# Scratch (frontend fixture dumps, local test exports)
+/ff16/
+
+# Tauri generated schemas
+/src-tauri/gen/schemas/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*~

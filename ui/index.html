@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lifting Plan Calculator</title>
+  <link rel="stylesheet" href="css/app.css" />
+  <script>
+    // Anything that fails before (or while) the app boots is shown on the page
+    // instead of leaving a blank window.
+    (function () {
+      function show(kind, message) {
+        function paint() {
+          var box = document.createElement("pre");
+          box.style.cssText =
+            "position:fixed;top:0;left:0;right:0;z-index:99;background:#1a0f12;color:#f07171;" +
+            "padding:24px;font:12.5px ui-monospace,monospace;white-space:pre-wrap;max-height:60vh;overflow:auto";
+          box.textContent = kind + "\n\n" + message;
+          (document.body || document.documentElement).appendChild(box);
+        }
+        if (document.body) paint();
+        else document.addEventListener("DOMContentLoaded", paint);
+      }
+      window.addEventListener("error", function (event) {
+        show("The application hit an error while starting:", event.message + "\n" + (event.filename || "") + ":" + (event.lineno || ""));
+      });
+      window.addEventListener("unhandledrejection", function (event) {
+        var reason = event.reason;
+        show("The application hit an error while starting:", (reason && (reason.stack || reason.message)) || String(reason));
+      });
+    })();
+  </script>
+</head>
+<body>
+  <script>
+    // A breadcrumb to the app's log file; harmless when the bridge is absent.
+    window.uilog = function (message) {
+      try {
+        if (window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke) {
+          window.__TAURI__.core.invoke("log_ui_event", { line: String(message) });
+        }
+      } catch (error) {
+        /* logging must never break the app */
+      }
+    };
+  </script>
+  <div class="app">
+    <aside id="rail" class="rail"></aside>
+    <main class="main">
+      <header id="topbar" class="topbar"></header>
+      <section id="screen" class="screen"></section>
+    </main>
+  </div>
+  <div id="toasts" class="toasts"></div>
+  <script type="module">
+    // Boot the application through a dynamic import so any failure — a bad
+    // module, a syntax error, a missing asset — becomes a sentence on screen
+    // rather than a blank window.
+    window.uilog && window.uilog("html parsed");
+    import("./js/app.js")
+      .then(() => window.uilog && window.uilog("app module loaded"))
+      .catch((error) => {
+        window.uilog &&
+          window.uilog(
+            "app failed to load: " + ((error && (error.stack || error.message)) || String(error)),
+          );
+        const box = document.createElement("pre");
+      box.style.cssText =
+        "position:fixed;top:0;left:0;right:0;z-index:99;background:#1a0f12;color:#f07171;" +
+        "padding:24px;font:12.5px ui-monospace,monospace;white-space:pre-wrap;max-height:60vh;overflow:auto";
+      box.textContent =
+        "The application could not start:\n\n" + ((error && (error.stack || error.message)) || String(error));
+      document.body.appendChild(box);
+    });
+  </script>
+</body>
+</html>

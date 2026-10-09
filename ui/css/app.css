@@ -1,0 +1,981 @@
+/* ===========================================================================
+   Lifting Plan Calculator — design system
+   A single dark theme, tuned for long form-entry sessions: calm surfaces,
+   one accent, and the three usage bands carried through every status surface.
+   =========================================================================== */
+
+@font-face {
+  font-family: "Inter";
+  src: url("../fonts/InterVariable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --bg: #0f141c;
+  --bg-rail: #0b0f16;
+  --surface: #151c27;
+  --surface-2: #1b2431;
+  --surface-3: #223045;
+  --surface-hi: #29364b;
+  --border: #243040;
+  --border-soft: #1e2836;
+  --border-strong: #33425a;
+  --text: #e9eff8;
+  --muted: #93a3ba;
+  --faint: #64748d;
+  --accent: #5cb3ff;
+  --accent-soft: rgba(92, 179, 255, 0.14);
+  --accent-line: #2b6cb8;
+  --accent-strong: #2a5c9e;
+  --ok: #2e7d52;
+  --ok-text: #54c98e;
+  --ok-soft: rgba(84, 201, 142, 0.12);
+  --caution: #b06a1e;
+  --caution-text: #e2a558;
+  --caution-soft: rgba(226, 165, 88, 0.12);
+  --over: #b23b3b;
+  --over-text: #f07171;
+  --over-soft: rgba(240, 113, 113, 0.12);
+  --danger: #8a3a3a;
+  --add: #2e6b4e;
+  --radius: 12px;
+  --radius-sm: 8px;
+  /* Weight/measurement box width used by the narrow row layout. One value for
+     both the load and the lifting-tackle rows, so the two sections always show
+     the same box size. */
+  --wbox: 107px;
+  --rail-w: 236px;
+  --topbar-h: 54px;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.25);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: "Inter", "Noto Sans", "DejaVu Sans", system-ui, sans-serif;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+input, select, button, textarea { font: inherit; color: inherit; }
+::selection { background: rgba(92, 179, 255, 0.35); }
+
+/* ---------- layout ------------------------------------------------------- */
+
+.app {
+  display: grid;
+  grid-template-columns: var(--rail-w) 1fr;
+  height: 100vh;
+}
+
+.main {
+  display: grid;
+  /* minmax(0, 1fr), not 1fr: a grid row's default min-height is auto, which
+     would let the content area grow past the window instead of scrolling,
+     cutting off everything below the fold with no way to reach it. The
+     min-height/overflow pair does the same for .main as a grid item of .app.
+     The explicit minmax(0, 1fr) column does the same job horizontally: the
+     implicit auto column track would otherwise grow to the topbar's
+     min-content width (nowrap subtitle + chips) and push the whole content
+     column past the window edge with no scrollbar in split-screen widths. */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: var(--topbar-h) minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.screen {
+  overflow-y: auto;
+  min-height: 0;
+  padding: 16px 20px 48px;
+  scrollbar-color: #2b3a52 transparent;
+}
+
+.page { max-width: 1240px; margin: 0 auto; }
+
+/* ---------- rail --------------------------------------------------------- */
+
+.rail {
+  background: var(--bg-rail);
+  border-right: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  padding: 18px 12px 14px;
+  gap: 6px;
+}
+
+.rail-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 8px 16px;
+}
+
+.rail-logo img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.5));
+}
+
+.rail-logo .name {
+  font-weight: 700;
+  font-size: 13.5px;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+}
+
+.rail-logo .kind {
+  font-size: 10.5px;
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.nav-group {
+  margin-top: 12px;
+  padding: 0 8px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.nav-item svg { flex: 0 0 auto; opacity: 0.85; }
+
+.nav-item:hover { background: var(--surface-2); color: var(--text); }
+
+.nav-item.active {
+  background: linear-gradient(90deg, var(--accent-soft), transparent 85%);
+  border-color: var(--border);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.nav-item.active svg { color: var(--accent); opacity: 1; }
+.nav-item.active::before {
+  content: "";
+  position: absolute;
+}
+
+.nav-item .key {
+  margin-left: auto;
+  font-size: 10.5px;
+  color: var(--faint);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0 5px;
+  line-height: 1.5;
+}
+
+.rail-foot {
+  margin-top: auto;
+  padding: 10px 10px 0;
+  border-top: 1px solid var(--border-soft);
+  color: var(--faint);
+  font-size: 11.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rail-foot .brand { color: var(--muted); font-weight: 600; }
+
+/* ---------- topbar ------------------------------------------------------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 28px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-soft);
+  /* Belt and braces: the titles shrink and ellipsize (min-width: 0 below),
+     and anything that still cannot fit is clipped here instead of painting
+     over the window edge in narrow split-screen windows. */
+  overflow: hidden;
+}
+
+.topbar-titles {
+  min-width: 0;
+  /* flex-basis 0: the titles grow into whatever space is left of the chips
+     instead of starting at their (nowrap subtitle) min-content width and
+     shrinking. WebKit does not shrink this block below its min-content even
+     with min-width: 0, which pushed the chips over the window edge in narrow
+     split-screen windows; growing from basis 0 involves no shrink at all. */
+  flex: 1 1 0;
+  overflow: hidden;
+}
+.topbar-titles h1 { margin: 0; font-size: 16px; font-weight: 700; }
+.topbar-titles p {
+  margin: 1px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The titles grow (flex-basis 0 above) and hold the chips at the right edge;
+   the spacer must not compete for the free space. */
+.topbar-spacer { flex: 0 0 0; }
+
+/* The chips carry the two headline numbers: they keep their natural width
+   and never shrink or wrap. */
+.chips { display: flex; gap: 10px; align-items: center; flex: 0 0 auto; }
+
+.chip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 5px 10px;
+  display: flex;
+  flex-direction: column;
+  min-width: 108px;
+}
+
+.chip .k {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.chip .v { font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; }
+
+/* ---------- cards -------------------------------------------------------- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.card + .card, .stack > * + * { margin-top: 16px; }
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-soft);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent);
+}
+
+.card-head h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #b9cdf0;
+}
+
+.card-head .note {
+  font-size: 11.5px;
+  color: var(--faint);
+  margin-left: 2px;
+}
+
+.card-head .spacer { flex: 1; }
+
+.card-body { padding: 13px 14px; }
+.card-body.tight { padding: 10px; }
+
+.card-foot {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* ---------- grid --------------------------------------------------------- */
+
+.grid2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.grid-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 980px) {
+  .grid2, .grid-main { grid-template-columns: minmax(0, 1fr); }
+}
+
+.sticky { position: sticky; top: 0; }
+
+/* ---------- fields ------------------------------------------------------- */
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px 12px;
+}
+
+/* The manual chart card holds exactly four short fields. Once the card is
+   wide enough that the 170px rule would wrap them 3 + 1, give each field a
+   quarter of the row so all four sit on one line. Narrower cards keep the
+   normal wrapping grid. */
+@container (min-width: 534px) {
+  .fields-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+
+.field > label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.field .hint { font-size: 11.5px; color: var(--faint); }
+
+.input-wrap { position: relative; display: flex; align-items: center; }
+
+input[type="text"], input[type="number"], select {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+input::placeholder { color: #5b6a80; }
+
+input:focus, select:focus {
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+input.bad { border-color: var(--over); }
+
+input.num { text-align: right; font-variant-numeric: tabular-nums; padding-right: 34px; }
+
+.unit {
+  position: absolute;
+  right: 10px;
+  font-size: 11.5px;
+  color: var(--faint);
+  pointer-events: none;
+}
+
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 17px) 55%, calc(100% - 12px) 55%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 30px;
+}
+
+select option { background: var(--surface-2); }
+
+/* ---------- buttons ------------------------------------------------------ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 8px 13px;
+  font-weight: 600;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.05s ease;
+  white-space: nowrap;
+}
+
+.btn:hover { background: var(--surface-3); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+
+.btn.primary {
+  background: var(--accent-strong);
+  border-color: #3c74bd;
+}
+.btn.primary:hover { background: #336cb8; }
+
+.btn.add { background: var(--add); border-color: #3b7f5d; }
+.btn.add:hover { background: #378060; }
+
+.btn.danger { background: var(--danger); border-color: #a04a4a; }
+.btn.danger:hover { background: #a04646; }
+
+.btn.ghost { background: transparent; }
+.btn.ghost:hover { background: var(--surface-2); }
+
+.btn.small { padding: 5px 9px; font-size: 11.5px; border-radius: 7px; }
+
+.btn.wide { width: 100%; }
+
+.link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0;
+  font-size: 12px;
+}
+.link:hover { text-decoration: underline; }
+
+.icon-btn {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.icon-btn:hover { background: var(--surface-3); color: var(--text); }
+.icon-btn.remove:hover { background: rgba(178, 59, 59, 0.25); color: #ffb4b4; }
+
+/* ---------- item rows ---------------------------------------------------- */
+
+.rows { display: flex; flex-direction: column; gap: 8px; }
+
+.rows-head {
+  display: grid;
+  gap: 10px;
+  /* Match the row card's content box (1px border + 10px padding) so every
+     label sits exactly over its column instead of 7px to the left. */
+  padding: 0 11px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.row-card {
+  display: grid;
+  gap: 10px;
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 9px 10px;
+}
+
+/* Grid and flex children default to min-width:auto, which stops them from
+   shrinking and pushes later columns out of the card. Let them shrink. */
+.row-card > *,
+.rows-head > *,
+.row-card .row > *,
+.row-card input,
+.row-card select {
+  min-width: 0;
+}
+
+/* Row dropdowns are tight, so give the label every pixel: a smaller right
+   inset keeps the full "Weight by Volume" text visible. The arrow lives
+   within 22px of the right edge, so 26px still clears it. */
+.row-card select {
+  padding-left: 8px;
+  padding-right: 26px;
+}
+
+.row-card:hover { border-color: var(--border-strong); }
+
+.line-total {
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #cfe0ff;
+  white-space: nowrap;
+}
+
+.empty {
+  border: 1.5px dashed var(--border-strong);
+  border-radius: 10px;
+  padding: 22px 16px;
+  text-align: center;
+  color: var(--faint);
+  font-size: 12.5px;
+}
+
+
+/* --- load / tackle rows -------------------------------------------------- */
+
+/* The measurement box is fixed at 122px, the same size as the tackle row's
+   weight-each box, so stretching the window only widens the description. */
+.rows-head.load-head,
+.load-row {
+  grid-template-columns: minmax(96px, 1.2fr) 160px 54px 122px 88px 26px;
+}
+
+.rows-head.tackle-head,
+.tackle-row {
+  grid-template-columns: minmax(120px, 1.6fr) 54px 122px 88px 26px;
+}
+
+/* When the card itself is narrow (a tiled half-screen window), both rows
+   reflow onto two lines with the same geometry:
+     line 1:  description ................................ | remove
+     line 2:  qty | measured by | weight box | subtotal            */
+.card-body { container-type: inline-size; }
+
+@container (max-width: 620px) {
+  .rows-head { display: none; }
+
+  .load-row,
+  .tackle-row {
+    position: relative; /* the remove button parks at the row's top right */
+    column-gap: 6px;
+    row-gap: 8px;
+  }
+
+  /* The description ends above the weight box so their right edges line up,
+     the measured-by box sits beside the weight box, and the quantity stays at
+     the left of line 2, exactly like the tackle line. */
+  .load-row {
+    grid-template-columns: minmax(0, 1fr) 156px var(--wbox) 96px;
+    grid-template-areas:
+      "desc desc desc ."
+      "qty type weight total";
+  }
+
+  .load-row > *:nth-child(1) { grid-area: desc; }
+  .load-row > *:nth-child(2) { grid-area: type; }
+  .load-row > *:nth-child(3) { grid-area: qty; justify-self: start; width: 62px; }
+  .load-row > *:nth-child(4) {
+    grid-area: weight;
+    /* The measurement cell's two inputs stack, so each keeps room for its unit. */
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .load-row > *:nth-child(5) { grid-area: total; align-self: center; }
+  .load-row > *:nth-child(6) { position: absolute; top: 10px; right: 10px; }
+
+  .tackle-row {
+    grid-template-columns: minmax(0, 1fr) var(--wbox) 96px;
+    grid-template-areas:
+      "desc desc ."
+      "qty weight total";
+  }
+
+  .tackle-row > *:nth-child(1) { grid-area: desc; }
+  .tackle-row > *:nth-child(2) { grid-area: qty; justify-self: start; width: 62px; }
+  .tackle-row > *:nth-child(3) { grid-area: weight; }
+  .tackle-row > *:nth-child(4) { grid-area: total; align-self: center; }
+  .tackle-row > *:nth-child(5) { position: absolute; top: 10px; right: 10px; }
+}
+
+/* ---------- key/value rows ----------------------------------------------- */
+
+.kv { display: flex; flex-direction: column; }
+
+.kv-row {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 14px;
+  padding: 8px 2px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.kv-row:last-child { border-bottom: none; }
+.kv-row .k { color: var(--muted); min-width: 0; }
+.kv-row .v {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  /* Long values (an arrangement's full name, a workbook path) wrap inside the
+     row instead of running over their label. Short numbers never wrap. */
+  white-space: normal;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
+.kv-row.big .v { font-size: 19px; }
+
+/* Summary rows that must never wrap: the label stays on one line (clipped with
+   an ellipsis at the very narrowest widths) and the value never breaks. */
+.kv-row.one-line .k { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kv-row.one-line .v { white-space: nowrap; }
+.kv-row.mega .v { font-size: 24px; color: #ffffff; }
+.kv-row .v.ok { color: var(--ok-text); }
+.kv-row .v.caution { color: var(--caution-text); }
+.kv-row .v.over { color: var(--over-text); }
+.kv-row .v.accent { color: var(--accent); }
+
+.kv .sub {
+  font-size: 11.5px;
+  color: var(--faint);
+  padding: 0 2px 8px;
+  margin-top: -4px;
+}
+
+/* ---------- status ------------------------------------------------------- */
+
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 10px;
+  padding: 13px 15px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+}
+
+.badge .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--faint);
+  flex: 0 0 auto;
+}
+
+.badge .text { font-weight: 700; font-size: 14px; }
+.badge .sub { font-size: 12px; color: var(--muted); font-weight: 400; }
+
+.badge.ok { border-color: rgba(84, 201, 142, 0.45); background: var(--ok-soft); }
+.badge.ok .dot { background: var(--ok-text); }
+.badge.ok .text { color: var(--ok-text); }
+
+.badge.caution { border-color: rgba(226, 165, 88, 0.45); background: var(--caution-soft); }
+.badge.caution .dot { background: var(--caution-text); }
+.badge.caution .text { color: var(--caution-text); }
+
+.badge.over { border-color: rgba(240, 113, 113, 0.5); background: var(--over-soft); }
+.badge.over .dot { background: var(--over-text); }
+.badge.over .text { color: var(--over-text); }
+
+.error-text { color: var(--over-text); font-weight: 600; font-size: 12.5px; }
+
+/* meter */
+
+.meter { margin-top: 12px; }
+
+.meter-track {
+  position: relative;
+  height: 12px;
+  border-radius: 7px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  border-radius: 7px;
+  background: var(--ok);
+  transition: width 0.25s ease;
+}
+
+.meter-fill.caution { background: var(--caution); }
+.meter-fill.over { background: var(--over); }
+
+.meter-marks {
+  position: relative;
+  height: 14px;
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--faint);
+}
+
+.meter-marks .mark75 {
+  position: absolute;
+  left: 75%;
+  transform: translateX(-50%);
+  color: var(--caution-text);
+}
+
+.meter-marks .mark100 { position: absolute; left: 100%; transform: translateX(-100%); }
+
+.meter-caption {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ---------- pills / tags ------------------------------------------------- */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+}
+
+.pill.ok { color: var(--ok-text); border-color: rgba(84, 201, 142, 0.5); background: var(--ok-soft); }
+.pill.caution { color: var(--caution-text); border-color: rgba(226, 165, 88, 0.5); background: var(--caution-soft); }
+.pill.over { color: var(--over-text); border-color: rgba(240, 113, 113, 0.55); background: var(--over-soft); }
+
+/* ---------- tables ------------------------------------------------------- */
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--border-soft); border-radius: 10px; }
+
+table.grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+table.grid th {
+  text-align: left;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid var(--border);
+}
+
+table.grid td {
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+table.grid tr:last-child td { border-bottom: none; }
+table.grid td.num { text-align: right; }
+
+/* ---------- misc --------------------------------------------------------- */
+
+.muted { color: var(--muted); }
+.faint { color: var(--faint); }
+.small { font-size: 12px; }
+.mt8 { margin-top: 8px; }
+.mt12 { margin-top: 12px; }
+.mt16 { margin-top: 16px; }
+.row { display: flex; align-items: center; gap: 10px; }
+.row.wrap { flex-wrap: wrap; }
+.spacer { flex: 1; }
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 9px;
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.check:hover { border-color: var(--border-strong); }
+
+.check input { accent-color: var(--accent-line); width: 16px; height: 16px; }
+.check .t { font-weight: 600; }
+.check .d { font-size: 11.5px; color: var(--faint); }
+
+/* toasts */
+
+.toasts {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 60;
+}
+
+.toast {
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--accent);
+  border-radius: 9px;
+  padding: 11px 14px;
+  max-width: 420px;
+  box-shadow: var(--shadow);
+  font-size: 12.5px;
+  animation: slide-in 0.18s ease;
+}
+
+.toast.error { border-left-color: var(--over-text); }
+.toast.ok { border-left-color: var(--ok-text); }
+
+@keyframes slide-in {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+/* report screen */
+
+.report-layout {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .report-layout { grid-template-columns: minmax(0, 1fr); }
+  /* Stacked, the card stack sits above the report, so a sticky stack would
+     pin over it and let the report scroll behind the sections and export
+     cards. Side by side the stack has real content below it in the row and
+     sticky behaves as intended, so only the stacked case is taken out of
+     sticky flow. */
+  .report-layout > .stack.sticky { position: static; }
+}
+
+/* graph screen (working range diagram) */
+
+.graph-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .graph-layout { grid-template-columns: minmax(0, 1fr); }
+}
+
+.graph-canvas {
+  display: block;
+  width: 100%;
+  height: calc(100vh - var(--topbar-h) - 190px);
+  min-height: 400px;
+  max-height: 660px;
+  background: #141922;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.graph-page .stack-8 { display: flex; flex-direction: column; gap: 8px; }
+
+.graph-page .checks { display: flex; flex-direction: column; gap: 6px; }
+
+.graph-page .checks .check { padding: 8px 10px; }
+
+.graph-page .check input[type="radio"] { accent-color: var(--accent); }
+
+.graph-page .field.disabled { opacity: 0.55; }
+
+.report-frame {
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  height: calc(100vh - var(--topbar-h) - 120px);
+  min-height: 480px;
+}
+
+.report-frame iframe { width: 100%; height: 100%; border: none; background: #fff; }
+
+/* about screen */
+
+.about-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 28px 16px 10px;
+}
+
+.about-hero img { width: 84px; height: 84px; object-fit: contain; }
+.about-hero h2 { margin: 0; font-size: 20px; }
+.about-hero .tagline { color: var(--muted); max-width: 520px; }
+
+/* scrollbars (WebKit) */
+
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-thumb { background: #2b3a52; border-radius: 6px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: #3a4c69; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- narrow windows (split screen) -------------------------------
+   Below the old 1100px window floor the app is usually sharing the screen
+   with another window, so every pixel counts. The rail collapses to a
+   64px icon strip: group labels, shortcut chips and the footer step aside,
+   the topbar and screen paddings tighten, and the content column keeps
+   almost the whole width. Tooltips (title attributes on the nav buttons)
+   carry the labels while collapsed.
+
+   Pure media queries, so widening the window restores the full rail and
+   nothing about the state is persisted between launches. */
+
+@media (max-width: 1099px) {
+  :root { --rail-w: 64px; }
+
+  .rail { padding: 14px 8px 12px; }
+
+  .nav-group,
+  .rail-foot { display: none; }
+
+  .nav-item {
+    justify-content: center;
+    padding: 10px 0;
+    gap: 0;
+  }
+
+  /* Hide the label and the Ctrl+N chip; the icon stays. */
+  .nav-item span { display: none; }
+
+  .topbar { padding: 0 14px; gap: 12px; }
+  .screen { padding: 14px 14px 40px; }
+}

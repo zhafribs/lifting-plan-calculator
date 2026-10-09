@@ -1,0 +1,31 @@
+name: Feature request
+description: Suggest a calculation, a form or a workflow the app should support.
+title: "feat: "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is a small app, so the most useful requests describe the rigging
+        situation and the figure you need, not only the UI.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: The lift or the task that the app cannot handle today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What should it do?
+      description: The inputs, the calculation and the result you would expect.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: How you work around this now, if you do.
+    validations:
+      required: false

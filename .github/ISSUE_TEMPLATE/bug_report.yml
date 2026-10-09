@@ -1,0 +1,71 @@
+name: Bug report
+description: Something in the calculator is wrong or broken.
+title: "bug: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please search the existing issues first.
+
+        For a calculation that gives the wrong figure, say what you entered and
+        what you expected; that is usually enough to reproduce it.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: The behaviour you saw, and what you expected instead.
+      placeholder: Entering 20 t on the Overall tab reports a gross load of ...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Which tab, which inputs, which window size.
+      placeholder: |
+        1. Open the Overall tab
+        2. Add a load line, weight 20000 kg
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The AppImage file name, or the commit SHA if built from source.
+      placeholder: lifting-plan-calculator-V2.0.0.appimage
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Distribution and desktop
+      placeholder: Ubuntu 22.04, GNOME 42, Wayland
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How are you running it?
+      options:
+        - AppImage from the Releases page
+        - Built from source (cargo run)
+        - Built from source (AppImage)
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Paste the contents of `~/.cache/lifting-plan-calculator/ui.log`, if it exists.
+      render: text
+    validations:
+      required: false
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Drag images here if they help.
+    validations:
+      required: false

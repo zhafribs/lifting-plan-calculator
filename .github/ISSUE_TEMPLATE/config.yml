@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or usage help
+    url: https://github.com/zhafribs/lifting-plan-calculator/discussions
+    about: Ask how to use the calculator, or how to read a result.
+  - name: Security report
+    url: https://github.com/zhafribs/lifting-plan-calculator/security/advisories/new
+    about: Report a vulnerability privately.

@@ -1,0 +1,31 @@
+# Normalize to LF in the repository regardless of contributor OS.
+* text=auto eol=lf
+
+# Source and text
+*.rs      text diff=rust
+*.toml    text
+*.json    text
+*.html    text
+*.css     text
+*.js      text
+*.md      text
+*.sh      text eol=lf
+Dockerfile text
+
+# Binaries (never diff or convert)
+*.png     binary
+*.ico     binary
+*.icns    binary
+*.woff2   binary
+*.AppImage binary
+*.xlsx    binary
+
+# Vendored assets are not part of the project's own language stats.
+ui/vendor/katex/** linguist-vendored
+ui/fonts/**        linguist-vendored
+
+# Icons are generated from the app's crane icon.
+src-tauri/icons/** linguist-generated
+
+# The lockfile is generated and should not be diffed by hand.
+Cargo.lock linguist-generated

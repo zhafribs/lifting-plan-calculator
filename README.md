@@ -15,7 +15,7 @@ Every figure is solved by the Rust engine (ported line-for-line from the
 Android Kotlin source) and covered by a test suite ported from the Kotlin unit
 tests. No sign-in, no network, no stored state: all calculations run locally.
 
-![Lifting Plan Calculator](docs/screenshot.png)
+![Lifting Plan Calculator](docs/screenshots/01-overall.png)
 
 ## Features
 
@@ -29,6 +29,24 @@ Five calculation forms over one shared lift, plus a printable report:
 | **Nonuniform Load** | The 2-leg asymmetric bridle with a shortening grab hook. |
 | **Tandem** | Two independent cranes sharing one load, in the two declared lug configurations. |
 | **Summary** | An HTML report with KaTeX-typeset formulas, ready to save or print. Saved reports keep a copy of the KaTeX assets beside them, so they print with the equations typeset anywhere. |
+
+## Screenshots
+
+Every screen below is a live capture of the running app with an example lift
+(20,000 kg load plus 350 kg of tackle, giving a 20,350 kg gross load and a
+27,133.33 kg required capacity at the 75% rule).
+
+| Overall Weight | Crane capacity check |
+| --- | --- |
+| ![Overall Weight](docs/screenshots/01-overall.png) | ![Crane](docs/screenshots/02-crane.png) |
+| **Working range diagram** | **Uniform Load** |
+| ![Working range diagram](docs/screenshots/03-graph.png) | ![Uniform Load](docs/screenshots/04-uniform.png) |
+| **Nonuniform Load** | **Tandem** |
+| ![Nonuniform Load](docs/screenshots/05-nonuniform.png) | ![Tandem](docs/screenshots/06-tandem.png) |
+
+**Summary report** — the printable plan, with each figure shown as its formula:
+
+![Summary report](docs/screenshots/07-summary.png)
 
 ## Install
 

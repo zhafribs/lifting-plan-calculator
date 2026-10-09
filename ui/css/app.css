@@ -887,7 +887,10 @@ table.grid td.num { text-align: right; }
 
 .report-layout {
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  /* The Summary tab is the mirror image of the other tabs: the preview is the
+     star, so it gets the larger (right) column while the other tabs put their
+     larger column on the left. */
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
   gap: 16px;
   align-items: start;
 }

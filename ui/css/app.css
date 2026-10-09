@@ -359,7 +359,7 @@ input, select, button, textarea { font: inherit; color: inherit; }
 
 .grid-main {
   display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   gap: 16px;
   align-items: start;
 }
@@ -887,7 +887,7 @@ table.grid td.num { text-align: right; }
 
 .report-layout {
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   gap: 16px;
   align-items: start;
 }
@@ -906,7 +906,7 @@ table.grid td.num { text-align: right; }
 
 .graph-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   gap: 16px;
   align-items: start;
 }
@@ -934,6 +934,12 @@ table.grid td.num { text-align: right; }
     flex-direction: column;
     flex: 1 1 auto;
     min-height: 0;
+    /* A flex item with `margin: 0 auto` sizes to its content unless given an
+       explicit width; without this every tab's grid would shrink to its own
+       content width and the sections would be a different size on each tab.
+       Fill the available width (capped by max-width) so every tab uses the
+       same proportions. */
+    width: 100%;
   }
 
   .screen.split-screen .grid-main,

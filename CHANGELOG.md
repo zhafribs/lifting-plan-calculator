@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.5] - 2026-10-09
+
+### Fixed
+
+- **Double scroll now engages the moment a tab can show two columns**, at the
+  same 981px cut the layouts use (previously 1001px). Between 981 and 1000px
+  the Overall Weight, Crane, Graph, Uniform Load, Nonuniform Load and Tandem
+  tabs showed their cards side by side with a single page scroll; now every
+  tab splits into independent scroll panes whenever its cards are side by
+  side (981px+), and falls back to one stacked scroll below that. Summary
+  gets the same treatment.
+
 ## [2.1.4] - 2026-10-09
 
 ### Changed

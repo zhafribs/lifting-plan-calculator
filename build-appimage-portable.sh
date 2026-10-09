@@ -74,9 +74,9 @@ bwrap \
     export HOME=/root
     # The apt sandbox drops privileges to the _apt user, which is not possible
     # inside a bubblewrap user namespace; run apt as root here. And the user
-    # namespace maps no groups beyond gid 0, so dpkg's ownership changes would
-    # fail with EINVAL — `--force-not-root` makes it skip them (the files end
-    # up owned by the invoking user either way).
+    # namespace maps no groups beyond gid 0, so the ownership changes dpkg
+    # would make fail with EINVAL anyway — `--force-not-root` makes it skip
+    # them (the files end up owned by the invoking user either way).
     apt-get -o APT::Sandbox::User=root update
     apt-get -o APT::Sandbox::User=root -o Dpkg::Options::=--force-not-root \
       install -y --no-install-recommends \

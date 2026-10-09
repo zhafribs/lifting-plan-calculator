@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.2] - 2026-10-09
+
+### Added
+
+- **Independent scroll panes on the Overall Weight tab**: on wide windows the
+  Load weight and Lifting tackle cards and the Weight summary and Next step
+  cards each scroll on their own, so the summary keeps its place while the form
+  moves. Stacked (narrow) windows keep the single scroll they had before.
+
 ## [2.1.1] - 2026-10-09
 
 ### Fixed

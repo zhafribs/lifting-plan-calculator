@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-10-09
+
+### Fixed
+
+- **Rail footer in short, wide windows**: the sidebar footer (app name,
+  version, contact) is no longer pushed below the window when the labelled
+  navigation is taller than the window. The navigation list scrolls on its own
+  and the footer stays pinned, at every window size.
+
 ## [2.1.0] - 2026-10-09
 
 A usability release that keeps the important things in view at any window

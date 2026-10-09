@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.4] - 2026-10-09
+
+### Changed
+
+- **One consistent layout on every tab**: all wide windows now use the same
+  60/40 two-column split (Overall Weight, Crane, Graph, Uniform Load,
+  Nonuniform Load, Tandem and Summary), and every tab's content fills the same
+  width instead of each tab shrinking to fit its own content. Stacked (narrow)
+  windows are unchanged.
+
 ## [2.1.3] - 2026-10-09
 
 ### Added

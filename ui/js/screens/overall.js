@@ -84,7 +84,7 @@ export function createOverallScreen(ctx) {
       { class: "grid-main" },
       el(
         "div",
-        { class: "stack" },
+        { class: "stack pane" },
         card({
           title: "Load weight",
           note: "What the crane actually lifts",
@@ -105,7 +105,7 @@ export function createOverallScreen(ctx) {
       ),
       el(
         "div",
-        { class: "stack sticky" },
+        { class: "stack sticky pane" },
         card({
           title: "Weight summary",
           body: summaryBox,

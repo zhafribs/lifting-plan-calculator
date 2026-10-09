@@ -49,7 +49,7 @@ const ORDER = NAV.flatMap((group) => group.items).map((item) => item.key);
 
 // Screens whose wide layout splits into two independently scrolling panes:
 // the form column and the results column each keep their own scroll position.
-const SPLIT_KEYS = new Set(["uniform", "nonuniform", "tandem", "graph"]);
+const SPLIT_KEYS = new Set(["overall", "uniform", "nonuniform", "tandem", "graph"]);
 
 async function main() {
   window.uilog && window.uilog("app main start");

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.3] - 2026-10-09
+
+### Added
+
+- **Independent scroll panes on the Crane and Summary tabs**: on wide windows
+  the Crane form column and its capacity-check column scroll on their own, and
+  on the Summary tab the sections/export column scrolls on its own while the
+  report preview keeps its own scroll. Stacked (narrow) windows keep the single
+  scroll they had before.
+
 ## [2.1.2] - 2026-10-09
 
 ### Added

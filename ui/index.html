@@ -21,7 +21,19 @@
         if (document.body) paint();
         else document.addEventListener("DOMContentLoaded", paint);
       }
+      // Browsers report "ResizeObserver loop completed with undelivered
+      // notifications." through the error event even though it is always
+      // recoverable. WebKitGTK in particular fires it whenever an observer
+      // callback resizes the observed element, so it must never be shown as a
+      // startup-error banner. Log it when the bridge is available.
+      function isBenign(message) {
+        return /^ResizeObserver loop completed with undelivered notifications/.test(message || "");
+      }
       window.addEventListener("error", function (event) {
+        if (isBenign(event.message)) {
+          window.uilog && window.uilog("swallowed benign window error: " + event.message);
+          return;
+        }
         show("The application hit an error while starting:", event.message + "\n" + (event.filename || "") + ":" + (event.lineno || ""));
       });
       window.addEventListener("unhandledrejection", function (event) {

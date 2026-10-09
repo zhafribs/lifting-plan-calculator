@@ -648,9 +648,20 @@ export function createGraphScreen(ctx) {
     { passive: false },
   );
 
+  // Resizing the canvas bitmap inside an observer delivery counts as an
+  // undelivered notification on WebKitGTK ("ResizeObserver loop completed with
+  // undelivered notifications.") and the app's global error handler turns that
+  // into an error banner. The split-screen graph canvas is a `height: auto`
+  // flex child, so setting the bitmap in redraw() really does resize the
+  // element. Deferring to the next animation frame moves the resize out of the
+  // delivery cycle and lets the observer settle cleanly.
+  let resizeFrame = 0;
   new ResizeObserver(() => {
-    measureBox();
-    redraw();
+    cancelAnimationFrame(resizeFrame);
+    resizeFrame = requestAnimationFrame(() => {
+      measureBox();
+      redraw();
+    });
   }).observe(canvas);
 
   // --- state flow ------------------------------------------------------------

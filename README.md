@@ -58,8 +58,8 @@ Download the latest
 then:
 
 ```bash
-chmod +x Lifting-Plan-Calculator-2.2.0-linux-x86_64.AppImage
-./Lifting-Plan-Calculator-2.2.0-linux-x86_64.AppImage
+chmod +x Lifting-Plan-Calculator-2.2.1-linux-x86_64.AppImage
+./Lifting-Plan-Calculator-2.2.1-linux-x86_64.AppImage
 ```
 
 The portable release is built inside an Ubuntu 22.04 userspace, so its glibc
@@ -74,7 +74,7 @@ AppImage can update by fetching only the blocks that changed (via
 
 ```bash
 appimageupdatetool Lifting-Plan-Calculator-2.1.5-linux-x86_64.AppImage \
-  https://github.com/zhafribs/lifting-plan-calculator/releases/download/v2.2.0/Lifting-Plan-Calculator-2.2.0-linux-x86_64.AppImage.zsync
+  https://github.com/zhafribs/lifting-plan-calculator/releases/download/v2.2.1/Lifting-Plan-Calculator-2.2.1-linux-x86_64.AppImage.zsync
 ```
 
 ### Windows

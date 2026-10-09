@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-10-10
+
+### Fixed
+
+- Opening the Graph tab no longer shows "ResizeObserver loop completed with
+  undelivered notifications." as an error banner: the diagram's ResizeObserver
+  defers its redraw to the next animation frame, and the global error handler
+  treats that specific recoverable message as the warning it is.
+
 ## [2.2.0] - 2026-10-09
 
 ### Added

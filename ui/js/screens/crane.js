@@ -91,7 +91,7 @@ export function createCraneScreen(ctx) {
       { class: "grid-main" },
       el(
         "div",
-        { class: "stack" },
+        { class: "stack pane" },
         card({
           title: "Crane",
           note: "As booked for this lift",
@@ -123,7 +123,7 @@ export function createCraneScreen(ctx) {
       ),
       el(
         "div",
-        { class: "stack sticky" },
+        { class: "stack sticky pane" },
         card({ title: "Capacity check", body: el("div", {}, checkBadge, checkMeter, checkRows, plotBox) }),
         card({
           title: "Actions",

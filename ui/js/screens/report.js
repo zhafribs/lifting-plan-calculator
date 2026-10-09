@@ -129,7 +129,7 @@ export function createReportScreen(ctx) {
       { class: "report-layout" },
       el(
         "div",
-        { class: "stack sticky" },
+        { class: "stack sticky pane" },
         card({
           title: "Report sections",
           body: el(

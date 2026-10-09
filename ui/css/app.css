@@ -937,7 +937,8 @@ table.grid td.num { text-align: right; }
   }
 
   .screen.split-screen .grid-main,
-  .screen.split-screen .graph-layout {
+  .screen.split-screen .graph-layout,
+  .screen.split-screen .report-layout {
     flex: 1 1 auto;
     min-height: 0;
     grid-template-rows: minmax(0, 1fr);
@@ -945,12 +946,21 @@ table.grid td.num { text-align: right; }
   }
 
   .screen.split-screen .grid-main > .pane,
-  .screen.split-screen .graph-layout > .pane {
+  .screen.split-screen .graph-layout > .pane,
+  .screen.split-screen .report-layout > .pane {
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     padding-right: 4px;
     scrollbar-color: #2b3a52 transparent;
+  }
+
+  /* The report preview stays a viewport-sized box and keeps its own inner
+     scroll (the iframe), so the frame fills its column without growing past
+     the window. */
+  .screen.split-screen .report-frame {
+    height: auto;
+    min-height: 0;
   }
 
   /* The diagram fills its pane and rescales (the ResizeObserver redraws it)

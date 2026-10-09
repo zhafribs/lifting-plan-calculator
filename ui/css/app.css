@@ -895,7 +895,7 @@ table.grid td.num { text-align: right; }
   align-items: start;
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 980px) {
   .report-layout { grid-template-columns: minmax(0, 1fr); }
   /* Stacked, the card stack sits above the report, so a sticky stack would
      pin over it and let the report scroll behind the sections and export
@@ -914,7 +914,7 @@ table.grid td.num { text-align: right; }
   align-items: start;
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 980px) {
   .graph-layout { grid-template-columns: minmax(0, 1fr); }
 }
 
@@ -923,8 +923,10 @@ table.grid td.num { text-align: right; }
    the working range diagram) stay put while the other column moves. Stacked,
    the page falls back to the single scroll it had before. The `split-screen`
    class is put on the shared #screen element by app.js when one of these
-   screens is shown. */
-@media (min-width: 1001px) {
+   screens is shown. The 981px cut matches the two-column cut of the layouts
+   (everything stacks at 980px and below), so two columns and independent
+   scroll panes always come together. */
+@media (min-width: 981px) {
   .screen.split-screen {
     display: flex;
     flex-direction: column;

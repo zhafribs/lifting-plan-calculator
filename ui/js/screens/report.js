@@ -35,8 +35,8 @@ export function createReportScreen(ctx) {
   // Summary tab reads as a single document — the frame opens to the report's
   // full height and the screen owns the only scrollbar. Side by side the
   // frame keeps its viewport-sized box and its own scroll, which is the one
-  // scrollable there.
-  const stackedQuery = window.matchMedia("(max-width: 1000px)");
+  // scrollable there. 980px is the stack cut shared with the CSS breakpoints.
+  const stackedQuery = window.matchMedia("(max-width: 980px)");
   function fitFrame() {
     if (!stackedQuery.matches) {
       frameWrap.style.height = "";

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-10-11
+
+### Added
+
+- The new workbook format in the Crane and Graph tabs: the crane's position,
+  the longest main boom, a jib configuration card (the configuration picks
+  its jib; only the offset angles it allows are offered), the jib capacity
+  checked at the boom angle, the boom angle auto-chosen to pass the 75% rule
+  at the farthest reach, the manual entry mirroring the jib check, and the
+  Graph tab following the workbook with a "Reset to Crane Tab" button after
+  manual edits.
+
+### Fixed
+
+- Jib offset angles rotate clockwise (below the boom axis).
+- Working radii are measured from the x = 0 axis, not from the crane.
+- Choosing a dropdown no longer scrolls the page back to its top.
+- The workbook table folds behind a toggle.
+
 ## [2.2.1] - 2026-10-10
 
 ### Fixed

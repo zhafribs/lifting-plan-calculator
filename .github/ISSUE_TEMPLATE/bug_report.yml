@@ -34,7 +34,7 @@ body:
     attributes:
       label: Version
       description: The AppImage file name, or the commit SHA if built from source.
-      placeholder: Lifting-Plan-Calculator-2.2.1-linux-x86_64.AppImage
+      placeholder: Lifting-Plan-Calculator-2.3.0-linux-x86_64.AppImage
     validations:
       required: true
   - type: input

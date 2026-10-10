@@ -72,6 +72,11 @@ export function createCraneScreen(ctx) {
   ];
   const jibConfigBox = el("div", { class: "checks" });
   const jibLengthLine = el("div", { class: "faint small" });
+  const jibBoomAngleSelect = selectInput({
+    options: [],
+    value: null,
+    onChange: (value) => store.setBoomAngle(Number(value)),
+  });
   const jibOffsetSelect = selectInput({
     options: [],
     value: null,
@@ -84,6 +89,7 @@ export function createCraneScreen(ctx) {
     el(
       "div",
       { class: "fields" },
+      el("div", { class: "field" }, el("label", { text: "Boom angle" }), jibBoomAngleSelect),
       el("div", { class: "field" }, el("label", { text: "Jib offset angle" }), jibOffsetSelect),
     ),
   );
@@ -297,6 +303,26 @@ export function createCraneScreen(ctx) {
     // shortest table, the extended jib its longest. Only the offset angles
     // that jib allows remain to choose.
     jibLengthLine.textContent = `Jib ${fmt(state.crane.jib_length ?? 0, 2, "m")} — set by the configuration`;
+
+    // The boom angle, listed from the selected jib chart's own rows: it is the
+    // jib chart's input, the way the working radius is the main boom's.
+    const angles = (state.crane.chart_jib_points || [])
+      .map((point) => point[0])
+      .sort((a, b) => a - b);
+    jibBoomAngleSelect.replaceChildren(
+      ...angles.map((value) =>
+        el("option", {
+          value: String(value),
+          text: Number.isInteger(value) ? fmt(value, 0, "°") : fmt(value, 1, "°"),
+        }),
+      ),
+    );
+    const effectiveAngle =
+      state.crane.boom_angle_deg ?? store.solved?.crane?.result?.boom_angle_deg ?? null;
+    if (effectiveAngle !== null && effectiveAngle !== undefined && angles.length) {
+      jibBoomAngleSelect.value = String(nearest(angles, effectiveAngle));
+    }
+
     const offsets = jibs
       .filter((jib) => Math.abs(jib.length - (state.crane.jib_length ?? 0)) < 1e-9)
       .map((jib) => jib.offset)

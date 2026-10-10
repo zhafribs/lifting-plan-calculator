@@ -219,6 +219,16 @@ export function createStore({ onError } = {}) {
     return chartAction({ action: "manual", row });
   }
 
+  // The boom angle is the jib charts' own input: setting it here lets the
+  // Crane tab drive the jib check without the Graph tab open. The working
+  // radius follows from the assembly geometry (the solver derives it).
+  function setBoomAngle(angle) {
+    update((draft) => {
+      draft.crane.boom_angle_deg = angle;
+      if (draft.crane.rows[0]) draft.crane.rows[0].angle = angle;
+    });
+  }
+
   // Choose a jib configuration and its allowed offset angle, with the
   // workbook-aware rules in one place: both the crane tab's controls and the
   // graph's configuration radios go through it. The configuration picks its
@@ -270,6 +280,7 @@ export function createStore({ onError } = {}) {
     importChartPath,
     chartAction,
     chooseJib,
+    setBoomAngle,
     manualChartEdit,
   };
 }

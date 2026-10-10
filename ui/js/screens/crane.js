@@ -50,6 +50,7 @@ export function createCraneScreen(ctx) {
   const radiusWrap = el("div", { class: "field" });
   const workbookBox = el("div", {});
   const positionLine = el("div", { class: "faint small", style: { margin: "10px 0 0" } });
+  let tableOpen = true;
   const workbookSection = el(
     "div",
     { class: "mt16" },
@@ -231,29 +232,7 @@ export function createCraneScreen(ctx) {
       if (radii.length) radiusSelect.value = String(nearest(radii, state.crane.working_radius));
 
       const table = state.chart_table;
-      if (table && table.headers?.length) {
-        workbookBox.replaceChildren(
-          el("div", { class: "faint small", style: { margin: "10px 0 6px" }, text: "Workbook table" }),
-          el(
-            "div",
-            { class: "table-wrap" },
-            el(
-              "table",
-              { class: "grid" },
-              el("thead", {}, el("tr", {}, ...table.headers.map((header) => el("th", { text: header })))),
-              el(
-                "tbody",
-                {},
-                ...table.rows.map((row) =>
-                  el("tr", {}, ...row.map((cell, index) => el("td", { class: index ? "num" : "", text: cell }))),
-                ),
-              ),
-            ),
-          ),
-        );
-      } else {
-        workbookBox.replaceChildren();
-      }
+      renderWorkbookTable(table);
       const position = state.crane.chart_position;
       positionLine.textContent = position
         ? `Crane location on axis (X, Y): (${position[0]}, ${position[1]}) — from the workbook`
@@ -262,6 +241,7 @@ export function createCraneScreen(ctx) {
     } else {
       positionLine.textContent = "";
       jibCard.style.display = "none";
+      workbookBox.replaceChildren();
     }
 
     const row = state.crane.rows[0] || { radius: 0, capacity: 0, angle: 0, boom: 0 };
@@ -327,6 +307,51 @@ export function createCraneScreen(ctx) {
     }
   }
 
+  // The workbook table under the chart controls, foldable: the toggle header
+  // stays put, the table body comes and goes. The open state lasts while the
+  // tab lives, like every other form state.
+  function renderWorkbookTable(table) {
+    if (!table || !table.headers?.length) {
+      workbookBox.replaceChildren();
+      return;
+    }
+    const toggle = el(
+      "button",
+      {
+        class: "btn ghost small",
+        style: { margin: "10px 0 6px" },
+        title: tableOpen ? "Collapse the workbook table" : "Expand the workbook table",
+        onClick: () => {
+          tableOpen = !tableOpen;
+          renderWorkbookTable(table);
+        },
+      },
+      tableOpen ? "\u25be Workbook table" : "\u25b8 Workbook table",
+    );
+    const nodes = [el("div", {}, toggle)];
+    if (tableOpen) {
+      nodes.push(
+        el(
+          "div",
+          { class: "table-wrap" },
+          el(
+            "table",
+            { class: "grid" },
+            el("thead", {}, el("tr", {}, ...table.headers.map((header) => el("th", { text: header })))),
+            el(
+              "tbody",
+              {},
+              ...table.rows.map((row) =>
+                el("tr", {}, ...row.map((cell, index) => el("td", { class: index ? "num" : "", text: cell }))),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    workbookBox.replaceChildren(...nodes);
+  }
+
   function render(solved) {
     if (!solved) return;
     const section = solved.crane;
@@ -351,14 +376,16 @@ export function createCraneScreen(ctx) {
     // The angle produced for the working radius (by the graph, or implied by
     // the assembly geometry) is mirrored into the manual row so the entry, the
     // capacity check and the report all read the same figure. Only the
-    // new-format workbook — it carries the crane position — does this.
+    // new-format workbook — it carries the crane position — does this. The
+    // mirror carries the printed resolution, not the raw float.
+    const mirroredAngle = Math.round(result.boom_angle_deg * 100) / 100;
     if (
       craneState.chart_position &&
-      result.boom_angle_deg &&
-      Math.abs((craneState.rows[0]?.angle ?? 0) - result.boom_angle_deg) > 1e-9
+      mirroredAngle &&
+      Math.abs((craneState.rows[0]?.angle ?? 0) - mirroredAngle) > 1e-9
     ) {
       store.update((draft) => {
-        if (draft.crane.rows[0]) draft.crane.rows[0].angle = result.boom_angle_deg;
+        if (draft.crane.rows[0]) draft.crane.rows[0].angle = mirroredAngle;
       });
     }
 

@@ -440,19 +440,30 @@ pub fn solve_crane(inputs: &CraneInputs, gross: f64) -> Result<CraneResult, Cran
     })
 }
 
-/// The boom angle that places the hook at `radius`, from the assembly
-/// geometry: the boom (plus any jib, at its offset) rotated so its horizontal
-/// reach equals the working radius. This is the same figure the Graph tab
-/// draws, solved from the crane tab's own inputs.
+/// The boom angle that places the hook at the chart's `radius`, from the
+/// assembly geometry. This is the same figure the Graph tab draws, solved from
+/// the crane tab's own inputs.
 ///
-/// The result is from horizontal (0 deg) and the upper solution is taken: the
-/// hook above the pivot. None when there is no boom or radius to solve from.
+/// Two conventions the workbook fixes:
+///
+///  * the radius is measured from the **x = 0 axis**, not from the crane, so
+///    the horizontal reach from the crane is the radius less its own X;
+///  * the jib offset is **clockwise** from the boom axis (a positive offset
+///    lowers the jib), so the offset vector's vertical part is negative.
+///
+/// The upper solution is taken: the hook above the pivot. None when there is
+/// no boom, no radius, or the radius sits behind the crane.
 pub fn implied_boom_angle(inputs: &CraneInputs, radius: f64) -> Option<f64> {
     if radius <= 0.0 {
         return None;
     }
     let boom = inputs.chart_boom?;
     if boom <= 0.0 {
+        return None;
+    }
+    let crane_x = inputs.chart_position.map(|(x, _)| x).unwrap_or(0.0);
+    let reach = radius - crane_x;
+    if reach <= 0.0 {
         return None;
     }
     let (jib, offset) = if inputs.jib_active() {
@@ -465,12 +476,12 @@ pub fn implied_boom_angle(inputs: &CraneInputs, radius: f64) -> Option<f64> {
     };
     let offset_rad = offset.to_radians();
     let vx = boom + jib * offset_rad.cos();
-    let vy = jib * offset_rad.sin();
+    let vy = -jib * offset_rad.sin();
     let envelope = (vx * vx + vy * vy).sqrt();
     if envelope <= 0.0 {
         return None;
     }
-    let ratio = (radius / envelope).clamp(0.0, 1.0);
+    let ratio = (reach / envelope).clamp(0.0, 1.0);
     let base = vy.atan2(vx).to_degrees();
     Some((ratio.acos().to_degrees() - base).clamp(0.0, 90.0))
 }
@@ -783,16 +794,34 @@ mod tests {
     fn a_new_format_workbook_implies_the_boom_angle_from_the_working_radius() {
         let inputs = CraneInputs {
             chart_points: vec![(5.0, 10000.0), (20.0, 5000.0)],
-            // 34 m boom with the hook at 17 m: cos(angle) = 0.5, so 60 deg.
+            // 34 m boom with the hook 17 m from the x axis, crane on it:
+            // cos(angle) = 0.5, so 60 deg.
             working_radius: 17.0,
             chart_source: "excel".to_string(),
             chart_booms: vec![9.0, 15.25, 21.5, 27.75, 34.0],
+            chart_boom: Some(34.0),
+            chart_position: Some((0.0, 2.8)),
+            ..CraneInputs::default()
+        };
+        let result = solve_crane(&inputs, 2000.0).unwrap();
+        assert!((result.boom_angle_deg.unwrap() - 60.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn the_radius_is_measured_from_the_x_axis_not_the_crane() {
+        // The crane sits 1.7 m left of the axis, so a chart radius of 12 m is
+        // a 13.7 m reach: acos(13.7 / 34) = 66.2378 degrees.
+        let inputs = CraneInputs {
+            chart_points: vec![(5.0, 10000.0), (20.0, 5000.0)],
+            working_radius: 12.0,
+            chart_source: "excel".to_string(),
+            chart_booms: vec![34.0],
             chart_boom: Some(34.0),
             chart_position: Some((-1.7, 2.8)),
             ..CraneInputs::default()
         };
         let result = solve_crane(&inputs, 2000.0).unwrap();
-        assert!((result.boom_angle_deg.unwrap() - 60.0).abs() < 1e-9);
+        assert!((result.boom_angle_deg.unwrap() - 66.23782514659558).abs() < 1e-6);
     }
 
     #[test]
@@ -862,11 +891,11 @@ mod tests {
     #[test]
     fn a_jib_angle_is_implied_from_the_radius_for_the_lower_solution() {
         // 34 m boom + 12.8 m jib at 0 deg offset: envelope 46.8 m.
-        // Radius 23.4 m gives the boom at acos(0.5) = 60 deg.
+        // Radius 23.4 m (crane on the axis) gives the boom at acos(0.5) = 60.
         let inputs = CraneInputs {
             chart_booms: vec![34.0],
             chart_boom: Some(34.0),
-            chart_position: Some((-1.7, 2.8)),
+            chart_position: Some((0.0, 2.8)),
             jib_config: "boom_ext_jib".to_string(),
             jib_length: Some(12.8),
             jib_offset: Some(0.0),
@@ -874,5 +903,25 @@ mod tests {
         };
         let angle = implied_boom_angle(&inputs, 23.4).unwrap();
         assert!((angle - 60.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn a_jib_offset_is_clockwise_and_raises_the_boom_for_the_same_reach() {
+        let with_jib = |offset: f64| CraneInputs {
+            chart_booms: vec![34.0],
+            chart_boom: Some(34.0),
+            chart_position: Some((0.0, 2.8)),
+            jib_config: "boom_ext_jib".to_string(),
+            jib_length: Some(12.8),
+            jib_offset: Some(offset),
+            ..CraneInputs::default()
+        };
+        let straight = implied_boom_angle(&with_jib(0.0), 23.4).unwrap();
+        let lowered = implied_boom_angle(&with_jib(5.0), 23.4).unwrap();
+        // The clockwise offset drops the jib tip, so the boom must rise to
+        // keep the same reach: acos(23.4 / 46.7646) + 1.3662 = 61.3419.
+        assert!((straight - 60.0).abs() < 1e-9);
+        assert!((lowered - 61.34190629216339).abs() < 1e-6);
+        assert!(lowered > straight);
     }
 }

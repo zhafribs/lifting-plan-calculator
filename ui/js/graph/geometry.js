@@ -82,23 +82,25 @@ export function boomTip(pivot, boomLength, angleDeg) {
 
 // World coordinates of the free end of the boom + jib assembly. With no jib
 // this is the boom tip; otherwise it is the jib tip, the jib being pinned at
-// the boom tip at `jib_offset_deg` relative to the boom axis.
+// the boom tip and offset **clockwise** from the boom axis by `jibOffsetDeg`
+// (a positive offset lowers the jib below the boom line).
 export function assemblyTip(pivot, boomLength, jibLength, jibOffsetDeg, angleDeg) {
   const tip = boomTip(pivot, boomLength, angleDeg);
   if (jibLength <= 0) return tip;
-  const a = ((angleDeg + jibOffsetDeg) * Math.PI) / 180.0;
+  const a = ((angleDeg - jibOffsetDeg) * Math.PI) / 180.0;
   return [tip[0] + jibLength * Math.cos(a), tip[1] + jibLength * Math.sin(a)];
 }
 
 // Tip position relative to the pivot at boom angle 0 (assembly frame). Because
 // the boom + jib assembly is rigid, the world tip is simply this offset rotated
-// by the boom angle.
+// by the boom angle. The jib offset is clockwise, so its vertical component is
+// negative.
 export function tipOffsetFromPivot(boomLength, jibLength, jibOffsetDeg) {
   if (boomLength < 0 || jibLength < 0) {
     throw new GeometryError("Boom and jib lengths cannot be negative.");
   }
   const a = (jibOffsetDeg * Math.PI) / 180.0;
-  return [boomLength + jibLength * Math.cos(a), jibLength * Math.sin(a)];
+  return [boomLength + jibLength * Math.cos(a), -jibLength * Math.sin(a)];
 }
 
 // Distance from pivot to the assembly tip = envelope arc radius (m).
@@ -131,9 +133,11 @@ export function angleForTip(pivot, boomLength, jibLength, jibOffsetDeg, target) 
   return normalizeAngle(targetAng - base);
 }
 
-// Working radius (m) = horizontal distance from crane to tip.
-export function workingRadius(pivot, tip) {
-  return Math.abs(tip[0] - pivot[0]);
+// Working radius (m): the tip's horizontal distance from the x = 0 axis, the
+// basis the load chart's radii are measured from — not from the crane's own
+// position.
+export function workingRadius(tip) {
+  return tip[0];
 }
 
 // Boom angle (deg) that gives the assembly a working radius of `radius`: the
@@ -178,7 +182,7 @@ export function readouts(state) {
     pivot,
     boom_end: boomEnd,
     tip,
-    working_radius: workingRadius(pivot, tip),
+    working_radius: workingRadius(tip),
     tip_height: tipHeight(tip),
     boom_tip_height: tipHeight(boomEnd),
     height_above_crane: tip[1] - pivot[1],

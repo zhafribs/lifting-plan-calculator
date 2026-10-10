@@ -312,16 +312,18 @@ export function createGraphScreen(ctx) {
 
   function drawDimensions(g) {
     const tip = geo.tipForState(state);
-    const [px, py] = w2s(state.crane_x, state.crane_y);
+    const py = w2s(state.crane_x, state.crane_y)[1];
     const [tx, ty] = w2s(tip[0], tip[1]);
     const gy = w2s(0, 0)[1];
+    const zx = w2s(0, 0)[0];
 
-    // working radius: horizontal dashed line from pivot to tip X
+    // working radius: horizontal dashed line from the x = 0 axis to the tip,
+    // the basis the load chart's radii are measured from
     g.setLineDash([7, 5]);
     g.strokeStyle = COL_DIM_R;
     g.lineWidth = 1;
     g.beginPath();
-    g.moveTo(px, py);
+    g.moveTo(zx, py);
     g.lineTo(tx, py);
     g.stroke();
     g.setLineDash([]);
@@ -330,8 +332,12 @@ export function createGraphScreen(ctx) {
     g.moveTo(tx, py - 5);
     g.lineTo(tx, py + 5);
     g.stroke();
-    const radius = geo.workingRadius([state.crane_x, state.crane_y], tip);
-    pill(g, (px + tx) / 2.0, py - 12, `R = ${radius.toFixed(2)} m`, COL_BOOM, 10);
+    g.beginPath();
+    g.moveTo(zx, py - 5);
+    g.lineTo(zx, py + 5);
+    g.stroke();
+    const radius = geo.workingRadius(tip);
+    pill(g, (zx + tx) / 2.0, py - 12, `R = ${radius.toFixed(2)} m`, COL_BOOM, 10);
 
     // tip height: dashed line from ground up to the tip
     if (gy >= -50 && gy <= box.h + 50) {
@@ -701,7 +707,7 @@ export function createGraphScreen(ctx) {
         ["Boom length", `${state.boom_length.toFixed(1)} m`],
         [jibLabel, jibActive ? `${rd.jib_length.toFixed(1)} m` : "not fitted"],
         ["Jib offset angle", jibActive ? `${state.jib_offset.toFixed(1)} deg` : NOTHING],
-        ["Working radius", `${rd.working_radius.toFixed(2)} m`],
+        ["Working radius (from X axis)", `${rd.working_radius.toFixed(2)} m`],
         ["Tip height above ground", `${rd.tip_height.toFixed(2)} m`],
         ["Tip height above crane", `${rd.height_above_crane.toFixed(2)} m`],
         ["Envelope radius", `${rd.envelope_radius.toFixed(2)} m`],
@@ -778,9 +784,12 @@ export function createGraphScreen(ctx) {
     if (patch.config === geo.CONFIG_BOOM_JIB) patch.jib_length = jib;
     if (patch.config === geo.CONFIG_BOOM_EXT_JIB) patch.ext_jib_length = jib;
     patch.jib_offset = offset;
-    if (src.radius > 0 && patch.boom_length > 0) {
+    // The chart's working radius is measured from the x = 0 axis, so the
+    // horizontal reach from the crane is the radius less the crane's own X.
+    const reach = src.radius - src.x;
+    if (reach > 0 && patch.boom_length > 0) {
       try {
-        const angle = geo.angleForWorkingRadius(patch.boom_length, jib, offset, src.radius);
+        const angle = geo.angleForWorkingRadius(patch.boom_length, jib, offset, reach);
         // Two decimals, the resolution the crane tab and report print.
         patch.angle = Math.round(geo.clamp(angle, geo.ANGLE_MIN, geo.ANGLE_MAX) * 100) / 100;
       } catch (error) {

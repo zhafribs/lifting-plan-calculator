@@ -219,13 +219,14 @@ export function createStore({ onError } = {}) {
     return chartAction({ action: "manual", row });
   }
 
-  // Choose a jib configuration, length and offset with the workbook-aware
-  // defaults in one place: both the crane tab's controls and the graph's
-  // configuration radios go through it. Switching to a jib configuration with
-  // no length yet picks the shortest for the jib and the longest for the
-  // extended jib; an offset that does not exist for the chosen length falls
-  // back to that length's first offset.
-  function chooseJib({ config, length, offset } = {}) {
+  // Choose a jib configuration and its allowed offset angle, with the
+  // workbook-aware rules in one place: both the crane tab's controls and the
+  // graph's configuration radios go through it. The configuration picks its
+  // jib — the plain jib is the workbook's shortest table, the extended jib the
+  // longest — so the only jib figure left to choose is the offset angle the
+  // chosen configuration allows. An offset that does not exist for that jib
+  // falls back to its first allowed one.
+  function chooseJib({ config, offset } = {}) {
     const crane = state.crane;
     const jibs = crane.chart_jibs || [];
     const nextConfig = config ?? crane.jib_config ?? "boom";
@@ -233,10 +234,8 @@ export function createStore({ onError } = {}) {
       return chartAction({ action: "jib", config: "boom", length: null, offset: null });
     }
     const lengths = [...new Set(jibs.map((jib) => jib.length))].sort((a, b) => a - b);
-    let nextLength = length ?? crane.jib_length ?? null;
-    if (nextLength === null || !lengths.some((value) => Math.abs(value - nextLength) < 1e-9)) {
-      nextLength = nextConfig === "boom_ext_jib" ? lengths[lengths.length - 1] : lengths[0];
-    }
+    const nextLength =
+      nextConfig === "boom_ext_jib" ? lengths[lengths.length - 1] : lengths[0];
     const offsets = jibs
       .filter((jib) => Math.abs(jib.length - nextLength) < 1e-9)
       .map((jib) => jib.offset)

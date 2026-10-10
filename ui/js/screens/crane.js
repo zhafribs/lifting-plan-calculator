@@ -60,20 +60,18 @@ export function createCraneScreen(ctx) {
   );
 
   // --- jib configuration (the workbook's jib sheet) ------------------------
-  // Shown only for a workbook that carries jib tables. The selection lives in
-  // the shared state and both this card and the Graph tab's configuration
-  // radios go through `store.chooseJib`.
+  // Shown only for a workbook that carries jib tables. The configuration picks
+  // its jib (the plain jib is the workbook's shortest table, the extended jib
+  // the longest) and the operator chooses one of the offset angles that jib
+  // allows. The selection lives in the shared state and both this card and the
+  // Graph tab's configuration radios go through `store.chooseJib`.
   const JIB_CONFIGS = [
     ["boom", "Boom length"],
     ["boom_jib", "Boom length + jib"],
     ["boom_ext_jib", "Boom length + extended jib"],
   ];
   const jibConfigBox = el("div", { class: "checks" });
-  const jibLengthSelect = selectInput({
-    options: [],
-    value: null,
-    onChange: (value) => store.chooseJib({ length: Number(value) }),
-  });
+  const jibLengthLine = el("div", { class: "faint small" });
   const jibOffsetSelect = selectInput({
     options: [],
     value: null,
@@ -81,9 +79,13 @@ export function createCraneScreen(ctx) {
   });
   const jibFields = el(
     "div",
-    { class: "fields" },
-    el("div", { class: "field" }, el("label", { text: "Jib length" }), jibLengthSelect),
-    el("div", { class: "field" }, el("label", { text: "Jib offset angle" }), jibOffsetSelect),
+    { class: "stack-8" },
+    jibLengthLine,
+    el(
+      "div",
+      { class: "fields" },
+      el("div", { class: "field" }, el("label", { text: "Jib offset angle" }), jibOffsetSelect),
+    ),
   );
   const jibCard = card({
     title: "Jib configuration",
@@ -291,14 +293,10 @@ export function createCraneScreen(ctx) {
     jibFields.style.display = active ? "" : "none";
     if (!active) return;
 
-    const lengths = [...new Set(jibs.map((jib) => jib.length))].sort((a, b) => a - b);
-    jibLengthSelect.replaceChildren(
-      ...lengths.map((value) => el("option", { value: String(value), text: fmt(value, 2, "m") })),
-    );
-    if (state.crane.jib_length !== null && state.crane.jib_length !== undefined) {
-      jibLengthSelect.value = String(nearest(lengths, state.crane.jib_length));
-    }
-
+    // The configuration determines the jib: the plain jib is the workbook's
+    // shortest table, the extended jib its longest. Only the offset angles
+    // that jib allows remain to choose.
+    jibLengthLine.textContent = `Jib ${fmt(state.crane.jib_length ?? 0, 2, "m")} — set by the configuration`;
     const offsets = jibs
       .filter((jib) => Math.abs(jib.length - (state.crane.jib_length ?? 0)) < 1e-9)
       .map((jib) => jib.offset)

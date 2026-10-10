@@ -49,12 +49,46 @@ export function createCraneScreen(ctx) {
   const boomWrap = el("div", { class: "field" });
   const radiusWrap = el("div", { class: "field" });
   const workbookBox = el("div", {});
+  const positionLine = el("div", { class: "faint small", style: { margin: "10px 0 0" } });
   const workbookSection = el(
     "div",
     { class: "mt16" },
     el("div", { class: "fields" }, boomWrap, radiusWrap),
     workbookBox,
+    positionLine,
   );
+
+  // --- jib configuration (the workbook's jib sheet) ------------------------
+  // Shown only for a workbook that carries jib tables. The selection lives in
+  // the shared state and both this card and the Graph tab's configuration
+  // radios go through `store.chooseJib`.
+  const JIB_CONFIGS = [
+    ["boom", "Boom length"],
+    ["boom_jib", "Boom length + jib"],
+    ["boom_ext_jib", "Boom length + extended jib"],
+  ];
+  const jibConfigBox = el("div", { class: "checks" });
+  const jibLengthSelect = selectInput({
+    options: [],
+    value: null,
+    onChange: (value) => store.chooseJib({ length: Number(value) }),
+  });
+  const jibOffsetSelect = selectInput({
+    options: [],
+    value: null,
+    onChange: (value) => store.chooseJib({ offset: Number(value) }),
+  });
+  const jibFields = el(
+    "div",
+    { class: "fields" },
+    el("div", { class: "field" }, el("label", { text: "Jib length" }), jibLengthSelect),
+    el("div", { class: "field" }, el("label", { text: "Jib offset angle" }), jibOffsetSelect),
+  );
+  const jibCard = card({
+    title: "Jib configuration",
+    note: "From the workbook's jib sheet",
+    body: el("div", { class: "stack-8" }, jibConfigBox, jibFields),
+  });
 
   const boomSelect = selectInput({ options: [], value: null, onChange: (value) => store.chartAction({ action: "boom", boom: Number(value), gross: currentGross() }) });
   const radiusSelect = selectInput({ options: [], value: null, onChange: (value) => store.chartAction({ action: "radius", radius: Number(value) }) });
@@ -115,6 +149,7 @@ export function createCraneScreen(ctx) {
             }),
           ),
         }),
+        jibCard,
         card({
           title: "Load chart — manual entry",
           note: "Typing here switches the chart back to this line",
@@ -151,6 +186,13 @@ export function createCraneScreen(ctx) {
                   chart_booms: [],
                   chart_boom: null,
                   chart_radii: [],
+                  chart_position: null,
+                  chart_jibs: [],
+                  jib_config: "boom",
+                  jib_length: null,
+                  jib_offset: null,
+                  chart_jib_points: [],
+                  boom_angle_deg: null,
                 };
                 s.chart_table = null;
               }),
@@ -212,6 +254,14 @@ export function createCraneScreen(ctx) {
       } else {
         workbookBox.replaceChildren();
       }
+      const position = state.crane.chart_position;
+      positionLine.textContent = position
+        ? `Crane location on axis (X, Y): (${position[0]}, ${position[1]}) — from the workbook`
+        : "";
+      syncJib(state);
+    } else {
+      positionLine.textContent = "";
+      jibCard.style.display = "none";
     }
 
     const row = state.crane.rows[0] || { radius: 0, capacity: 0, angle: 0, boom: 0 };
@@ -237,6 +287,46 @@ export function createCraneScreen(ctx) {
     return best;
   }
 
+  // The jib controls, populated from the workbook's jib tables.
+  function syncJib(state) {
+    const jibs = state.crane.chart_jibs || [];
+    jibCard.style.display = jibs.length ? "" : "none";
+    if (!jibs.length) return;
+
+    const config = state.crane.jib_config || "boom";
+    jibConfigBox.replaceChildren(
+      ...JIB_CONFIGS.map(([key, label]) => {
+        const radio = el("input", { type: "radio", name: "crane-jib-config" });
+        radio.checked = key === config;
+        radio.addEventListener("change", () => store.chooseJib({ config: key }));
+        return el("label", { class: "check" }, radio, el("span", { class: "t", text: label }));
+      }),
+    );
+
+    const active = config !== "boom";
+    jibFields.style.display = active ? "" : "none";
+    if (!active) return;
+
+    const lengths = [...new Set(jibs.map((jib) => jib.length))].sort((a, b) => a - b);
+    jibLengthSelect.replaceChildren(
+      ...lengths.map((value) => el("option", { value: String(value), text: fmt(value, 2, "m") })),
+    );
+    if (state.crane.jib_length !== null && state.crane.jib_length !== undefined) {
+      jibLengthSelect.value = String(nearest(lengths, state.crane.jib_length));
+    }
+
+    const offsets = jibs
+      .filter((jib) => Math.abs(jib.length - (state.crane.jib_length ?? 0)) < 1e-9)
+      .map((jib) => jib.offset)
+      .sort((a, b) => a - b);
+    jibOffsetSelect.replaceChildren(
+      ...offsets.map((value) => el("option", { value: String(value), text: fmt(value, 0, "°") })),
+    );
+    if (state.crane.jib_offset !== null && state.crane.jib_offset !== undefined) {
+      jibOffsetSelect.value = String(nearest(offsets, state.crane.jib_offset));
+    }
+  }
+
   function render(solved) {
     if (!solved) return;
     const section = solved.crane;
@@ -253,6 +343,24 @@ export function createCraneScreen(ctx) {
     const result = section.result;
     const band = result.capacity_band || "";
     const usage = result.capacity_usage_percent;
+    const craneState = store.state.crane;
+    const jibActive =
+      craneState.chart_source === "excel" &&
+      (craneState.jib_config === "boom_jib" || craneState.jib_config === "boom_ext_jib");
+
+    // The angle produced for the working radius (by the graph, or implied by
+    // the assembly geometry) is mirrored into the manual row so the entry, the
+    // capacity check and the report all read the same figure. Only the
+    // new-format workbook — it carries the crane position — does this.
+    if (
+      craneState.chart_position &&
+      result.boom_angle_deg &&
+      Math.abs((craneState.rows[0]?.angle ?? 0) - result.boom_angle_deg) > 1e-9
+    ) {
+      store.update((draft) => {
+        if (draft.crane.rows[0]) draft.crane.rows[0].angle = result.boom_angle_deg;
+      });
+    }
 
     checkBadge.replaceChildren(
       statusBadge(
@@ -269,8 +377,14 @@ export function createCraneScreen(ctx) {
         ["Crane rated capacity", result.crane_capacity_kg ? fmt(result.crane_capacity_kg, 2, "kg") : "—"],
         ["Boom length", result.boom_m ? fmt(result.boom_m, 2, "m") : "—"],
         ["Boom angle", result.boom_angle_deg ? fmt(result.boom_angle_deg, 2, "°") : "—"],
+        jibActive
+          ? ["Jib", `${fmt(craneState.jib_length ?? 0, 2, "m")} at ${fmt(craneState.jib_offset ?? 0, 0, "°")} offset`]
+          : null,
         ["Working radius", result.radius_m ? fmt(result.radius_m, 2, "m") : "—"],
-        ["Chart capacity at radius", result.chart_capacity_kg ? fmt(result.chart_capacity_kg, 2, "kg") : "—"],
+        [
+          jibActive ? "Jib capacity at boom angle" : "Chart capacity at radius",
+          result.chart_capacity_kg ? fmt(result.chart_capacity_kg, 2, "kg") : "—",
+        ],
         ["Gross load at hook", fmt(gross, 2, "kg")],
         [
           "Capacity usage",
@@ -282,7 +396,10 @@ export function createCraneScreen(ctx) {
       ]),
     );
 
-    plotBox.replaceChildren(plot(solved, result));
+    // The capacity-vs-radius picture belongs to the main boom chart; with a
+    // jib configured the checked figure comes from the jib table at a boom
+    // angle, so the boom chart's marker would name the wrong thing.
+    plotBox.replaceChildren(jibActive ? el("div", {}) : plot(solved, result));
   }
 
   // The capacity-vs-radius picture: the solved chart, with the working radius

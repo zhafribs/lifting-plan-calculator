@@ -4,12 +4,19 @@ import { el, svgIcon, clear } from "./dom.js";
 import { fmt } from "./format.js";
 
 export function card({ title, note, actions, body, foot, class: extra = "" }) {
+  // `note` is a string in almost every card; a caller that needs to swap the
+  // note's contents later passes its own node instead.
+  const noteNode = note
+    ? typeof note === "string"
+      ? el("span", { class: "note", text: note })
+      : note
+    : null;
   const head = el(
     "div",
     { class: "card-head" },
     svgIcon(sparkFor(title), 16),
     el("h2", { text: title }),
-    note ? el("span", { class: "note", text: note }) : null,
+    noteNode,
     el("span", { class: "spacer" }),
     ...(actions || []),
   );

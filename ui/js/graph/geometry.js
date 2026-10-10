@@ -136,6 +136,23 @@ export function workingRadius(pivot, tip) {
   return Math.abs(tip[0] - pivot[0]);
 }
 
+// Boom angle (deg) that gives the assembly a working radius of `radius`: the
+// inverse of the horizontal reach, taking the upper solution (tip above the
+// pivot). With no jib this reduces to acos(radius / boomLength).
+export function angleForWorkingRadius(boomLength, jibLength, jibOffsetDeg, radius) {
+  const [vx, vy] = tipOffsetFromPivot(boomLength, jibLength, jibOffsetDeg);
+  const envelope = Math.hypot(vx, vy);
+  if (envelope < 1e-9) {
+    throw new GeometryError("Boom length must be greater than 0.");
+  }
+  if (radius < 0) {
+    throw new GeometryError("Working radius cannot be negative.");
+  }
+  const base = (Math.atan2(vy, vx) * 180.0) / Math.PI;
+  const ratio = Math.min(1, radius / envelope);
+  return normalizeAngle((Math.acos(ratio) * 180.0) / Math.PI - base);
+}
+
 // Tip height (m) above ground level (y = 0).
 export function tipHeight(tip) {
   return tip[1];

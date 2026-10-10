@@ -208,6 +208,16 @@ async function main() {
     ) {
       store.update((state) => (state.sling.hitch = info.start_hitch));
     }
+    // QA hook (mirrors --screen=): import a load chart at launch, and land it
+    // on a chosen working radius.
+    if (info.start_chart) {
+      store.importChartPath(info.start_chart).then(() => {
+        const radius = Number(info.chart_radius);
+        if (Number.isFinite(radius) && radius > 0) {
+          store.chartAction({ action: "radius", radius });
+        }
+      });
+    }
     go(info.start_screen && screens[info.start_screen] ? info.start_screen : "overall");
   } catch (error) {
     window.uilog && window.uilog(`app_info failed: ${errorText(error)}`);

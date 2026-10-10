@@ -3,6 +3,9 @@
 /src-tauri/target/
 /src-tauri/target-ubuntu/
 
+# Operator data: load-chart workbooks are not source
+*.xlsx
+
 # Scratch (frontend fixture dumps, local test exports)
 /ff16/
 

@@ -55,7 +55,7 @@ function roundRect(g, x, y, w, h, r) {
 }
 
 export function createGraphScreen(ctx) {
-  void ctx;
+  const store = ctx.store;
 
   // The screen's own document: a copy of the geometry defaults.
   const state = { ...geo.DEFAULT_STATE };
@@ -556,7 +556,7 @@ export function createGraphScreen(ctx) {
           geo.ANGLE_MAX,
         ) * 10,
       ) / 10;
-      if (angle !== state.angle) apply({ angle }, { fit: false });
+      if (angle !== state.angle) apply({ angle }, { user: true, fit: false });
     } catch (error) {
       /* dragging into an impossible region: keep the last good angle */
     }
@@ -569,7 +569,7 @@ export function createGraphScreen(ctx) {
     // The view is intentionally left alone while dragging (the marker must
     // track the cursor); interactionEnded re-fits on release, exactly like
     // the tip drag.
-    if (x !== state.crane_x || y !== state.crane_y) apply({ crane_x: x, crane_y: y }, { fit: false });
+    if (x !== state.crane_x || y !== state.crane_y) apply({ crane_x: x, crane_y: y }, { user: true, fit: false });
   }
 
   canvas.addEventListener("mousedown", (event) => {
@@ -672,6 +672,9 @@ export function createGraphScreen(ctx) {
     setEnabled(fieldNodes.jib_length, jibOn);
     setEnabled(fieldNodes.jib_offset, jibOn);
     setEnabled(fieldNodes.ext_jib_length, extOn);
+    for (const [key, radio] of Object.entries(configRadios)) {
+      radio.checked = key === state.config;
+    }
   }
 
   function setEnabled(node, on) {
@@ -714,12 +717,17 @@ export function createGraphScreen(ctx) {
   }
 
   function apply(patch, opts = {}) {
+    if (opts.user && workbookMode) deviated = true;
     Object.assign(state, patch);
     syncEnabled();
     if (autoFit && opts.fit !== false && fitted) fitView();
     redraw();
     updateReadout();
     reflectInputs();
+    if (opts.user) {
+      renderNote();
+      publishAngle();
+    }
   }
 
   function setFromForm(key, raw, min, max) {
@@ -727,7 +735,127 @@ export function createGraphScreen(ctx) {
     const patch = { [key]: value };
     if (key === "env_min" && value > state.env_max) patch.env_max = value;
     if (key === "env_max" && value < state.env_min) patch.env_min = value;
-    apply(patch, key === "angle" ? { fit: false } : {});
+    apply(patch, key === "angle" ? { user: true, fit: false } : { user: true });
+  }
+
+  // --- the workbook link -----------------------------------------------------
+  // When a new-format workbook is loaded in the Crane tab, the diagram follows
+  // it: the crane position comes from the workbook, the boom length and the
+  // working radius from the Crane tab, and the boom angle drawn here is
+  // published back for the Crane tab (and its jib chart) to read. A manual
+  // edit on this screen marks a deviation and offers the reset button in
+  // place of the card's note; the next Crane tab edit re-syncs.
+  let workbookKey = null; // the crane-tab source last applied to the diagram
+  let workbookMode = false;
+  let deviated = false;
+
+  const noteBox = el("span", { class: "note", text: "Drawn to scale, metres" });
+
+  function workbookSource() {
+    const crane = store.state.crane;
+    if (!crane || crane.chart_source !== "excel" || !crane.chart_position) return null;
+    return {
+      x: crane.chart_position[0],
+      y: crane.chart_position[1],
+      boom: crane.chart_boom ?? 0,
+      radius: crane.working_radius ?? 0,
+      config: crane.jib_config || "boom",
+      jib: crane.jib_length ?? 0,
+      offset: crane.jib_offset ?? 0,
+    };
+  }
+
+  function applyWorkbook(src, fit) {
+    const active = src.config === geo.CONFIG_BOOM_JIB || src.config === geo.CONFIG_BOOM_EXT_JIB;
+    const jib = active ? src.jib : 0;
+    const offset = active ? src.offset : 0;
+    const patch = {
+      config: geo.CONFIGS.includes(src.config) ? src.config : geo.CONFIG_BOOM,
+      crane_x: src.x,
+      crane_y: src.y,
+      boom_length: src.boom > 0 ? src.boom : state.boom_length,
+    };
+    if (patch.config === geo.CONFIG_BOOM_JIB) patch.jib_length = jib;
+    if (patch.config === geo.CONFIG_BOOM_EXT_JIB) patch.ext_jib_length = jib;
+    patch.jib_offset = offset;
+    if (src.radius > 0 && patch.boom_length > 0) {
+      try {
+        const angle = geo.angleForWorkingRadius(patch.boom_length, jib, offset, src.radius);
+        // Two decimals, the resolution the crane tab and report print.
+        patch.angle = Math.round(geo.clamp(angle, geo.ANGLE_MIN, geo.ANGLE_MAX) * 100) / 100;
+      } catch (error) {
+        /* the geometry cannot solve a radius: leave the angle as it is */
+      }
+    }
+    apply(patch, { fit: Boolean(fit), user: false });
+  }
+
+  function renderNote() {
+    if (workbookMode && deviated) {
+      noteBox.replaceChildren(
+        el(
+          "button",
+          {
+            class: "btn ghost small",
+            title: "Restore this diagram to the Crane tab's position, boom length and angle",
+            onClick: resetToCrane,
+          },
+          "Reset to Crane Tab",
+        ),
+      );
+    } else {
+      noteBox.textContent = "Drawn to scale, metres";
+    }
+  }
+
+  function resetToCrane() {
+    workbookKey = null;
+    deviated = false;
+    syncFromWorkbook();
+  }
+
+  function syncFromWorkbook() {
+    const src = workbookSource();
+    if (!src || !(src.boom > 0)) {
+      workbookMode = false;
+      workbookKey = null;
+      deviated = false;
+      renderNote();
+      return;
+    }
+    workbookMode = true;
+    const key = JSON.stringify(src);
+    const changed = key !== workbookKey;
+    if (changed || !deviated) {
+      workbookKey = key;
+      applyWorkbook(src, changed && autoFit);
+      deviated = false;
+    }
+    renderNote();
+    publishAngle();
+  }
+
+  // The angle the graph draws is the crane tab's "Boom angle" figure. Writing
+  // it back only when it actually differs keeps the solve cycle from looping,
+  // and only a live working radius publishes: with no radius there is no
+  // solved angle to show.
+  function publishAngle() {
+    if (!workbookMode) return;
+    const crane = store.state.crane;
+    if (!((crane.working_radius ?? 0) > 0)) return;
+    const angle = state.angle;
+    if (!(angle > 0)) return;
+    const row = (crane.rows && crane.rows[0]) || null;
+    const anglePublished =
+      crane.boom_angle_deg !== null &&
+      crane.boom_angle_deg !== undefined &&
+      Math.abs(crane.boom_angle_deg - angle) < 1e-9;
+    const rowMirrored = !row || Math.abs((row.angle || 0) - angle) < 1e-9;
+    if (anglePublished && rowMirrored) return;
+    store.update((draft) => {
+      draft.crane.boom_angle_deg = angle;
+      if (draft.crane.rows[0]) draft.crane.rows[0].angle = angle;
+    });
   }
 
   // --- inputs ----------------------------------------------------------------
@@ -735,6 +863,7 @@ export function createGraphScreen(ctx) {
   const readoutBox = el("div", {});
   const numInputs = {};
   const fieldNodes = {};
+  const configRadios = {};
 
   function makeNumber(key, label, unit, min, max) {
     const input = numberInput({
@@ -751,8 +880,15 @@ export function createGraphScreen(ctx) {
     const radio = el("input", {
       type: "radio",
       name: "graph-config",
-      onClick: () => apply({ config }),
+      onChange: () => {
+        // With a workbook loaded the configuration belongs to the crane tab,
+        // so the change writes through to the shared state. `change` (not
+        // `click`) so keyboard selection of the radio group works too.
+        if (workbookMode) store.chooseJib({ config });
+        apply({ config });
+      },
     });
+    configRadios[config] = radio;
     if (config === geo.CONFIG_BOOM) radio.checked = true;
     return el(
       "label",
@@ -877,7 +1013,7 @@ export function createGraphScreen(ctx) {
         { class: "stack pane graph-pane" },
         card({
           title: "Working range diagram",
-          note: "Drawn to scale, metres",
+          note: noteBox,
           body: el("div", { class: "graph-canvas-wrap" }, canvas),
           foot: el("span", {
             class: "faint small",
@@ -912,6 +1048,7 @@ export function createGraphScreen(ctx) {
       fitted = true;
       fitView();
     }
+    syncFromWorkbook();
     redraw();
   }
 

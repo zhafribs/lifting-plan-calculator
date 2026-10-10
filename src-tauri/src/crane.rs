@@ -119,6 +119,13 @@ impl ChartRow {
     }
 }
 
+/// One jib table a workbook offers, as a (jib length, offset angle) pair.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct JibOption {
+    pub length: f64,
+    pub offset: f64,
+}
+
 /// The tab's whole input surface.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
@@ -146,6 +153,22 @@ pub struct CraneInputs {
     /// The radii charted at `chart_boom`, ascending: what the radius dropdown
     /// offers.
     pub chart_radii: Vec<f64>,
+    /// The crane location on the axis as the new-format workbook records it
+    /// ("Crane location on axis (X, Y)"). None for every other workbook, and
+    /// None is what keeps the Graph tab self-contained.
+    pub chart_position: Option<(f64, f64)>,
+    /// The jib tables the workbook offers, as (length, offset) pairs.
+    pub chart_jibs: Vec<JibOption>,
+    /// Which configuration the jib chart is checked at: `"boom"` (or empty)
+    /// for the main boom alone, `"boom_jib"`, `"boom_ext_jib"`.
+    pub jib_config: String,
+    /// The selected jib column: length and offset angle.
+    pub jib_length: Option<f64>,
+    pub jib_offset: Option<f64>,
+    /// The selected jib column's chart, as (boom angle, capacity kg) points.
+    pub chart_jib_points: Vec<(f64, f64)>,
+    /// The boom angle the Graph tab publishes, in degrees from horizontal.
+    pub boom_angle_deg: Option<f64>,
 }
 
 impl Default for CraneInputs {
@@ -162,11 +185,23 @@ impl Default for CraneInputs {
             chart_booms: Vec::new(),
             chart_boom: None,
             chart_radii: Vec::new(),
+            chart_position: None,
+            chart_jibs: Vec::new(),
+            jib_config: String::new(),
+            jib_length: None,
+            jib_offset: None,
+            chart_jib_points: Vec::new(),
+            boom_angle_deg: None,
         }
     }
 }
 
 impl CraneInputs {
+    /// Whether a jib configuration is selected (not the main boom alone).
+    pub fn jib_active(&self) -> bool {
+        matches!(self.jib_config.as_str(), "boom_jib" | "boom_ext_jib")
+    }
+
     /// The manual entry's `(radius, capacity)` points, in row order.
     pub fn chart_pairs(&self) -> Vec<(f64, f64)> {
         self.rows.iter().filter_map(ChartRow::pair).collect()
@@ -305,6 +340,35 @@ pub fn solve_crane(inputs: &CraneInputs, gross: f64) -> Result<CraneResult, Cran
         chart_capacity = manual_capacity;
     }
 
+    // The boom angle: the Graph tab's published figure when there is one, else
+    // the angle the assembly geometry implies for the working radius (so a jib
+    // chart can be checked before the graph is opened), else the manual row's
+    // own angle — the original behaviour.
+    let published_angle = inputs.boom_angle_deg.filter(|angle| *angle > 0.0);
+    let implied_angle = if inputs.chart_position.is_some() {
+        implied_boom_angle(inputs, effective_radius)
+    } else {
+        None
+    };
+    let boom_angle = published_angle
+        .or(implied_angle)
+        .or_else(|| manual_angle(effective_radius, &inputs.rows));
+
+    // A jib configuration is checked against the workbook's jib table at the
+    // boom angle, and that table replaces the main-boom chart entirely: a
+    // radius lookup would read a column that no longer applies once a jib is
+    // fitted. With no angle yet there is nothing honest to publish.
+    if inputs.jib_active() && inputs.chart_source == "excel" && !inputs.chart_jib_points.is_empty()
+    {
+        chart_capacity = match boom_angle {
+            Some(angle) => Some(
+                calc::lookup_chart_capacity(&inputs.chart_jib_points, angle)
+                    .map_err(|exc| CraneInputException(exc.0))?,
+            ),
+            None => None,
+        };
+    }
+
     let usage = match (chart_capacity, gross > 0.0) {
         (Some(capacity), true) => Some(
             calc::chart_usage_percent(gross, capacity).map_err(|exc| CraneInputException(exc.0))?,
@@ -367,13 +431,48 @@ pub fn solve_crane(inputs: &CraneInputs, gross: f64) -> Result<CraneResult, Cran
         } else {
             inputs.chart_boom
         },
-        boom_angle_deg: manual_angle(effective_radius, &inputs.rows),
+        boom_angle_deg: boom_angle,
         chart_rows: if use_manual {
             manual_pairs.len()
         } else {
             inputs.chart_points.len()
         },
     })
+}
+
+/// The boom angle that places the hook at `radius`, from the assembly
+/// geometry: the boom (plus any jib, at its offset) rotated so its horizontal
+/// reach equals the working radius. This is the same figure the Graph tab
+/// draws, solved from the crane tab's own inputs.
+///
+/// The result is from horizontal (0 deg) and the upper solution is taken: the
+/// hook above the pivot. None when there is no boom or radius to solve from.
+pub fn implied_boom_angle(inputs: &CraneInputs, radius: f64) -> Option<f64> {
+    if radius <= 0.0 {
+        return None;
+    }
+    let boom = inputs.chart_boom?;
+    if boom <= 0.0 {
+        return None;
+    }
+    let (jib, offset) = if inputs.jib_active() {
+        (
+            inputs.jib_length.unwrap_or(0.0),
+            inputs.jib_offset.unwrap_or(0.0),
+        )
+    } else {
+        (0.0, 0.0)
+    };
+    let offset_rad = offset.to_radians();
+    let vx = boom + jib * offset_rad.cos();
+    let vy = jib * offset_rad.sin();
+    let envelope = (vx * vx + vy * vy).sqrt();
+    if envelope <= 0.0 {
+        return None;
+    }
+    let ratio = (radius / envelope).clamp(0.0, 1.0);
+    let base = vy.atan2(vx).to_degrees();
+    Some((ratio.acos().to_degrees() - base).clamp(0.0, 90.0))
 }
 
 /// The boom angle of the manual row nearest `radius`.
@@ -678,5 +777,102 @@ mod tests {
             solve_crane(&inputs, 100.0).unwrap_err().0,
             "Load chart contains a non-positive capacity."
         );
+    }
+
+    #[test]
+    fn a_new_format_workbook_implies_the_boom_angle_from_the_working_radius() {
+        let inputs = CraneInputs {
+            chart_points: vec![(5.0, 10000.0), (20.0, 5000.0)],
+            // 34 m boom with the hook at 17 m: cos(angle) = 0.5, so 60 deg.
+            working_radius: 17.0,
+            chart_source: "excel".to_string(),
+            chart_booms: vec![9.0, 15.25, 21.5, 27.75, 34.0],
+            chart_boom: Some(34.0),
+            chart_position: Some((-1.7, 2.8)),
+            ..CraneInputs::default()
+        };
+        let result = solve_crane(&inputs, 2000.0).unwrap();
+        assert!((result.boom_angle_deg.unwrap() - 60.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn the_graphs_published_angle_beats_the_implied_one() {
+        let inputs = CraneInputs {
+            chart_points: vec![(5.0, 10000.0), (10.0, 5000.0)],
+            working_radius: 10.0,
+            chart_source: "excel".to_string(),
+            chart_booms: vec![34.0],
+            chart_boom: Some(34.0),
+            chart_position: Some((-1.7, 2.8)),
+            boom_angle_deg: Some(60.0),
+            ..CraneInputs::default()
+        };
+        let result = solve_crane(&inputs, 2000.0).unwrap();
+        assert!((result.boom_angle_deg.unwrap() - 60.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_jib_configuration_is_checked_against_the_jib_table_at_the_boom_angle() {
+        let inputs = CraneInputs {
+            chart_points: vec![(5.0, 35000.0), (10.0, 21000.0)],
+            working_radius: 10.0,
+            chart_source: "excel".to_string(),
+            chart_booms: vec![34.0],
+            chart_boom: Some(34.0),
+            chart_position: Some((-1.7, 2.8)),
+            chart_jibs: vec![JibOption {
+                length: 7.2,
+                offset: 25.0,
+            }],
+            jib_config: "boom_jib".to_string(),
+            jib_length: Some(7.2),
+            jib_offset: Some(25.0),
+            // Jib 7.2 m at 25 deg: 1.8 t at 83 deg, 1.65 t at 72 deg.
+            chart_jib_points: vec![(83.0, 1800.0), (72.0, 1650.0)],
+            boom_angle_deg: Some(72.0),
+            ..CraneInputs::default()
+        };
+        let result = solve_crane(&inputs, 1000.0).unwrap();
+        // The jib table wins over the main-boom chart at the same radius.
+        assert!((result.chart_capacity_kg.unwrap() - 1650.0).abs() < 1e-9);
+        assert_eq!(result.capacity_source, "Excel chart");
+        assert!((result.boom_angle_deg.unwrap() - 72.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_jib_without_an_angle_publishes_no_capacity_rather_than_the_boom_one() {
+        let inputs = CraneInputs {
+            chart_points: vec![(5.0, 35000.0), (10.0, 21000.0)],
+            working_radius: 0.0,
+            chart_source: "excel".to_string(),
+            chart_booms: vec![34.0],
+            chart_boom: Some(34.0),
+            chart_position: Some((-1.7, 2.8)),
+            jib_config: "boom_jib".to_string(),
+            jib_length: Some(7.2),
+            jib_offset: Some(25.0),
+            chart_jib_points: vec![(83.0, 1800.0), (72.0, 1650.0)],
+            ..CraneInputs::default()
+        };
+        let result = solve_crane(&inputs, 1000.0).unwrap();
+        assert_eq!(result.chart_capacity_kg, None);
+        assert_eq!(result.capacity_usage_percent, None);
+    }
+
+    #[test]
+    fn a_jib_angle_is_implied_from_the_radius_for_the_lower_solution() {
+        // 34 m boom + 12.8 m jib at 0 deg offset: envelope 46.8 m.
+        // Radius 23.4 m gives the boom at acos(0.5) = 60 deg.
+        let inputs = CraneInputs {
+            chart_booms: vec![34.0],
+            chart_boom: Some(34.0),
+            chart_position: Some((-1.7, 2.8)),
+            jib_config: "boom_ext_jib".to_string(),
+            jib_length: Some(12.8),
+            jib_offset: Some(0.0),
+            ..CraneInputs::default()
+        };
+        let angle = implied_boom_angle(&inputs, 23.4).unwrap();
+        assert!((angle - 60.0).abs() < 1e-6);
     }
 }

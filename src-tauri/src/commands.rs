@@ -21,12 +21,17 @@ pub struct ChartHolder(pub Mutex<Option<LoadChartData>>);
 // round trip. `start_screen` lets a launcher open a named screen directly
 // (`--screen=crane`), which is also how the UI is smoke-tested. `start_hitch`
 // lands the uniform tab on a chosen sling arrangement (`--sling-hitch=round_choke`).
+// `start_chart` imports a load-chart workbook at launch (`--chart=path.xlsx`),
+// which is how the workbook-driven screens are smoke-tested; `chart_radius`
+// lands that workbook on a chosen working radius (`--chart-radius=12`).
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct AppInfo {
     pub app_name: String,
     pub version: String,
     pub start_screen: Option<String>,
     pub start_hitch: Option<String>,
+    pub start_chart: Option<String>,
+    pub chart_radius: Option<String>,
 }
 
 #[tauri::command]
@@ -35,11 +40,17 @@ pub fn app_info() -> AppInfo {
         .find_map(|argument| argument.strip_prefix("--screen=").map(str::to_string));
     let start_hitch = std::env::args()
         .find_map(|argument| argument.strip_prefix("--sling-hitch=").map(str::to_string));
+    let start_chart = std::env::args()
+        .find_map(|argument| argument.strip_prefix("--chart=").map(str::to_string));
+    let chart_radius = std::env::args()
+        .find_map(|argument| argument.strip_prefix("--chart-radius=").map(str::to_string));
     AppInfo {
         app_name: "Lifting Plan Calculator".to_string(),
         version: env!("CARGO_PKG_VERSION").to_string(),
         start_screen,
         start_hitch,
+        start_chart,
+        chart_radius,
     }
 }
 
@@ -159,6 +170,11 @@ pub fn import_chart(
 pub enum ChartAction {
     Boom { boom: f64, gross: f64 },
     Radius { radius: f64 },
+    Jib {
+        config: String,
+        length: Option<f64>,
+        offset: Option<f64>,
+    },
     Forget,
     Manual { row: crate::crane::ChartRow },
 }
@@ -186,6 +202,18 @@ pub fn chart_update(
             crane: excel::manual_edit(&crane, row),
             table: None,
         }),
+        ChartAction::Jib {
+            config,
+            length,
+            offset,
+        } => {
+            let guard = holder.0.lock().expect("chart holder poisoned");
+            let chart = guard.as_ref().ok_or("No workbook is loaded.")?;
+            Ok(ChartUpdate {
+                crane: excel::jib_changed(&crane, chart, &config, length, offset),
+                table: None,
+            })
+        }
         ChartAction::Boom { boom, gross } => {
             let guard = holder.0.lock().expect("chart holder poisoned");
             let chart = guard.as_ref().ok_or("No workbook is loaded.")?;

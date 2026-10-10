@@ -12,8 +12,9 @@
 //! Two answers here are *decisions* rather than parsing, and both are the
 //! desktop's own:
 //!
-//!  * **Which boom column a matrix chart is read from** — the *last* workbook
-//!    entry (the longest boom), not `max()`.
+//!  * **Which boom column a matrix chart is read from** — the **longest main
+//!    boom**. The jib charts are written for the full boom, so the main boom
+//!    stays at its longest length once a workbook is loaded.
 //!  * **Which working radius an imported chart settles on** — the farthest
 //!    charted radius whose capacity still meets `gross / 0.75`.
 
@@ -25,7 +26,7 @@ use calamine::{open_workbook_from_rs, Data, Reader, Xlsx};
 use serde::{Deserialize, Serialize};
 
 use crate::calc::{self, CalcException};
-use crate::crane::{ChartRow, CraneInputs};
+use crate::crane::{ChartRow, CraneInputs, JibOption};
 use crate::figures::fmt;
 
 /// A workbook that could not be read, in words an operator can act on.
@@ -132,6 +133,16 @@ pub struct ChartDataRow {
     pub capacities: Vec<Option<f64>>,
 }
 
+/// One jib table parsed from the workbook's jib sheet: a jib length at an
+/// offset angle, charted against boom angle.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct JibColumn {
+    pub length: f64,
+    pub offset: f64,
+    /// `(boom angle deg, capacity kg)` points, ascending by angle.
+    pub points: Vec<(f64, f64)>,
+}
+
 /// A parsed load chart table.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LoadChartData {
@@ -142,6 +153,13 @@ pub struct LoadChartData {
     pub matrix: bool,
     pub booms: Vec<f64>,
     pub unit: String,
+    /// The "Crane location on axis (X, Y)" cell the new workbook format
+    /// records, when the workbook has one.
+    #[serde(default)]
+    pub position: Option<(f64, f64)>,
+    /// The jib sheet's tables, when the workbook has one.
+    #[serde(default)]
+    pub jib_columns: Vec<JibColumn>,
 }
 
 impl LoadChartData {
@@ -213,6 +231,31 @@ const COLUMN_RULES: [(&str, &str); 13] = [
     ("length", "boom"),
 ];
 
+/// A sheet's cells, trimmed and with wholly empty rows dropped — the shape
+/// every parser below works on.
+pub fn sheet_rows(sheet: &XlsxSheet) -> Vec<Vec<Option<CellValue>>> {
+    sheet
+        .rows
+        .iter()
+        .map(|row| -> Vec<Option<CellValue>> {
+            row.iter()
+                .map(|cell| match cell {
+                    Some(CellValue::Text(text)) => {
+                        let trimmed = text.trim();
+                        if trimmed.is_empty() {
+                            None
+                        } else {
+                            Some(CellValue::Text(trimmed.to_string()))
+                        }
+                    }
+                    other => other.clone(),
+                })
+                .collect()
+        })
+        .filter(|row| row.iter().any(|cell| cell.is_some()))
+        .collect()
+}
+
 /// Parse a chart out of the workbook's sheets, in order.
 ///
 /// The first sheet that yields a chart wins. A sheet with nothing on it is
@@ -222,28 +265,7 @@ pub fn load_chart(
     column_map: Option<&BTreeMap<String, usize>>,
 ) -> Result<LoadChartData, CalcException> {
     for sheet in sheets {
-        // The reference strips each string cell and turns an empty one into
-        // None while it reads, then drops rows that are entirely empty.
-        let rows: Vec<Vec<Option<CellValue>>> = sheet
-            .rows
-            .iter()
-            .map(|row| -> Vec<Option<CellValue>> {
-                row.iter()
-                    .map(|cell| match cell {
-                        Some(CellValue::Text(text)) => {
-                            let trimmed = text.trim();
-                            if trimmed.is_empty() {
-                                None
-                            } else {
-                                Some(CellValue::Text(trimmed.to_string()))
-                            }
-                        }
-                        other => other.clone(),
-                    })
-                    .collect()
-            })
-            .filter(|row| row.iter().any(|cell| cell.is_some()))
-            .collect();
+        let rows = sheet_rows(sheet);
         if rows.is_empty() {
             continue;
         }
@@ -277,6 +299,187 @@ pub fn load_chart(
          length row across the top with radii in the first column."
             .to_string(),
     ))
+}
+
+/// The first number written in a string — `"Jib 7.2 m"` gives 7.2, `"5°"`
+/// gives 5. Text without a number gives None.
+fn first_number(text: &str) -> Option<f64> {
+    let mut current = String::new();
+    for ch in text.chars() {
+        if ch.is_ascii_digit() || ch == '.' || (ch == '-' && current.is_empty()) {
+            current.push(ch);
+        } else if !current.is_empty() {
+            if let Ok(value) = current.trim_end_matches('.').parse::<f64>() {
+                return Some(value);
+            }
+            current.clear();
+        }
+    }
+    if current.is_empty() {
+        None
+    } else {
+        current.trim_end_matches('.').parse::<f64>().ok()
+    }
+}
+
+/// A cell as a number, tolerating a unit suffix or degree sign ("5°").
+fn chart_number(value: &Option<CellValue>) -> Option<f64> {
+    to_double_or_null(value).or_else(|| match value {
+        Some(CellValue::Text(text)) => first_number(text),
+        _ => None,
+    })
+}
+
+/// `"1.7,2.8"` / `"1.7 2.8"` / `"1.7;2.8"` as a pair.
+fn pair_from_text(text: &str) -> Option<(f64, f64)> {
+    let cleaned = text.replace([';', ' '], ",");
+    let mut parts = cleaned.split(',').filter(|part| !part.trim().is_empty());
+    let x = parts.next()?.trim().parse::<f64>().ok()?;
+    let y = parts.next()?.trim().parse::<f64>().ok()?;
+    Some((x, y))
+}
+
+/// The "Crane location on axis (X, Y)" value in a sheet, if it has one.
+///
+/// The value is on the label's right or directly below it, written either as
+/// one `x,y` text or as two numeric cells.
+pub fn find_position(rows: &[Vec<Option<CellValue>>]) -> Option<(f64, f64)> {
+    for (index, row) in rows.iter().enumerate() {
+        for (column, cell) in row.iter().enumerate() {
+            if !normalise(cell).contains("cranelocation") {
+                continue;
+            }
+            if let Some(right) = row.get(column + 1).and_then(pair_from_cell) {
+                return Some(right);
+            }
+            let Some(below) = rows.get(index + 1) else {
+                continue;
+            };
+            if let Some(below_same) = below.get(column).and_then(pair_from_cell) {
+                return Some(below_same);
+            }
+            if let Some(below_right) = below.get(column + 1).and_then(pair_from_cell) {
+                return Some(below_right);
+            }
+            if let (Some(x), Some(y)) = (
+                below.get(column).and_then(chart_number),
+                below.get(column + 1).and_then(chart_number),
+            ) {
+                return Some((x, y));
+            }
+        }
+    }
+    None
+}
+
+fn pair_from_cell(cell: &Option<CellValue>) -> Option<(f64, f64)> {
+    match cell {
+        Some(CellValue::Text(text)) => pair_from_text(text),
+        _ => None,
+    }
+}
+
+/// Parse a jib load chart sheet: `Boom angle (°)` down the first column,
+/// `Jib 7.2 m`-style headings over one column per offset angle.
+///
+/// Returns one [`JibColumn`] per (jib length, offset) pair, capacities in kg.
+pub fn parse_jib_sheet(rows: &[Vec<Option<CellValue>>]) -> Option<Vec<JibColumn>> {
+    let header = (0..rows.len().min(40)).find(|index| {
+        let row = &rows[*index];
+        let first = row
+            .iter()
+            .find(|cell| cell.is_some())
+            .cloned()
+            .unwrap_or(None);
+        let norm = normalise(&first);
+        // The first cell must *be* the angle heading: the sheet's title text
+        // also mentions "boom angle" on many charts.
+        norm.starts_with("boomangle")
+            || (norm.starts_with("angle")
+                && row.iter().any(|cell| normalise(cell).contains("jib")))
+    })?;
+    let header_row = rows.get(header)?;
+
+    // The group starts: heading cells that name a jib length.
+    let mut groups: Vec<(f64, usize)> = Vec::new();
+    for (column, cell) in header_row.iter().enumerate() {
+        let norm = normalise(cell);
+        if norm.contains("jib") {
+            if let Some(length) = first_number(&text(cell)).filter(|value| *value > 0.0) {
+                groups.push((length, column));
+            }
+        }
+    }
+    if groups.is_empty() {
+        return None;
+    }
+
+    // The offsets row sits under the headings, one column per offset.
+    let offsets_row = rows.get(header + 1)?;
+    let mut sources: Vec<(f64, f64, usize)> = Vec::new();
+    let ends = groups
+        .iter()
+        .skip(1)
+        .map(|(_, column)| *column)
+        .chain(std::iter::once(usize::MAX));
+    for ((length, start), end) in groups.iter().zip(ends) {
+        for column in *start..end.min(offsets_row.len()) {
+            if let Some(offset) = chart_number(offsets_row.get(column).unwrap_or(&None)) {
+                sources.push((*length, offset, column));
+            }
+        }
+    }
+    if sources.is_empty() {
+        return None;
+    }
+
+    // The data rows: the first cell is the boom angle, the columns are
+    // capacities.
+    let mut columns: Vec<JibColumn> = sources
+        .iter()
+        .map(|(length, offset, _)| JibColumn {
+            length: *length,
+            offset: *offset,
+            points: Vec::new(),
+        })
+        .collect();
+    let mut values: Vec<f64> = Vec::new();
+    for row in rows.iter().skip(header + 2) {
+        let Some(angle) = row.first().and_then(chart_number) else {
+            continue;
+        };
+        for (index, (_, _, column)) in sources.iter().enumerate() {
+            let capacity = row
+                .get(*column)
+                .and_then(chart_number)
+                .filter(|value| *value > 0.0);
+            if let Some(capacity) = capacity {
+                columns[index].points.push((angle, capacity));
+                values.push(capacity);
+            }
+        }
+    }
+    if values.is_empty() {
+        return None;
+    }
+
+    let (_, multiplier) = detect_unit(&values);
+    for column in &mut columns {
+        column.points = column
+            .points
+            .iter()
+            .map(|(angle, capacity)| (*angle, capacity * multiplier))
+            .collect();
+        column
+            .points
+            .sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+    }
+    // A column with a single point is not a table.
+    columns.retain(|column| column.points.len() >= 2);
+    if columns.is_empty() {
+        return None;
+    }
+    Some(columns)
 }
 
 /// The first row that looks like a header, and the columns it names.
@@ -408,6 +611,8 @@ fn parse_column_rows(
         matrix: false,
         booms: Vec::new(),
         unit: "kg".to_string(),
+        position: None,
+        jib_columns: Vec::new(),
     })
 }
 
@@ -471,6 +676,8 @@ fn parse_matrix_rows(
         matrix: true,
         booms: booms.to_vec(),
         unit,
+        position: None,
+        jib_columns: Vec::new(),
     })
 }
 
@@ -565,7 +772,18 @@ pub fn read_chart(bytes: &[u8]) -> Result<LoadChartData, ExcelImportException> {
             return Err(err(&format!("That workbook could not be read: {message}")));
         }
     };
-    load_chart(&sheets, None).map_err(|exc| ExcelImportException(exc.0))
+    let mut chart = load_chart(&sheets, None).map_err(|exc| ExcelImportException(exc.0))?;
+    // The new workbook format adds a crane position and a second, jib sheet.
+    // Both are extras: a workbook without them parses exactly as it always did.
+    let parsed: Vec<Vec<Vec<Option<CellValue>>>> = sheets.iter().map(sheet_rows).collect();
+    if chart.position.is_none() {
+        chart.position = parsed.iter().find_map(|rows| find_position(rows));
+    }
+    chart.jib_columns = parsed
+        .iter()
+        .find_map(|rows| parse_jib_sheet(rows))
+        .unwrap_or_default();
+    Ok(chart)
 }
 
 /// The boom lengths the operator may switch between, in workbook order.
@@ -578,8 +796,8 @@ pub fn available_booms(chart: &LoadChartData) -> Vec<f64> {
 
 /// Which boom column the chart is read from.
 ///
-/// Given none, **the desktop's default, which is the last entry and not
-/// `max()`**.
+/// Given none, the last workbook entry — only a fallback: imports pass the
+/// longest main boom explicitly.
 pub fn selected_boom_index(chart: &LoadChartData, boom: Option<f64>) -> usize {
     if !chart.matrix || chart.booms.is_empty() {
         return 0;
@@ -805,7 +1023,13 @@ pub fn imported_inputs(
     gross: f64,
 ) -> CraneInputs {
     let booms = available_booms(chart);
-    let boom = booms.last().copied();
+    // The workbook's longest main boom, per the operator's rule: the jib
+    // charts are written for the full boom, so the main boom stays at its
+    // longest length.
+    let boom = booms
+        .iter()
+        .copied()
+        .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     applied(inputs, chart, name, boom, gross)
 }
 
@@ -843,6 +1067,13 @@ fn applied(
         chart_boom: boom,
         chart_radii: chart_radii(chart, boom),
         working_radius: radius,
+        chart_position: chart.position,
+        chart_jibs: jib_options(chart),
+        jib_config: "boom".to_string(),
+        jib_length: None,
+        jib_offset: None,
+        chart_jib_points: Vec::new(),
+        boom_angle_deg: None,
         ..inputs.clone()
     }
 }
@@ -850,12 +1081,15 @@ fn applied(
 /// The inputs after the operator picks a different working radius.
 ///
 /// **The mirror follows, and that is the whole point of it.** The suggested
-/// radius is deliberately **not** re-asked here.
+/// radius is deliberately **not** re-asked here. The graph's published boom
+/// angle is cleared: it belonged to the old radius, and the geometry derives
+/// the new one.
 pub fn radius_changed(inputs: &CraneInputs, chart: &LoadChartData, radius: f64) -> CraneInputs {
     let mirrored = mirrored_point(chart, radius, inputs.chart_boom);
     CraneInputs {
         working_radius: radius,
         rows: mirror_into(&inputs.rows, mirrored),
+        boom_angle_deg: None,
         ..inputs.clone()
     }
 }
@@ -892,6 +1126,13 @@ pub fn forget_chart(inputs: &CraneInputs) -> CraneInputs {
         chart_booms: Vec::new(),
         chart_boom: None,
         chart_radii: Vec::new(),
+        chart_position: None,
+        chart_jibs: Vec::new(),
+        jib_config: String::new(),
+        jib_length: None,
+        jib_offset: None,
+        chart_jib_points: Vec::new(),
+        boom_angle_deg: None,
         ..inputs.clone()
     }
 }
@@ -910,6 +1151,77 @@ pub fn manual_edit(inputs: &CraneInputs, row: ChartRow) -> CraneInputs {
         rows,
         working_radius: radius,
         ..forgotten
+    }
+}
+
+/// The jib tables a workbook offers, as (length, offset) pairs in order.
+pub fn jib_options(chart: &LoadChartData) -> Vec<JibOption> {
+    let mut options: Vec<JibOption> = Vec::new();
+    for column in &chart.jib_columns {
+        let option = JibOption {
+            length: column.length,
+            offset: column.offset,
+        };
+        if !options.contains(&option) {
+            options.push(option);
+        }
+    }
+    options
+}
+
+/// The selected jib column's `(boom angle, capacity kg)` points, or empty.
+pub fn jib_points(
+    chart: &LoadChartData,
+    length: Option<f64>,
+    offset: Option<f64>,
+) -> Vec<(f64, f64)> {
+    let (Some(length), Some(offset)) = (length, offset) else {
+        return Vec::new();
+    };
+    chart
+        .jib_columns
+        .iter()
+        .find(|column| {
+            (column.length - length).abs() < 1e-9 && (column.offset - offset).abs() < 1e-9
+        })
+        .map(|column| column.points.clone())
+        .unwrap_or_default()
+}
+
+/// The inputs after the operator changes the jib configuration or selection.
+///
+/// The published boom angle is cleared with the selection: the Graph tab
+/// re-derives it from the new geometry, and a stale angle must not be checked
+/// against the new column in the meantime.
+pub fn jib_changed(
+    inputs: &CraneInputs,
+    chart: &LoadChartData,
+    config: &str,
+    length: Option<f64>,
+    offset: Option<f64>,
+) -> CraneInputs {
+    let config = match config {
+        "boom_jib" | "boom_ext_jib" => config.to_string(),
+        _ => "boom".to_string(),
+    };
+    let active = config != "boom";
+    let points = if active {
+        jib_points(chart, length, offset)
+    } else {
+        Vec::new()
+    };
+    let mut rows = inputs.rows.clone();
+    if let Some(row) = rows.first_mut() {
+        row.angle = 0.0;
+    }
+    CraneInputs {
+        rows,
+        jib_config: config,
+        jib_length: if active { length } else { None },
+        jib_offset: if active { offset } else { None },
+        chart_jib_points: points,
+        boom_angle_deg: None,
+        ..inputs.clone()
     }
 }
 
@@ -1376,5 +1688,140 @@ xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">
         assert_eq!(rows[0], vec!["5.00 m", "10,000.00 kg", "20.00 m"]);
         assert_eq!(rows[1], vec!["10.00 m", "5,000.00 kg", "20.00 m"]);
         assert_eq!(rows[2], vec!["15.00 m", "2,500.00 kg", "20.00 m"]);
+    }
+
+    fn t(value: &str) -> Option<CellValue> {
+        Some(CellValue::Text(value.to_string()))
+    }
+
+    fn n(value: f64) -> Option<CellValue> {
+        Some(CellValue::Number(value))
+    }
+
+    fn new_format_rows() -> Vec<Vec<FixtureCell>> {
+        let mut rows = matrix_rows();
+        rows.push(vec![S("Crane location on axis (X, Y)")]);
+        rows.push(vec![S("-1.7,2.8")]);
+        rows.push(vec![S("Boom angle (°)"), S("Jib 7.2 m"), S(""), S(""), S("Jib 12.8 m")]);
+        rows.push(vec![S(""), S("5°"), S("25°"), S("45°"), S("5°"), S("25°"), S("45°")]);
+        rows.push(vec![N(83.0), N(3.0), N(1.8), N(1.3), N(2.0), N(1.05), N(0.7)]);
+        rows.push(vec![N(45.0), N(0.6), N(0.55), N(0.55), N(0.5), N(0.45), N(0.4)]);
+        rows
+    }
+
+    #[test]
+    fn the_new_format_position_is_read_from_its_label() {
+        let below = vec![
+            vec![t("TOTAL RATED LOADS")],
+            vec![t("Crane location on axis (X, Y)"), None],
+            vec![t("-1.7,2.8")],
+        ];
+        assert_eq!(find_position(&below), Some((-1.7, 2.8)));
+
+        let inline = vec![vec![t("Crane location on axis (X, Y)"), t("-2.5, 1.0")]];
+        assert_eq!(find_position(&inline), Some((-2.5, 1.0)));
+
+        let two_cells = vec![
+            vec![t("Crane location on axis (X, Y)")],
+            vec![n(-1.7), n(2.8)],
+        ];
+        assert_eq!(find_position(&two_cells), Some((-1.7, 2.8)));
+
+        assert_eq!(find_position(&[vec![t("nothing here")]]), None);
+    }
+
+    #[test]
+    fn the_jib_sheet_parses_to_length_by_offset_tables() {
+        let rows = vec![
+            vec![t("TOTAL RATED LOADS — With outriggers fully extended (360°), Unit: ton")],
+            vec![t(
+                "TR-350M-1  |  JIB load chart  |  rows = boom angle (°), columns = jib length × jib offset angle",
+            )],
+            vec![t("Boom angle (°)"), t("Jib 7.2 m"), None, None, t("Jib 12.8 m")],
+            vec![None, t("5°"), t("25°"), t("45°"), t("5°"), t("25°"), t("45°")],
+            vec![n(83.0), n(3.0), n(1.8), n(1.3), n(2.0), n(1.05), n(0.7)],
+            vec![n(45.0), n(0.6), n(0.55), n(0.55), n(0.5), n(0.45), n(0.4)],
+        ];
+        let columns = parse_jib_sheet(&rows).unwrap();
+        assert_eq!(columns.len(), 6);
+        assert_eq!(columns[0].length, 7.2);
+        assert_eq!(columns[0].offset, 5.0);
+        assert_eq!(columns[0].points, vec![(45.0, 600.0), (83.0, 3000.0)]);
+        assert_eq!(columns[5].length, 12.8);
+        assert_eq!(columns[5].offset, 45.0);
+        assert_eq!(columns[5].points, vec![(45.0, 400.0), (83.0, 700.0)]);
+
+        // A sheet that is not a jib chart stays out of the way.
+        assert_eq!(parse_jib_sheet(&[vec![t("Radius"), n(9.8), n(13.3)]]), None);
+    }
+
+    #[test]
+    fn a_workbook_carries_its_position_and_jib_tables_into_the_chart() {
+        let chart = read_chart(&build_workbook("Chart", &new_format_rows())).unwrap();
+        assert_eq!(chart.position, Some((-1.7, 2.8)));
+        assert_eq!(chart.jib_columns.len(), 6);
+        assert_eq!(jib_options(&chart).len(), 6);
+        assert_eq!(
+            jib_points(&chart, Some(7.2), Some(25.0)),
+            vec![(45.0, 550.0), (83.0, 1800.0)]
+        );
+    }
+
+    #[test]
+    fn a_workbook_without_the_new_extras_keeps_them_empty() {
+        let chart = matrix_chart();
+        assert_eq!(chart.position, None);
+        assert!(chart.jib_columns.is_empty());
+    }
+
+    #[test]
+    fn importing_keeps_the_longest_main_boom_and_offers_the_jib_tables() {
+        let mut rows = descending_rows();
+        rows.push(vec![S("Crane location on axis (X, Y)")]);
+        rows.push(vec![S("-1.7,2.8")]);
+        rows.push(vec![S("Boom angle (°)"), S("Jib 7.2 m"), S(""), S(""), S("Jib 12.8 m")]);
+        rows.push(vec![S(""), S("5°"), S("25°"), S("45°"), S("5°"), S("25°"), S("45°")]);
+        rows.push(vec![N(83.0), N(3.0), N(1.8), N(1.3), N(2.0), N(1.05), N(0.7)]);
+        rows.push(vec![N(45.0), N(0.6), N(0.55), N(0.55), N(0.5), N(0.45), N(0.4)]);
+        let chart = read_chart(&build_workbook("Chart", &rows)).unwrap();
+        let inputs = imported_inputs(&CraneInputs::default(), &chart, "TR350M-1.xlsx", 2000.0);
+        // The longest boom (31) wins, not the last workbook entry (9.8).
+        assert_eq!(inputs.chart_boom, Some(31.0));
+        assert_eq!(inputs.chart_position, Some((-1.7, 2.8)));
+        assert_eq!(inputs.chart_jibs.len(), 6);
+        assert_eq!(inputs.jib_config, "boom");
+        assert!(inputs.chart_jib_points.is_empty());
+        assert_eq!(inputs.boom_angle_deg, None);
+    }
+
+    #[test]
+    fn changing_the_radius_clears_the_graphs_published_angle() {
+        let chart = matrix_chart();
+        let inputs = CraneInputs {
+            boom_angle_deg: Some(55.0),
+            ..imported_inputs(&CraneInputs::default(), &chart, "Chart.xlsx", 2000.0)
+        };
+        let updated = radius_changed(&inputs, &chart, 10.0);
+        assert_eq!(updated.boom_angle_deg, None);
+        assert!((updated.working_radius - 10.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn choosing_a_jib_column_loads_its_points_and_clears_the_published_angle() {        let chart = read_chart(&build_workbook("Chart", &new_format_rows())).unwrap();
+        let inputs = CraneInputs {
+            boom_angle_deg: Some(70.0),
+            ..imported_inputs(&CraneInputs::default(), &chart, "TR350M-1.xlsx", 2000.0)
+        };
+        let selected = jib_changed(&inputs, &chart, "boom_jib", Some(7.2), Some(25.0));
+        assert_eq!(selected.jib_config, "boom_jib");
+        assert_eq!(selected.jib_length, Some(7.2));
+        assert_eq!(selected.jib_offset, Some(25.0));
+        assert_eq!(selected.chart_jib_points, vec![(45.0, 550.0), (83.0, 1800.0)]);
+        assert_eq!(selected.boom_angle_deg, None);
+
+        let back = jib_changed(&selected, &chart, "boom", None, None);
+        assert_eq!(back.jib_config, "boom");
+        assert!(back.chart_jib_points.is_empty());
+        assert_eq!(back.jib_length, None);
     }
 }

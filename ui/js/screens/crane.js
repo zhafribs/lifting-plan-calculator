@@ -263,7 +263,16 @@ export function createCraneScreen(ctx) {
     setValue(manual.radius.querySelector("input"), row.radius);
     setValue(manual.capacity.querySelector("input"), row.capacity);
     setValue(manual.angle.querySelector("input"), row.angle);
-    setValue(manual.boom.querySelector("input"), row.boom);
+    // With a jib, the boom column reads as the assembly it is: the main boom
+    // plus the jib the configuration selected.
+    const jibAssembly =
+      state.crane.chart_source === "excel" &&
+      (state.crane.jib_config === "boom_jib" || state.crane.jib_config === "boom_ext_jib") &&
+      state.crane.jib_length;
+    setValue(
+      manual.boom.querySelector("input"),
+      jibAssembly ? `${row.boom ?? 0}+${state.crane.jib_length}` : row.boom,
+    );
   }
 
   function nearest(values, wanted) {
@@ -401,20 +410,46 @@ export function createCraneScreen(ctx) {
       craneState.chart_source === "excel" &&
       (craneState.jib_config === "boom_jib" || craneState.jib_config === "boom_ext_jib");
 
-    // The angle produced for the working radius (by the graph, or implied by
-    // the assembly geometry) is mirrored into the manual row so the entry, the
-    // capacity check and the report all read the same figure. Only the
-    // new-format workbook — it carries the crane position — does this. The
-    // mirror carries the printed resolution, not the raw float.
-    const mirroredAngle = Math.round(result.boom_angle_deg * 100) / 100;
-    if (
-      craneState.chart_position &&
-      mirroredAngle &&
-      Math.abs((craneState.rows[0]?.angle ?? 0) - mirroredAngle) > 1e-9
-    ) {
-      store.update((draft) => {
-        if (draft.crane.rows[0]) draft.crane.rows[0].angle = mirroredAngle;
-      });
+    // Mirror the solved figures into the manual row so the entry, the check
+    // and the report read the same thing. The main boom mirrors the boom
+    // chart's own angle; a jib configuration mirrors the jib check — the
+    // working radius the boom angle reaches, the capacity at that angle — and
+    // keeps the main boom in the boom column. Only the new-format workbook
+    // (it carries the crane position) does this, and the mirror carries the
+    // printed resolution, not raw floats.
+    if (craneState.chart_position) {
+      const row = craneState.rows[0] || {};
+      const want = {};
+      if (result.boom_angle_deg) {
+        want.angle = Math.round(result.boom_angle_deg * 100) / 100;
+      }
+      if (jibActive && result.radius_m > 0) {
+        want.radius = Math.round(result.radius_m * 100) / 100;
+      }
+      if (jibActive && result.chart_capacity_kg) {
+        want.capacity = Math.round(result.chart_capacity_kg * 100) / 100;
+      }
+      if (jibActive && craneState.chart_boom) {
+        want.boom = craneState.chart_boom;
+      }
+      const differs = Object.entries(want).some(
+        ([key, value]) => Math.abs((row[key] ?? 0) - value) > 1e-9,
+      );
+      // The working radius now belongs to the assembly, not the chart picker:
+      // keep the shared value on the derived one so a configuration switch (or
+      // a return to the main boom) continues from where the hook actually is.
+      const radiusFollows =
+        jibActive &&
+        result.radius_m > 0 &&
+        Math.abs((craneState.working_radius ?? 0) - Math.round(result.radius_m * 100) / 100) > 1e-9;
+      if ((Object.keys(want).length && differs) || radiusFollows) {
+        store.update((draft) => {
+          if (draft.crane.rows[0]) Object.assign(draft.crane.rows[0], want);
+          if (radiusFollows) {
+            draft.crane.working_radius = Math.round(result.radius_m * 100) / 100;
+          }
+        });
+      }
     }
 
     checkBadge.replaceChildren(

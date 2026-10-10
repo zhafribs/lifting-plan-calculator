@@ -751,7 +751,8 @@ export function createGraphScreen(ctx) {
   // published back for the Crane tab (and its jib chart) to read. A manual
   // edit on this screen marks a deviation and offers the reset button in
   // place of the card's note; the next Crane tab edit re-syncs.
-  let workbookKey = null; // the crane-tab source last applied to the diagram
+  let workbookKey = null; // the crane-tab input last applied to the diagram
+  let workbookChassis = null; // ... and its non-angle, non-radius parts
   let workbookMode = false;
   let deviated = false;
 
@@ -768,6 +769,9 @@ export function createGraphScreen(ctx) {
       config: crane.jib_config || "boom",
       jib: crane.jib_length ?? 0,
       offset: crane.jib_offset ?? 0,
+      // The angle the crane tab holds (published by this screen, or implied by
+      // its solver). With a jib it is the input; without one it is derived.
+      angle: crane.boom_angle_deg ?? 0,
     };
   }
 
@@ -784,16 +788,24 @@ export function createGraphScreen(ctx) {
     if (patch.config === geo.CONFIG_BOOM_JIB) patch.jib_length = jib;
     if (patch.config === geo.CONFIG_BOOM_EXT_JIB) patch.ext_jib_length = jib;
     patch.jib_offset = offset;
-    // The chart's working radius is measured from the x = 0 axis, so the
-    // horizontal reach from the crane is the radius less the crane's own X.
-    const reach = src.radius - src.x;
-    if (reach > 0 && patch.boom_length > 0) {
-      try {
-        const angle = geo.angleForWorkingRadius(patch.boom_length, jib, offset, reach);
-        // Two decimals, the resolution the crane tab and report print.
-        patch.angle = Math.round(geo.clamp(angle, geo.ANGLE_MIN, geo.ANGLE_MAX) * 100) / 100;
-      } catch (error) {
-        /* the geometry cannot solve a radius: leave the angle as it is */
+    // Where the boom angle comes from: the main-boom chart is read by working
+    // radius (the angle is derived from it), while the jib charts are read by
+    // boom angle — so with a jib selected the angle is the input and the
+    // radius follows from the geometry.
+    if (active && src.angle > 0) {
+      patch.angle = Math.round(geo.clamp(src.angle, geo.ANGLE_MIN, geo.ANGLE_MAX) * 100) / 100;
+    } else {
+      // The chart's working radius is measured from the x = 0 axis, so the
+      // horizontal reach from the crane is the radius less the crane's own X.
+      const reach = src.radius - src.x;
+      if (reach > 0 && patch.boom_length > 0) {
+        try {
+          const angle = geo.angleForWorkingRadius(patch.boom_length, jib, offset, reach);
+          // Two decimals, the resolution the crane tab and report print.
+          patch.angle = Math.round(geo.clamp(angle, geo.ANGLE_MIN, geo.ANGLE_MAX) * 100) / 100;
+        } catch (error) {
+          /* the geometry cannot solve a radius: leave the angle as it is */
+        }
       }
     }
     apply(patch, { fit: Boolean(fit), user: false });
@@ -828,16 +840,34 @@ export function createGraphScreen(ctx) {
     if (!src || !(src.boom > 0)) {
       workbookMode = false;
       workbookKey = null;
+      workbookChassis = null;
       deviated = false;
       renderNote();
       return;
     }
     workbookMode = true;
-    const key = JSON.stringify(src);
-    const changed = key !== workbookKey;
+    const jibActive =
+      src.config === geo.CONFIG_BOOM_JIB || src.config === geo.CONFIG_BOOM_EXT_JIB;
+    // The input side of the sync differs by configuration: the main-boom chart
+    // is read by working radius, the jib charts by boom angle. Only the input
+    // changing (or the chassis) re-pulls the diagram toward the crane tab.
+    const chassisKey = JSON.stringify({
+      x: src.x,
+      y: src.y,
+      boom: src.boom,
+      config: src.config,
+      jib: src.jib,
+      offset: src.offset,
+    });
+    const inputKey = jibActive
+      ? `${chassisKey}|a${src.angle}`
+      : `${chassisKey}|r${src.radius}`;
+    const chassisChanged = chassisKey !== workbookChassis;
+    const changed = inputKey !== workbookKey;
     if (changed || !deviated) {
-      workbookKey = key;
-      applyWorkbook(src, changed && autoFit);
+      workbookKey = inputKey;
+      workbookChassis = chassisKey;
+      applyWorkbook(src, chassisChanged && autoFit);
       deviated = false;
     }
     renderNote();
@@ -845,25 +875,35 @@ export function createGraphScreen(ctx) {
   }
 
   // The angle the graph draws is the crane tab's "Boom angle" figure. Writing
-  // it back only when it actually differs keeps the solve cycle from looping,
-  // and only a live working radius publishes: with no radius there is no
-  // solved angle to show.
+  // it back only when it actually differs keeps the solve cycle from looping.
+  // Without a jib a live working radius is required — the angle comes from it;
+  // with one the angle is the input, and the working radius it reaches is
+  // published alongside it.
   function publishAngle() {
     if (!workbookMode) return;
     const crane = store.state.crane;
-    if (!((crane.working_radius ?? 0) > 0)) return;
+    const jibActive =
+      crane.jib_config === geo.CONFIG_BOOM_JIB || crane.jib_config === geo.CONFIG_BOOM_EXT_JIB;
+    if (!jibActive && !((crane.working_radius ?? 0) > 0)) return;
     const angle = state.angle;
     if (!(angle > 0)) return;
+    const derivedRadius =
+      jibActive && !deviated
+        ? Math.round(geo.workingRadius(geo.tipForState(state)) * 100) / 100
+        : null;
     const row = (crane.rows && crane.rows[0]) || null;
     const anglePublished =
       crane.boom_angle_deg !== null &&
       crane.boom_angle_deg !== undefined &&
       Math.abs(crane.boom_angle_deg - angle) < 1e-9;
     const rowMirrored = !row || Math.abs((row.angle || 0) - angle) < 1e-9;
-    if (anglePublished && rowMirrored) return;
+    const radiusPublished =
+      derivedRadius === null || Math.abs((crane.working_radius ?? 0) - derivedRadius) < 1e-9;
+    if (anglePublished && rowMirrored && radiusPublished) return;
     store.update((draft) => {
       draft.crane.boom_angle_deg = angle;
       if (draft.crane.rows[0]) draft.crane.rows[0].angle = angle;
+      if (derivedRadius !== null) draft.crane.working_radius = derivedRadius;
     });
   }
 

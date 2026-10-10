@@ -220,7 +220,11 @@ export function createCraneScreen(ctx) {
       const booms = state.crane.chart_booms || [];
       const radii = state.crane.chart_radii || [];
       boomWrap.style.display = booms.length > 1 ? "" : "none";
-      radiusWrap.style.display = radii.length ? "" : "none";
+      // With a jib selected the radius follows from the boom angle (the jib
+      // sheet's own basis), so the radius picker has nothing to drive.
+      const jibActive =
+        state.crane.jib_config === "boom_jib" || state.crane.jib_config === "boom_ext_jib";
+      radiusWrap.style.display = radii.length && !jibActive ? "" : "none";
       boomSelect.replaceChildren(
         ...booms.map((boom) => el("option", { value: String(boom), text: fmt(boom, 2, "m") })),
       );

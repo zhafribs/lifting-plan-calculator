@@ -401,7 +401,15 @@ pub fn solve_crane(inputs: &CraneInputs, gross: f64) -> Result<CraneResult, Cran
         crane_name: inputs.name.clone(),
         crane_capacity_t: inputs.capacity_t,
         crane_capacity_kg: capacity_kg,
-        radius_m: effective_radius,
+        radius_m: if inputs.jib_active() {
+            // A jib chart is read at the boom angle: the working radius is the
+            // assembly's reach at that angle, measured from the x = 0 axis.
+            boom_angle
+                .and_then(|angle| assembly_radius(inputs, angle))
+                .unwrap_or(effective_radius)
+        } else {
+            effective_radius
+        },
         // True whenever *either* chart holds a point, so "loaded" keeps meaning
         // "there is something to look up" rather than "from Excel".
         chart_loaded: !manual_pairs.is_empty() || !inputs.chart_points.is_empty(),
@@ -484,6 +492,29 @@ pub fn implied_boom_angle(inputs: &CraneInputs, radius: f64) -> Option<f64> {
     let ratio = (reach / envelope).clamp(0.0, 1.0);
     let base = vy.atan2(vx).to_degrees();
     Some((ratio.acos().to_degrees() - base).clamp(0.0, 90.0))
+}
+
+/// The working radius the assembly reaches at `angle`, measured from the
+/// x = 0 axis. The forward partner of [`implied_boom_angle`], used by the jib
+/// charts: their input is the boom angle, so the radius follows.
+pub fn assembly_radius(inputs: &CraneInputs, angle: f64) -> Option<f64> {
+    let boom = inputs.chart_boom?;
+    if boom <= 0.0 {
+        return None;
+    }
+    let (jib, offset) = if inputs.jib_active() {
+        (
+            inputs.jib_length.unwrap_or(0.0),
+            inputs.jib_offset.unwrap_or(0.0),
+        )
+    } else {
+        (0.0, 0.0)
+    };
+    let a = angle.to_radians();
+    let o = offset.to_radians();
+    let reach = boom * a.cos() + jib * (a - o).cos();
+    let crane_x = inputs.chart_position.map(|(x, _)| x).unwrap_or(0.0);
+    Some(crane_x + reach)
 }
 
 /// The boom angle of the manual row nearest `radius`.
@@ -837,6 +868,28 @@ mod tests {
             ..CraneInputs::default()
         };
         let result = solve_crane(&inputs, 2000.0).unwrap();
+        assert!((result.boom_angle_deg.unwrap() - 60.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_jib_configuration_derives_the_working_radius_from_the_boom_angle() {
+        let inputs = CraneInputs {
+            chart_points: vec![(5.0, 10000.0), (30.0, 5000.0)],
+            working_radius: 5.0, // not what the jib chart is read at
+            chart_source: "excel".to_string(),
+            chart_booms: vec![34.0],
+            chart_boom: Some(34.0),
+            chart_position: Some((0.0, 2.8)),
+            jib_config: "boom_ext_jib".to_string(),
+            jib_length: Some(12.8),
+            jib_offset: Some(0.0),
+            chart_jib_points: vec![(45.0, 400.0), (83.0, 2000.0)],
+            boom_angle_deg: Some(60.0),
+            ..CraneInputs::default()
+        };
+        let result = solve_crane(&inputs, 1000.0).unwrap();
+        // 34 cos 60 + 12.8 cos 60 = 23.4 m from the axis.
+        assert!((result.radius_m - 23.4).abs() < 1e-9);
         assert!((result.boom_angle_deg.unwrap() - 60.0).abs() < 1e-9);
     }
 

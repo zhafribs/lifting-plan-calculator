@@ -87,6 +87,73 @@ async function main() {
   const store = createStore({ onError: (error) => toast(errorText(error), "error") });
   const ctx = { store, catalog, toast, go, showReport };
 
+  // The update reminder strip, between the topbar and the screen. Hidden until
+  // GitHub says there is a newer release.
+  const updateBar = el("div", { class: "update-bar" });
+  screenEl.parentElement.insertBefore(updateBar, screenEl);
+
+  function showUpdate(info) {
+    const buttons = [
+      el(
+        "button",
+        { class: "btn ghost small", onClick: () => api.openExternal(info.release_url).catch(() => {}) },
+        "Release notes",
+      ),
+      el(
+        "button",
+        { class: "btn ghost small", onClick: () => api.openExternal(info.repo_url).catch(() => {}) },
+        "Repository",
+      ),
+    ];
+    if (info.installer && ctx.platform === "windows") {
+      const install = el(
+        "button",
+        { class: "btn primary small", onClick: () => runInstaller(info, install) },
+        "Download & install",
+      );
+      buttons.push(install);
+    }
+    updateBar.replaceChildren(
+      el("span", {
+        class: "msg",
+        text: `Version ${info.latest} is available — you have ${info.current}.`,
+      }),
+      el("span", { class: "spacer" }),
+      ...buttons,
+      el(
+        "button",
+        {
+          class: "btn ghost small",
+          title: "Hide this reminder until the next launch",
+          onClick: () => {
+            updateBar.replaceChildren();
+            updateBar.classList.remove("on");
+          },
+        },
+        "Dismiss",
+      ),
+    );
+    updateBar.classList.add("on");
+  }
+
+  // Windows: fetch the release's installer and start it, then quit so the
+  // installer can replace the running files. Elsewhere the reminder is all
+  // there is; the release page carries the file.
+  async function runInstaller(info, button) {
+    button.disabled = true;
+    const label = button.textContent;
+    button.textContent = "Downloading\u2026";
+    try {
+      await api.installUpdate(info.installer);
+      toast("The installer has started - the app will close so it can update.", "ok");
+      setTimeout(() => api.quitApp(), 1500);
+    } catch (error) {
+      button.disabled = false;
+      button.textContent = label;
+      toast(errorText(error), "error");
+    }
+  }
+
   const screens = {
     overall: createOverallScreen(ctx),
     crane: createCraneScreen(ctx),
@@ -221,6 +288,15 @@ async function main() {
   try {
     const info = await api.appInfo();
     window.uilog && window.uilog(`app_info: ${JSON.stringify(info)}`);
+    ctx.platform = info.platform;
+    // A quiet start-of-day reminder: GitHub is asked once per launch, and an
+    // offline machine (or a rate-limited one) simply sees no banner.
+    api
+      .checkUpdate()
+      .then((update) => {
+        if (update && update.newer) showUpdate(update);
+      })
+      .catch(() => {});
     // QA hook (mirrors --screen=): boot the uniform tab onto a chosen hitch.
     if (
       info.start_hitch &&

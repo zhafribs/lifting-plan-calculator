@@ -23,11 +23,15 @@ pub struct ChartHolder(pub Mutex<Option<LoadChartData>>);
 // lands the uniform tab on a chosen sling arrangement (`--sling-hitch=round_choke`).
 // `start_chart` imports a load-chart workbook at launch (`--chart=path.xlsx`),
 // which is how the workbook-driven screens are smoke-tested; `chart_radius`
-// lands that workbook on a chosen working radius (`--chart-radius=12`).
+// lands that workbook on a chosen working radius (`--chart-radius=12`). The
+// update banner has its own QA hook (`--update-check-version=1.0.0`) read by
+// `update::check_update`.
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct AppInfo {
     pub app_name: String,
     pub version: String,
+    /// `std::env::consts::OS`: "windows", "linux", "macos".
+    pub platform: String,
     pub start_screen: Option<String>,
     pub start_hitch: Option<String>,
     pub start_chart: Option<String>,
@@ -47,6 +51,7 @@ pub fn app_info() -> AppInfo {
     AppInfo {
         app_name: "Lifting Plan Calculator".to_string(),
         version: env!("CARGO_PKG_VERSION").to_string(),
+        platform: std::env::consts::OS.to_string(),
         start_screen,
         start_hitch,
         start_chart,
@@ -318,28 +323,33 @@ pub async fn save_report(
     Ok(Some(target.to_string_lossy().to_string()))
 }
 
-/// Open a saved report in the desktop's own browser.
-#[tauri::command]
-pub fn open_report_file(path: String) -> Result<(), String> {
+/// Open a path or URL with the platform's own opener.
+pub fn open_with_desktop(target: &str) -> Result<(), String> {
     // The desktop opener differs per platform: `xdg-open` on Linux, `start` on
     // Windows. `start` needs an explicit window-title argument (the empty
-    // string) or it treats the first quoted token of the path as the title.
+    // string) or it treats the first quoted token of the target as the title.
     #[cfg(target_os = "windows")]
     let mut command = {
         let mut command = std::process::Command::new("cmd");
-        command.args(["/C", "start", "", path.as_str()]);
+        command.args(["/C", "start", "", target]);
         command
     };
     #[cfg(not(target_os = "windows"))]
     let mut command = {
         let mut command = std::process::Command::new("xdg-open");
-        command.arg(&path);
+        command.arg(target);
         command
     };
     command
         .spawn()
         .map(|_| ())
-        .map_err(|error| format!("No application could open that file: {error}"))
+        .map_err(|error| format!("No application could open that: {error}"))
+}
+
+/// Open a saved report in the desktop's own browser.
+#[tauri::command]
+pub fn open_report_file(path: String) -> Result<(), String> {
+    open_with_desktop(&path)
 }
 
 #[allow(dead_code)]

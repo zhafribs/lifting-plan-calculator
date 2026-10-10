@@ -95,13 +95,20 @@ input, select, button, textarea { font: inherit; color: inherit; }
      The explicit minmax(0, 1fr) column does the same job horizontally: the
      implicit auto column track would otherwise grow to the topbar's
      min-content width (nowrap subtitle + chips) and push the whole content
-     column past the window edge with no scrollbar in split-screen widths. */
+     column past the window edge with no scrollbar in split-screen widths.
+     The middle track is the update reminder, which folds to nothing when it
+     is hidden; the screen is pinned to the flexible bottom track so it keeps
+     the height whatever the reminder does. */
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: var(--topbar-h) minmax(0, 1fr);
+  grid-template-rows: var(--topbar-h) auto minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
   overflow: hidden;
 }
+
+.main > .topbar { grid-row: 1; }
+.main > .update-bar { grid-row: 2; }
+.main > .screen { grid-row: 3; }
 
 .screen {
   overflow-y: auto;
@@ -111,6 +118,24 @@ input, select, button, textarea { font: inherit; color: inherit; }
 }
 
 .page { max-width: 1240px; margin: 0 auto; }
+
+/* ---------- update reminder ---------------------------------------------- */
+
+.update-bar {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--accent-line);
+  color: var(--text);
+  font-size: 12.5px;
+}
+
+.update-bar.on { display: flex; }
+.update-bar .msg { font-weight: 600; }
+.update-bar .spacer { flex: 1; }
+.update-bar .btn { padding: 4px 10px; }
 
 /* ---------- rail --------------------------------------------------------- */
 

@@ -16,6 +16,7 @@ pub mod report_capacity;
 pub mod report_nonuniform;
 pub mod report_uniform;
 pub mod sling;
+pub mod update;
 
 pub fn run() {
     tauri::Builder::default()
@@ -31,6 +32,10 @@ pub fn run() {
             commands::build_report,
             commands::save_report,
             commands::open_report_file,
+            update::check_update,
+            update::install_update,
+            update::open_external,
+            update::quit_app,
         ])
         .run(tauri::generate_context!())
         .expect("error while running the Lifting Plan Calculator");

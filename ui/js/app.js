@@ -181,11 +181,31 @@ async function main() {
     go("report");
   }
 
+  // A re-solve rewrites the screens' DOM, and WebKit reacts by scrolling a
+  // focused control back into view — which yanks the page away from where the
+  // operator left it. Snapshot every scroll container around the repaint and
+  // put it back, right away and on the next frame (the scroll can happen
+  // during layout, after the mutations).
+  function scrollSnapshot() {
+    return {
+      screen: screenEl.scrollTop,
+      panes: [...screenEl.querySelectorAll(".pane")].map((pane) => [pane, pane.scrollTop]),
+    };
+  }
+
+  function restoreScroll(scrolls) {
+    screenEl.scrollTop = scrolls.screen;
+    for (const [pane, top] of scrolls.panes) pane.scrollTop = top;
+  }
+
   store.subscribe(() => {
     updateChips();
     if (!current) return;
+    const scrolls = scrollSnapshot();
     if (current.sync) current.sync(store.state);
     if (current.render) current.render(store.solved);
+    restoreScroll(scrolls);
+    requestAnimationFrame(() => restoreScroll(scrolls));
   });
 
   window.addEventListener("keydown", (event) => {

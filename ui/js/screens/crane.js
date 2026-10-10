@@ -51,6 +51,7 @@ export function createCraneScreen(ctx) {
   const workbookBox = el("div", {});
   const positionLine = el("div", { class: "faint small", style: { margin: "10px 0 0" } });
   let tableOpen = true;
+  let lastTable = null;
   const workbookSection = el(
     "div",
     { class: "mt16" },
@@ -233,14 +234,10 @@ export function createCraneScreen(ctx) {
       const jibActive =
         state.crane.jib_config === "boom_jib" || state.crane.jib_config === "boom_ext_jib";
       radiusWrap.style.display = radii.length && !jibActive ? "" : "none";
-      boomSelect.replaceChildren(
-        ...booms.map((boom) => el("option", { value: String(boom), text: fmt(boom, 2, "m") })),
-      );
+      fillSelect(boomSelect, booms, (value) => fmt(value, 2, "m"));
       const selectedBoom = state.crane.chart_boom ?? booms[booms.length - 1] ?? null;
       if (selectedBoom !== null) boomSelect.value = String(nearest(booms, selectedBoom));
-      radiusSelect.replaceChildren(
-        ...radii.map((radius) => el("option", { value: String(radius), text: fmt(radius, 2, "m") })),
-      );
+      fillSelect(radiusSelect, radii, (value) => fmt(value, 2, "m"));
       if (radii.length) radiusSelect.value = String(nearest(radii, state.crane.working_radius));
 
       const table = state.chart_table;
@@ -288,6 +285,19 @@ export function createCraneScreen(ctx) {
     return best;
   }
 
+  // A select's option list is only rewritten when it actually differs.
+  // Replacing the list under a focused select makes WebKit scroll the select
+  // back into view, moving the pane away from where the operator left it; an
+  // unchanged list stays untouched.
+  function fillSelect(select, values, label) {
+    const signature = values.map((value) => String(value)).join("|");
+    if (select.dataset.options === signature) return;
+    select.dataset.options = signature;
+    select.replaceChildren(
+      ...values.map((value) => el("option", { value: String(value), text: label(value) })),
+    );
+  }
+
   // The jib controls, populated from the workbook's jib tables.
   function syncJib(state) {
     const jibs = state.crane.chart_jibs || [];
@@ -295,14 +305,17 @@ export function createCraneScreen(ctx) {
     if (!jibs.length) return;
 
     const config = state.crane.jib_config || "boom";
-    jibConfigBox.replaceChildren(
-      ...JIB_CONFIGS.map(([key, label]) => {
-        const radio = el("input", { type: "radio", name: "crane-jib-config" });
-        radio.checked = key === config;
-        radio.addEventListener("change", () => store.chooseJib({ config: key }));
-        return el("label", { class: "check" }, radio, el("span", { class: "t", text: label }));
-      }),
-    );
+    if (jibConfigBox.dataset.config !== config) {
+      jibConfigBox.dataset.config = config;
+      jibConfigBox.replaceChildren(
+        ...JIB_CONFIGS.map(([key, label]) => {
+          const radio = el("input", { type: "radio", name: "crane-jib-config" });
+          radio.checked = key === config;
+          radio.addEventListener("change", () => store.chooseJib({ config: key }));
+          return el("label", { class: "check" }, radio, el("span", { class: "t", text: label }));
+        }),
+      );
+    }
 
     const active = config !== "boom";
     jibFields.style.display = active ? "" : "none";
@@ -318,13 +331,10 @@ export function createCraneScreen(ctx) {
     const angles = (state.crane.chart_jib_points || [])
       .map((point) => point[0])
       .sort((a, b) => a - b);
-    jibBoomAngleSelect.replaceChildren(
-      ...angles.map((value) =>
-        el("option", {
-          value: String(value),
-          text: Number.isInteger(value) ? fmt(value, 0, "°") : fmt(value, 1, "°"),
-        }),
-      ),
+    fillSelect(
+      jibBoomAngleSelect,
+      angles,
+      (value) => (Number.isInteger(value) ? fmt(value, 0, "°") : fmt(value, 1, "°")),
     );
     const effectiveAngle =
       state.crane.boom_angle_deg ?? store.solved?.crane?.result?.boom_angle_deg ?? null;
@@ -336,9 +346,7 @@ export function createCraneScreen(ctx) {
       .filter((jib) => Math.abs(jib.length - (state.crane.jib_length ?? 0)) < 1e-9)
       .map((jib) => jib.offset)
       .sort((a, b) => a - b);
-    jibOffsetSelect.replaceChildren(
-      ...offsets.map((value) => el("option", { value: String(value), text: fmt(value, 0, "°") })),
-    );
+    fillSelect(jibOffsetSelect, offsets, (value) => fmt(value, 0, "°"));
     if (state.crane.jib_offset !== null && state.crane.jib_offset !== undefined) {
       jibOffsetSelect.value = String(nearest(offsets, state.crane.jib_offset));
     }
@@ -348,6 +356,11 @@ export function createCraneScreen(ctx) {
   // stays put, the table body comes and goes. The open state lasts while the
   // tab lives, like every other form state.
   function renderWorkbookTable(table) {
+    // The table only changes with the workbook (or the fold); untouched across
+    // re-solves, it stays put — rewriting it under the operator's scroll is
+    // what makes WebKit yank the pane around.
+    if (table === lastTable) return;
+    lastTable = table;
     if (!table || !table.headers?.length) {
       workbookBox.replaceChildren();
       return;
@@ -360,6 +373,7 @@ export function createCraneScreen(ctx) {
         title: tableOpen ? "Collapse the workbook table" : "Expand the workbook table",
         onClick: () => {
           tableOpen = !tableOpen;
+          lastTable = null;
           renderWorkbookTable(table);
         },
       },

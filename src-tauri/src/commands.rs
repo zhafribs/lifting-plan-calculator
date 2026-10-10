@@ -174,6 +174,8 @@ pub enum ChartAction {
         config: String,
         length: Option<f64>,
         offset: Option<f64>,
+        #[serde(default)]
+        gross: f64,
     },
     Forget,
     Manual { row: crate::crane::ChartRow },
@@ -206,11 +208,12 @@ pub fn chart_update(
             config,
             length,
             offset,
+            gross,
         } => {
             let guard = holder.0.lock().expect("chart holder poisoned");
             let chart = guard.as_ref().ok_or("No workbook is loaded.")?;
             Ok(ChartUpdate {
-                crane: excel::jib_changed(&crane, chart, &config, length, offset),
+                crane: excel::jib_changed(&crane, chart, &config, length, offset, gross),
                 table: None,
             })
         }

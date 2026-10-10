@@ -239,9 +239,10 @@ export function createStore({ onError } = {}) {
   function chooseJib({ config, offset } = {}) {
     const crane = state.crane;
     const jibs = crane.chart_jibs || [];
+    const gross = solved?.totals?.gross ?? 0;
     const nextConfig = config ?? crane.jib_config ?? "boom";
     if (nextConfig === "boom") {
-      return chartAction({ action: "jib", config: "boom", length: null, offset: null });
+      return chartAction({ action: "jib", config: "boom", length: null, offset: null, gross });
     }
     const lengths = [...new Set(jibs.map((jib) => jib.length))].sort((a, b) => a - b);
     const nextLength =
@@ -259,6 +260,7 @@ export function createStore({ onError } = {}) {
       config: nextConfig,
       length: nextLength,
       offset: nextOffset,
+      gross,
     });
   }
 

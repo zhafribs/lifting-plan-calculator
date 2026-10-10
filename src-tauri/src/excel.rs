@@ -1188,17 +1188,38 @@ pub fn jib_points(
         .unwrap_or_default()
 }
 
+/// The boom angle an operator would settle on for this lift, or None.
+///
+/// The jib counterpart of [`suggest_radius`]: the lift needs `gross / 0.75` of
+/// rated capacity, and the angle picked is the **farthest reach** whose
+/// capacity still meets it — the smallest charted angle.
+pub fn suggest_jib_angle(points: &[(f64, f64)], gross: f64) -> Option<f64> {
+    if gross <= 0.0 {
+        return None;
+    }
+    let required = calc::required_chart_capacity(gross, calc::CRANE_USAGE_RATIO).ok()?;
+    let mut feasible: Vec<f64> = points
+        .iter()
+        .filter(|(_, capacity)| *capacity >= required)
+        .map(|(angle, _)| *angle)
+        .collect();
+    feasible.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    feasible.first().copied()
+}
+
 /// The inputs after the operator changes the jib configuration or selection.
 ///
-/// The published boom angle is cleared with the selection: the Graph tab
-/// re-derives it from the new geometry, and a stale angle must not be checked
-/// against the new column in the meantime.
+/// The boom angle is re-suggested for the new table — the farthest reach that
+/// still meets the 75% rule — the same way the working radius is suggested for
+/// the main boom. With no lift to check against it stays unset and the graph's
+/// geometry supplies it.
 pub fn jib_changed(
     inputs: &CraneInputs,
     chart: &LoadChartData,
     config: &str,
     length: Option<f64>,
     offset: Option<f64>,
+    gross: f64,
 ) -> CraneInputs {
     let config = match config {
         "boom_jib" | "boom_ext_jib" => config.to_string(),
@@ -1210,9 +1231,14 @@ pub fn jib_changed(
     } else {
         Vec::new()
     };
+    let suggested = if active {
+        suggest_jib_angle(&points, gross)
+    } else {
+        None
+    };
     let mut rows = inputs.rows.clone();
     if let Some(row) = rows.first_mut() {
-        row.angle = 0.0;
+        row.angle = suggested.unwrap_or(0.0);
     }
     CraneInputs {
         rows,
@@ -1220,7 +1246,7 @@ pub fn jib_changed(
         jib_length: if active { length } else { None },
         jib_offset: if active { offset } else { None },
         chart_jib_points: points,
-        boom_angle_deg: None,
+        boom_angle_deg: suggested,
         ..inputs.clone()
     }
 }
@@ -1807,21 +1833,53 @@ xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">
     }
 
     #[test]
-    fn choosing_a_jib_column_loads_its_points_and_clears_the_published_angle() {        let chart = read_chart(&build_workbook("Chart", &new_format_rows())).unwrap();
+    fn choosing_a_jib_column_loads_its_points() {
+        let chart = read_chart(&build_workbook("Chart", &new_format_rows())).unwrap();
         let inputs = CraneInputs {
             boom_angle_deg: Some(70.0),
             ..imported_inputs(&CraneInputs::default(), &chart, "TR350M-1.xlsx", 2000.0)
         };
-        let selected = jib_changed(&inputs, &chart, "boom_jib", Some(7.2), Some(25.0));
+        let selected = jib_changed(&inputs, &chart, "boom_jib", Some(7.2), Some(25.0), 0.0);
         assert_eq!(selected.jib_config, "boom_jib");
         assert_eq!(selected.jib_length, Some(7.2));
         assert_eq!(selected.jib_offset, Some(25.0));
         assert_eq!(selected.chart_jib_points, vec![(45.0, 550.0), (83.0, 1800.0)]);
+        // No lift to meet: nothing is suggested.
         assert_eq!(selected.boom_angle_deg, None);
 
-        let back = jib_changed(&selected, &chart, "boom", None, None);
+        let back = jib_changed(&selected, &chart, "boom", None, None, 0.0);
         assert_eq!(back.jib_config, "boom");
         assert!(back.chart_jib_points.is_empty());
         assert_eq!(back.jib_length, None);
+    }
+
+    #[test]
+    fn the_suggested_jib_angle_is_the_farthest_that_still_carries_the_lift() {
+        let points = vec![
+            (45.0, 400.0),
+            (50.0, 600.0),
+            (55.0, 800.0),
+            (60.0, 1000.0),
+            (65.0, 1500.0),
+        ];
+        // Gross 1000 kg needs 1333.33 kg; the farthest reach that carries it
+        // is the smallest charted angle meeting the requirement.
+        assert_eq!(suggest_jib_angle(&points, 1000.0), Some(65.0));
+        // Gross 400 kg needs 533.33 kg: 50 deg.
+        assert_eq!(suggest_jib_angle(&points, 400.0), Some(50.0));
+        // Nothing carries the largest lift; no lift, no suggestion.
+        assert_eq!(suggest_jib_angle(&points, 100000.0), None);
+        assert_eq!(suggest_jib_angle(&points, 0.0), None);
+    }
+
+    #[test]
+    fn choosing_a_jib_configuration_suggests_an_angle_that_passes_the_75_rule() {
+        let chart = read_chart(&build_workbook("Chart", &new_format_rows())).unwrap();
+        // Gross 500 kg needs 666.67 kg of chart. The 7.2 m @ 25 deg jib
+        // carries 1800 kg at 83 deg and 550 kg at 45 deg, so 83 deg is the
+        // only charted angle that passes.
+        let selected =
+            jib_changed(&CraneInputs::default(), &chart, "boom_jib", Some(7.2), Some(25.0), 500.0);
+        assert_eq!(selected.boom_angle_deg, Some(83.0));
     }
 }

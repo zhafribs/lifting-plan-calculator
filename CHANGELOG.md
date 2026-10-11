@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-10-11
+
+### Added
+
+- Update reminders: the app asks GitHub for the newest release at launch and
+  from the About tab, showing the release page and the repository a click
+  away.
+- On Windows, downloading and starting the release's installer from this
+  repository, then quitting so it can replace the running files.
+
+### Fixed
+
+- The reminder strip folds without shifting the page.
+
 ## [2.3.0] - 2026-10-11
 
 ### Added

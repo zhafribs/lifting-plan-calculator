@@ -1,43 +1,135 @@
-# Lifting Plan Calculator
+<p align="center">
+  <img src="src-tauri/icons/128x128.png" width="96" alt="Lifting Plan Calculator">
+</p>
 
-[![CI](https://github.com/zhafribs/lifting-plan-calculator/actions/workflows/ci.yml/badge.svg)](https://github.com/zhafribs/lifting-plan-calculator/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/zhafribs/lifting-plan-calculator?sort=semver)](https://github.com/zhafribs/lifting-plan-calculator/releases/latest)
-[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
-[![Platform: Linux | Windows](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-333)](#install)
-[![Rust](https://img.shields.io/badge/rust-1.85%2B-orange?logo=rust)](https://www.rust-lang.org/)
-[![Tauri 2](https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri)](https://tauri.app/)
+<h1 align="center">Lifting Plan Calculator</h1>
 
-A desktop build of the Lifting Plan Calculator, written in Rust with a Tauri 2
-shell and shipped as a single **AppImage** for Linux (Ubuntu, Fedora and Arch)
-and as **MSI / NSIS installers** for Windows.
+<p align="center">
+  A desktop lift plan that shows its arithmetic — every figure in the printable
+  report is written as the formula that produced it.
+</p>
 
-Every figure is solved by the Rust engine (ported line-for-line from the
-Android Kotlin source) and covered by a test suite ported from the Kotlin unit
-tests. There is no sign-in and no stored plan: all calculations run locally.
-The only network call is the update check you ask for on the About screen, and
-the only file written is a small `~/.cache/lifting-plan-calculator/ui.log`
-breadcrumb used to diagnose startup problems.
+<p align="center">
+  <a href="https://github.com/zhafribs/lifting-plan-calculator/actions/workflows/ci.yml"><img src="https://github.com/zhafribs/lifting-plan-calculator/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/zhafribs/lifting-plan-calculator/releases/latest"><img src="https://img.shields.io/github/v/release/zhafribs/lifting-plan-calculator?sort=semver" alt="Latest release"></a>
+  <a href="https://github.com/zhafribs/lifting-plan-calculator/releases"><img src="https://img.shields.io/github/downloads/zhafribs/lifting-plan-calculator/total" alt="Downloads"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue" alt="License: GPL-3.0-or-later"></a>
+  <br>
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20Windows-333" alt="Platform: Linux and Windows">
+  <img src="https://img.shields.io/badge/rust-1.85%2B-orange?logo=rust" alt="Rust 1.85+">
+  <img src="https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri" alt="Tauri 2">
+</p>
 
-![Lifting Plan Calculator](docs/screenshots/01-overall.png)
+![The Overall Weight tab](docs/screenshots/01-overall.png)
 
-## Features
+Rigging and crane lifts, calculated and documented in one window: the load at
+the hook, the crane's rated capacity, the sling arrangement, and a plan you can
+print, sign and file. Every figure is solved by a Rust engine ported line for
+line from the original Android Kotlin source and covered by the Kotlin tests'
+own expected values, so a drift in the arithmetic fails the build.
+
+There is no sign-in and no plan is stored by the app itself. It asks GitHub once
+per launch whether a newer release exists, and again only if you ask from the
+About screen. The only other network traffic is the installer you choose to
+download from the update reminder or the About screen, on Windows. Files are
+written only when you save a report (the HTML and its KaTeX assets), when that
+installer is downloaded, and the small
+`~/.cache/lifting-plan-calculator/ui.log` breadcrumb used to diagnose startup
+problems.
+
+## Scope of use
+
+This is a calculation aid for a competent person planning a lift. It does not
+certify a lift, a crane, an operator or a plan, and it is not a substitute for
+the manufacturer's load chart, the crane's rated capacity, the site's lift plan
+procedure, or a rigger's and appointed person's judgement. Every figure is only
+as good as the inputs and the chart it is read from — check both against the
+source before the lift. A printed plan from this app remains the responsibility
+of the person who approves it.
+
+## Download
+
+| Platform | File | Runs on |
+| --- | --- | --- |
+| **Linux** (recommended) | `Lifting-Plan-Calculator-<version>-linux-x86_64.AppImage` | Ubuntu 22.04+, Fedora 36+, Arch (glibc 2.35 floor) |
+| **Windows** 10/11 x64 | `Lifting-Plan-Calculator-<version>-windows-x86_64.msi` | WebView2 runtime (the installer ships the bootstrapper) |
+| **Windows** 10/11 x64 | `Lifting-Plan-Calculator-<version>-windows-x86_64-setup.exe` | NSIS installer, same build |
+
+All files, their checksums and their release notes are on the
+[**Releases page**](https://github.com/zhafribs/lifting-plan-calculator/releases/latest).
+
+```bash
+# Linux: one file, nothing to install
+chmod +x Lifting-Plan-Calculator-<version>-linux-x86_64.AppImage
+./Lifting-Plan-Calculator-<version>-linux-x86_64.AppImage
+```
+
+The portable AppImage bundles the GTK 3 and WebKitGTK 4.1 stack it needs, so
+nothing app-specific has to be installed on the target machine. Its glibc floor
+is 2.35 because it is built inside an Ubuntu 22.04 userspace, not on the
+maintainer's rolling-release desktop.
+
+### Verify a download
+
+Every release carries `SHA256SUMS.txt`. Download it beside the file you want and
+check just that file — the list names all of them, so a whole-list check fails
+for anyone who took one asset:
+
+```bash
+sha256sum -c --ignore-missing SHA256SUMS.txt
+```
+
+The checksums travel over the same connection as the files, so they catch a
+corrupted or truncated download, not a compromised release. Windows will warn
+that the installers are unsigned (SmartScreen shows "Unknown publisher"); the
+source for every build is this repository.
+
+### Updating
+
+- **Windows:** the app's update reminder can download and start the newer
+  installer, then closes so it can replace the running files.
+- **Linux:** since v2.2.0 the AppImage ships a matching `.AppImage.zsync`
+  sidecar, so `appimageupdatetool` (from AppImageUpdate) downloads only the
+  blocks that changed rather than the whole file:
+
+  ```bash
+  appimageupdatetool Lifting-Plan-Calculator-<old-version>-linux-x86_64.AppImage \
+    https://github.com/zhafribs/lifting-plan-calculator/releases/download/v<version>/Lifting-Plan-Calculator-<version>-linux-x86_64.AppImage.zsync
+  ```
+
+  Replace both version placeholders with the release you are updating to; the
+  `.zsync` file has the same name as the AppImage plus `.zsync`.
+
+## What it does
 
 Five calculation forms over one shared lift, plus a printable report:
 
 | Tab | What it does |
 | --- | --- |
 | **Overall Weight** | Load lines and tackle, summed to the gross load at the hook. |
-| **Crane** | The capacity check against a load chart imported from Excel, or a single point typed by hand (max 75% of rated chart capacity). |
+| **Crane** | The capacity check against a load chart imported from Excel, or a single point typed by hand, read against the same 75% band. |
 | **Uniform Load** | The nineteen 1-leg / 2-leg / nested / bridle arrangements, each checked against the gross load at hook. |
 | **Nonuniform Load** | The 2-leg asymmetric bridle with a shortening grab hook. |
 | **Tandem** | Two independent cranes sharing one load, in the two declared lug configurations. |
 | **Summary** | An HTML report with KaTeX-typeset formulas, ready to save or print. Saved reports keep a copy of the KaTeX assets beside them, so they print with the equations typeset anywhere. |
 
+The chart check is a band, not a cap: at or under 75% of the charted capacity
+the plan reads **WITHIN LIMIT**, between 75% and 100% **CAUTION**, and above
+100% **WARNING**. Since 2.5.0 the crane's own booked rating is checked against
+the same 75% test when a rating is entered; with none entered the plan says
+**Not checked** rather than inventing a pass. A working radius outside the chart's rated range
+is refused outright, naming the range the chart rates, instead of carrying the
+nearest charted capacity in. The reasoning behind each is recorded in
+[`docs/adr/`](docs/adr/).
+
 ## Screenshots
 
-Every screen below is a live capture of the running app with an example lift
-(20,000 kg load plus 350 kg of tackle, giving a 20,350 kg gross load and a
-27,133.33 kg required capacity at the 75% rule).
+The form tabs below are live captures from v2.0.0, when the layout was last
+captured; the report capture predates the 2.5.0 *Plan details* card and the 2.5.1
+head layout. They show an example lift: 20,000 kg of load plus 350 kg of tackle,
+giving a 20,350 kg gross load and a 27,133.33 kg required capacity at the 75%
+rule. That lift is deliberately over the example crane's 20 t rating, so the plan
+shows its over-capacity band.
 
 | Overall Weight | Crane capacity check |
 | --- | --- |
@@ -47,46 +139,14 @@ Every screen below is a live capture of the running app with an example lift
 | **Nonuniform Load** | **Tandem** |
 | ![Nonuniform Load](docs/screenshots/05-nonuniform.png) | ![Tandem](docs/screenshots/06-tandem.png) |
 
-**Summary report** — the printable plan, with each figure shown as its formula:
+**Summary report** — the printable plan, with each figure shown as its formula.
+This capture predates 2.5.0, which added the *Plan details* card, and 2.5.1,
+which packed the plan's head into the top third of the sheet; it also predates
+the scope line now printed at the foot of the plan:
 
 ![Summary report](docs/screenshots/07-summary.png)
 
-## Install
-
-### Linux (AppImage, recommended)
-
-Download the latest
-`Lifting-Plan-Calculator-<version>-linux-x86_64.AppImage` from the
-[Releases page](https://github.com/zhafribs/lifting-plan-calculator/releases/latest),
-then:
-
-```bash
-chmod +x Lifting-Plan-Calculator-2.5.1-linux-x86_64.AppImage
-./Lifting-Plan-Calculator-2.5.1-linux-x86_64.AppImage
-```
-
-The portable release is built inside an Ubuntu 22.04 userspace, so its glibc
-floor is 2.35 and it runs on **Ubuntu 22.04+, Fedora 36+ and Arch**. It bundles
-the GTK 3 and WebKitGTK 4.1 stack it needs; nothing app-specific has to be
-installed on the target machine. Verify it against the `SHA256SUMS.txt`
-attached to the release if you like.
-
-Every release also ships a matching `.AppImage.zsync` sidecar, so an older
-AppImage can update by fetching only the blocks that changed (via
-`appimageupdatetool` from AppImageUpdate):
-
-```bash
-appimageupdatetool Lifting-Plan-Calculator-2.1.5-linux-x86_64.AppImage \
-  https://github.com/zhafribs/lifting-plan-calculator/releases/download/v2.5.1/Lifting-Plan-Calculator-2.5.1-linux-x86_64.AppImage.zsync
-```
-
-### Windows
-
-Download `Lifting-Plan-Calculator-<version>-windows-x86_64.msi` and run it, or
-the `-windows-x86_64-setup.exe` (NSIS) installer. Windows 10 or 11 with the
-WebView2 runtime is required; the installer ships the bootstrapper.
-
-### From source
+## From source
 
 ```bash
 git clone https://github.com/zhafribs/lifting-plan-calculator.git
@@ -97,7 +157,7 @@ cargo run            # debug build, opens the calculator
 The frontend lives in `ui/` and is embedded into the binary at compile time —
 there is no Node.js build step and no npm dependency.
 
-## Building the AppImage
+### Building the AppImage
 
 ```bash
 ./build-appimage.sh            # host build: fastest, runs on distributions at
@@ -112,8 +172,9 @@ Both write `dist/Lifting-Plan-Calculator-<version>-linux-x86_64.AppImage` plus
 its `.AppImage.zsync` delta-update sidecar (the sidecar step needs the `zsync`
 package; it is skipped with a notice if `zsyncmake` is missing).
 
-Requirements: Rust (cargo), and a system with `webkit2gtk-4.1`, `gtk3` and
-`librsvg` development packages. The scripts install the Tauri CLI if missing.
+Requirements: Rust (cargo), `python3` (both scripts read the version from
+`tauri.conf.json`), and a system with `webkit2gtk-4.1`, `gtk3` and `librsvg`
+development packages. The scripts install the Tauri CLI if missing.
 `build-appimage-portable.sh` needs `bwrap` and an internet connection on its
 first run (it caches a ~30 MB Ubuntu base rootfs under
 `~/.cache/lifting-plan-calculator-build`). A Dockerfile with the same effect
@@ -132,17 +193,20 @@ cd src-tauri
 cargo test
 ```
 
-134 tests, all ported from the Kotlin unit suite (`CalcTest`, `CraneTest`,
+176 tests: 163 ported from the Kotlin unit suite (`CalcTest`, `CraneTest`,
 `CraneManualEntryTest`, `SlingTest`, `NonuniformTest`, `ExcelImportTest`,
 `ReportTest`, `ReportUniformTest`, `ReportCapacityTest`,
-`ReportNonuniformTest`), plus a few structural tests of the Rust port. The
-expected figures are the Kotlin tests' own literals, so a drift in the
-arithmetic fails the build.
+`ReportNonuniformTest`), plus 13 tests of the Rust port itself (load figures,
+model totals, the update check). The expected figures are the Kotlin tests' own
+literals, so a drift in the arithmetic fails the build.
 
-The same suite runs on every push and pull request in
-[CI](.github/workflows/ci.yml).
+The same suite runs on every push and pull request, with `cargo clippy
+--all-targets -- -D warnings`, a syntax check of every frontend module, and the
+release-notes check and its self-test, in [CI](.github/workflows/ci.yml). Windows
+and Linux release builds are produced from the same source by the
+[release workflow](.github/workflows/release.yml).
 
-## Layout
+## Project layout
 
 ```
 src-tauri/          the Rust crate
@@ -161,11 +225,40 @@ src-tauri/          the Rust crate
 ui/                 the frontend (plain ES modules; no build step)
   js/screens/       one module per screen
   vendor/katex/     bundled KaTeX (report typesetting)
+docs/releases/      one release note file per tag; the tag's file is published
+docs/adr/           architecture decisions, one file per decision
+docs/council/       the review charter, the seats, and the decision records
 build-appimage.sh            host AppImage build (+ .zsync sidecar)
 build-appimage-portable.sh   Ubuntu 22.04 userspace build (widest compatibility)
+packaging/check-release-notes.sh    validates every tag's notes
+packaging/publish-release-notes.sh  republishes existing release bodies
 packaging/make-zsync.sh      writes the AppImage delta-update sidecar
 packaging/Dockerfile         the same, for Docker users
 ```
+
+## Releases
+
+Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
+and the change log follows [Keep a Changelog](https://keepachangelog.com/):
+breaking changes in the engine's behaviour or the plan's output are a major
+bump, new checks and screens a minor, fixes a patch.
+
+Each tag has one notes file in [`docs/releases/`](docs/releases/), and the
+release workflow publishes exactly that file as the release body: it refuses a
+tag whose notes are missing, empty, or name another version. `CHANGELOG.md`
+holds the same changes in one continuous history; the notes are the shorter,
+user-facing subset. The process is written down in
+[`docs/releases/README.md`](docs/releases/README.md).
+
+Two of the 13 pages published before that process used to repeat earlier notes:
+v2.5.0 carried 2.4.0, and v2.5.1 carried 2.5.0 and 2.4.0. All 13 were
+republished from the same files on 13 November 2026; the eleven single-release
+pages were rewritten to the same shape, but their substance did not change.
+
+What the release pages deliberately do not do: they carry no screenshots (this
+page has them), there is no changelog inside the app — the update reminder links
+to the GitHub release — and the installers are unsigned, so Windows shows its
+"Unknown publisher" warning.
 
 ## Desktop notes
 
@@ -173,7 +266,7 @@ packaging/Dockerfile         the same, for Docker users
   across the top) and column charts (radius / load / boom columns) are detected
   automatically. The working radius is suggested as the farthest charted radius
   that still meets the 75% rule. Two example charts ship in `docs/examples/`
-  (a 35 t TR350M-1 and a 20 t TL-200M) if you want to try the import without a
+  (a 35 t TR-350M-1 and a 20 t TL-200M) if you want to try the import without a
   workbook of your own; the TL-200M also ships as its manufacturer's
   specification PDF, which the workbook transcribes.
 - **Printing**: the report preview is a web view; *Print* opens the system print
@@ -191,10 +284,11 @@ packaging/Dockerfile         the same, for Docker users
 
 ## Contributing
 
-Issues and focused pull requests are welcome — see
-[CONTRIBUTING.md](CONTRIBUTING.md) and the
-[Code of Conduct](CODE_OF_CONDUCT.md). Security reports go through
-[private advisories](SECURITY.md).
+Issues and focused pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md)
+and the [Code of Conduct](CODE_OF_CONDUCT.md). Questions and usage help belong
+in [Discussions](https://github.com/zhafribs/lifting-plan-calculator/discussions).
+Security reports go through [private advisories](SECURITY.md), never a public
+issue.
 
 ## License
 

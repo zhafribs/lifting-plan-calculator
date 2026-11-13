@@ -1977,7 +1977,7 @@ dependencies = [
 
 [[package]]
 name = "lifting-plan-calculator"
-version = "2.5.2"
+version = "2.5.3"
 dependencies = [
  "calamine",
  "rfd",

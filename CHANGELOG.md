@@ -9,6 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Nothing yet.
 
+## [2.5.3] - 2026-11-14
+
+### Added
+
+- *Save as PDF* writes the report directly to A4 with one-inch margins, using a
+  headless Chromium build (Microsoft Edge on Windows, Chromium on Linux). It
+  reports the saved path and fails with an actionable message if no renderer is
+  installed.
+- Every printed page carries a footer: the plan reference on the left, the
+  credit line in the centre, and `n / total` on the right. The centre text is
+  editable in Summary, between Plan details and Export.
+- Summary's *Working range diagram* check box (between Crane and Uniform Load)
+  includes the current diagram at the bottom of Plan details; it refreshes on
+  every rebuild, and clearing it removes the diagram. The report inverts it to a
+  light background for printing.
+
+### Changed
+
+- The plan head drops the repeated crane configuration, the capacity pill, the
+  chart-source line and the booked-rating note. The crane's plate capacity is
+  labelled "Crane rating", boom, radius and angle share one card, the issued line
+  is a DD-MM-YYYY date, and the two working formulas sit under centred labels.
+- "Plan details" is section 1 of the printed plan, so the lift inputs are
+  section 2. The Lifting Plan title (with the crane name inline) sits above the
+  head card, which runs from Plan details through the usage formula; the inputs
+  are figure cards inside their own card, and every following section uses the
+  same card.
+- The lift inputs no longer repeat the load weight; the gross load at hook is in
+  the plan head.
+- The printed plan's foot carries the credit line only; the scope statement
+  stays in the README.
+
 ## [2.5.2] - 2026-11-13
 
 ### Changed

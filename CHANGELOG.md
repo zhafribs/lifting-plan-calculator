@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A boom switch to a column with no charted capacities leaves the manual entry
+  blank instead of publishing the previous boom's capacity under the new boom's
+  label.
+
+### Added
+
+- The TR-350M-1 example load chart (`docs/examples/`) and a test that parses it
+  end to end, covering the main boom matrix, the crane position and the jib
+  tables.
+
 ## [2.4.0] - 2026-10-11
 
 ### Added

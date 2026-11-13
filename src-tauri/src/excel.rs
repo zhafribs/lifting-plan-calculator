@@ -1055,7 +1055,13 @@ fn applied(
     let radius = suggested.unwrap_or(inputs.working_radius);
     let points = chart_points(chart, boom).unwrap_or_default();
     let mirrored = mirrored_point(chart, radius, boom);
-    let rows = mirror_into(&inputs.rows, mirrored);
+    // A boom with no charted rows has nothing to mirror. Keeping the previous
+    // boom's row would publish its capacity under the new boom's own label.
+    let rows = if points.is_empty() {
+        vec![ChartRow::default()]
+    } else {
+        mirror_into(&inputs.rows, mirrored)
+    };
 
     CraneInputs {
         rows,
@@ -1423,6 +1429,16 @@ xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">
         ]
     }
 
+    /// A matrix whose longest boom column is entirely blank.
+    fn sparse_matrix_rows() -> Vec<Vec<FixtureCell>> {
+        vec![
+            vec![S("Radius"), N(9.8), N(13.3)],
+            vec![N(3.0), N(20.0)],
+            vec![N(5.0), N(18.0)],
+            vec![N(10.0), N(12.0)],
+        ]
+    }
+
     fn column_rows() -> Vec<Vec<FixtureCell>> {
         vec![
             vec![S("Radius"), S("Load"), S("Boom Length")],
@@ -1622,6 +1638,45 @@ xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">
             switched.chart_label,
             "Chart.xlsx (capacity in ton) \u{2014} read from boom 27.5 m"
         );
+    }
+
+    #[test]
+    fn a_boom_with_no_charted_rows_blanks_the_mirror_instead_of_keeping_the_old_one() {
+        let chart = read_chart(&build_workbook("Chart", &sparse_matrix_rows())).unwrap();
+        let previous = CraneInputs {
+            rows: vec![ChartRow {
+                radius: 5.0,
+                capacity: 15000.0,
+                ..ChartRow::default()
+            }],
+            working_radius: 5.0,
+            ..CraneInputs::default()
+        };
+
+        let switched = boom_changed(&previous, &chart, 13.3, 2000.0);
+        assert!(switched.chart_points.is_empty());
+        assert_eq!(switched.rows, vec![ChartRow::default()]);
+        assert!((switched.working_radius - previous.working_radius).abs() < 1e-9);
+    }
+
+    #[test]
+    fn the_bundled_tr350m_workbook_parses_to_its_own_tables() {
+        let bytes = include_bytes!("../../docs/examples/TR350M-1-Load-Chart Full.xlsx");
+        let chart = read_chart(bytes).unwrap();
+        assert!(chart.matrix);
+        assert_eq!(chart.booms, vec![9.0, 15.25, 21.5, 27.75, 34.0]);
+        assert_eq!(chart.unit, "ton");
+        assert_eq!(chart.position, Some((-1.7, 2.8)));
+        // The full boom at 5 m and the short boom at 6 m, in kg.
+        assert!((chart.capacity_at(5.0, Some(34.0)).unwrap() - 6500.0).abs() < 1e-9);
+        assert!((chart.capacity_at(6.0, Some(9.0)).unwrap() - 17500.0).abs() < 1e-9);
+        // The jib sheet: two jib lengths, three offset angles each.
+        let jibs = jib_options(&chart);
+        assert_eq!(jibs.len(), 6);
+        assert!((jibs[0].length - 7.2).abs() < 1e-9);
+        assert!((jibs[0].offset - 5.0).abs() < 1e-9);
+        assert!((jibs[5].length - 12.8).abs() < 1e-9);
+        assert!((jibs[5].offset - 45.0).abs() < 1e-9);
     }
 
     #[test]

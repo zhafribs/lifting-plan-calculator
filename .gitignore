@@ -5,12 +5,17 @@
 
 # Operator data: load-chart workbooks are not source
 *.xlsx
+# ...except the one example workbook the tests parse
+!/docs/examples/*.xlsx
 
 # Scratch (frontend fixture dumps, local test exports)
 /ff16/
 
 # Tauri generated schemas
 /src-tauri/gen/schemas/
+
+# Local graphify knowledge graph
+/graphify-out/
 
 # OS / editor noise
 .DS_Store

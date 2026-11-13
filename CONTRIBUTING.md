@@ -42,7 +42,8 @@ The result lands in `dist/`.
 
 - Keep changes focused; one topic per pull request.
 - Match the surrounding code style. Rust is expected to pass `cargo test` and
-  be `rustfmt`-formatted; the frontend follows the existing module layout.
+  `cargo clippy` (both run in CI); the frontend follows the existing module
+  layout.
 - Update `CHANGELOG.md` under `[Unreleased]` for user-visible changes.
 - Describe how you tested the change (which screen, which inputs, which
   window size).

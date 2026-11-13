@@ -113,6 +113,12 @@ Five calculation forms over one shared lift, plus a printable report:
 | **Tandem** | Two independent cranes sharing one load, in the two declared lug configurations. |
 | **Summary** | An HTML report with KaTeX-typeset formulas, ready to save or print. Saved reports keep a copy of the KaTeX assets beside them, so they print with the equations typeset anywhere. |
 
+The **Graph** tab is the working-range diagram, drawn to scale. In **Summary**,
+check **Working range diagram** — between the Crane and Uniform Load sections —
+to include the current diagram at the bottom of Plan details; it refreshes with
+the plan, and clearing the tick removes it. The report inverts it to a light
+background so it prints without a black block.
+
 The chart check is a band, not a cap: at or under 75% of the charted capacity
 the plan reads **WITHIN LIMIT**, between 75% and 100% **CAUTION**, and above
 100% **WARNING**. Since 2.5.0 the crane's own booked rating is checked against
@@ -269,12 +275,17 @@ to the GitHub release — and the installers are unsigned, so Windows shows its
   (a 35 t TR-350M-1 and a 20 t TL-200M) if you want to try the import without a
   workbook of your own; the TL-200M also ships as its manufacturer's
   specification PDF, which the workbook transcribes.
-- **Printing**: the report preview is a web view; *Print* opens the system print
-  dialog, and *Save as HTML* writes a portable copy. The page declares an A4
-  sheet with a one-inch margin on every side; a browser's print dialog must
-  leave its margin selector on **Default**, because *Minimum* and *None*
-  override the document's own margin. If the desktop cannot print from a web
-  view, save the file and print it from a browser.
+- **Printing and PDF**: the report preview is a web view; *Save as PDF* writes
+  the report directly to A4 with a one-inch margin on every side, using a
+  headless Chromium build — Microsoft Edge on Windows, Chromium on Linux
+  (install it if the app says no renderer was found). *Print* opens the system
+  print dialog, and *Save as HTML* writes a portable copy. The page declares the
+  same A4 one-inch margin, so a browser's print dialog must leave its margin
+  selector on **Default**; *Minimum* and *None* override it. Every page carries
+  the plan reference on the left, the credit line in the centre (editable in
+  Summary, between Plan details and Export), and `n / total` on the right, in
+  the bottom margin. If the desktop
+  cannot print from a web view, save the file and print it from a browser.
 - **Data**: nothing is stored between launches by design; every run opens a
   blank sheet. Use the report's *Save as HTML* to keep a plan.
 - **NVIDIA note**: WebKitGTK's DMA-BUF renderer can crash on some NVIDIA driver

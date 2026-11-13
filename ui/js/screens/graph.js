@@ -10,6 +10,7 @@
 import { el } from "../dom.js";
 import { card, field, kvRows, numberInput } from "../components.js";
 import * as geo from "../graph/geometry.js";
+import { registerGraphCapture } from "../graph/snapshot.js";
 
 const DEG = "\u00b0";
 const NOTHING = "\u2014";
@@ -105,6 +106,10 @@ export function createGraphScreen(ctx) {
 
   function fitView() {
     if (!measureBox()) return;
+    fitViewFor(box.w, box.h);
+  }
+
+  function fitViewFor(w, h) {
     const pivot = [state.crane_x, state.crane_y];
     const jib = geo.effectiveJibLength(state.config, state.jib_length, state.ext_jib_length);
     const radius = geo.envelopeRadius(state.boom_length, jib, state.jib_offset);
@@ -128,7 +133,7 @@ export function createGraphScreen(ctx) {
     x1 += pad;
     y0 -= pad;
     y1 += pad;
-    view.scale = geo.clamp(Math.min(box.w / (x1 - x0), box.h / (y1 - y0)), 0.02, 2000.0);
+    view.scale = geo.clamp(Math.min(w / (x1 - x0), h / (y1 - y0)), 0.02, 2000.0);
     view.cx = (x0 + x1) / 2.0;
     view.cy = (y0 + y1) / 2.0;
   }
@@ -493,15 +498,7 @@ export function createGraphScreen(ctx) {
     }
   }
 
-  function redraw() {
-    if (!measureBox()) return;
-    const dpr = window.devicePixelRatio || 1;
-    const bw = Math.round(box.w * dpr);
-    const bh = Math.round(box.h * dpr);
-    if (canvas.width !== bw) canvas.width = bw;
-    if (canvas.height !== bh) canvas.height = bh;
-    const g = canvas.getContext("2d");
-    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  function paint(g) {
     g.fillStyle = COL_BG;
     g.fillRect(0, 0, box.w, box.h);
     drawGrid(g);
@@ -512,6 +509,18 @@ export function createGraphScreen(ctx) {
     drawCrane(g);
     drawBoom(g);
     drawHandles(g);
+  }
+
+  function redraw() {
+    if (!measureBox()) return;
+    const dpr = window.devicePixelRatio || 1;
+    const bw = Math.round(box.w * dpr);
+    const bh = Math.round(box.h * dpr);
+    if (canvas.width !== bw) canvas.width = bw;
+    if (canvas.height !== bh) canvas.height = bh;
+    const g = canvas.getContext("2d");
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    paint(g);
   }
 
   // --- interaction -----------------------------------------------------------
@@ -835,7 +844,7 @@ export function createGraphScreen(ctx) {
     syncFromWorkbook();
   }
 
-  function syncFromWorkbook() {
+  function syncFromWorkbook(publish = true) {
     const src = workbookSource();
     if (!src || !(src.boom > 0)) {
       workbookMode = false;
@@ -871,7 +880,7 @@ export function createGraphScreen(ctx) {
       deviated = false;
     }
     renderNote();
-    publishAngle();
+    if (publish) publishAngle();
   }
 
   // The angle the graph draws is the crane tab's "Boom angle" figure. Writing
@@ -1086,8 +1095,42 @@ export function createGraphScreen(ctx) {
     pivotScreen: () => w2s(state.crane_x, state.crane_y),
   };
 
+  // Render the diagram offscreen at report resolution. This must work even
+  // when the Graph tab has never been shown, and it re-syncs from the crane
+  // tab first so a jib change is reflected without toggling anything.
+  function renderDiagram(width, height) {
+    syncFromWorkbook(false);
+    const savedBox = { ...box };
+    const savedView = { ...view };
+    const savedDims = showDims;
+    try {
+      box.w = width;
+      box.h = height;
+      fitViewFor(width, height);
+      showDims = true;
+      const scale = 2;
+      const off = document.createElement("canvas");
+      off.width = Math.round(width * scale);
+      off.height = Math.round(height * scale);
+      const g = off.getContext("2d");
+      if (!g) return null;
+      g.setTransform(scale, 0, 0, scale, 0, 0);
+      paint(g);
+      return off.toDataURL("image/png");
+    } finally {
+      box.w = savedBox.w;
+      box.h = savedBox.h;
+      view.scale = savedView.scale;
+      view.cx = savedView.cx;
+      view.cy = savedView.cy;
+      showDims = savedDims;
+      redraw();
+    }
+  }
+
   syncEnabled();
   updateReadout();
+  registerGraphCapture(() => renderDiagram(900, 700));
 
   // The screen is re-rendered each time it is opened (and never rebuilt), so
   // first show fits the view; later shows just repaint what the user left.

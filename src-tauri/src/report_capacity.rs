@@ -41,7 +41,7 @@ pub fn factors_section(result: &SlingResult, spec: &HitchSpec) -> String {
     let combined = result.combined_reeve_factor;
     let eff = result.effective_legs;
     let tension = result.tension_each;
-    let mut out = vec![heading(3, "Rigging Factors & Tension Calculations")];
+    let mut out = vec![heading(4, "Rigging Factors & Tension Calculations")];
 
     if result.nested != 0 {
         let af_long = result.af_long.unwrap_or(1.0);
@@ -349,7 +349,7 @@ pub fn capacity_section(result: &SlingResult, spec: &HitchSpec) -> String {
     let capacity = result.leg_capacity;
     let rating_legs = result.rating_legs;
     let nested = result.nested != 0;
-    let mut out = vec![heading(4, "Final Capacity & Equipment Selection")];
+    let mut out = vec![heading(5, "Final Capacity & Equipment Selection")];
 
     // The multi-leg reference documents open section 4 with the installed tag
     // rating.
@@ -503,7 +503,7 @@ pub fn shows_notes(spec: &HitchSpec) -> bool {
 /// Section 5: the choke reduction table and the tag-rating leg rule.
 pub fn notes_section(result: &SlingResult, spec: &HitchSpec) -> String {
     let mut out = vec![
-        heading(5, "Note"),
+        heading(6, "Note"),
         subheading("Choke Notes"),
     ];
     if !CHOKE_KEYS.contains(&spec.key) {
@@ -749,7 +749,7 @@ mod tests {
     fn the_single_leg_factors_match_the_reference() {
         let factors = sections(&direct_hook()).0;
         for expected in [
-            "<h2>3. RIGGING FACTORS &amp; TENSION CALCULATIONS</h2>",
+            "<h2>4. RIGGING FACTORS &amp; TENSION CALCULATIONS</h2>",
             "\\[\\text{AF} = \\cos(0.00^\\circ) = 1.000\\]",
             "\\[\\text{RF}_{Base} = 1.00\\]",
             "Tension in Each Effective Legs:",
@@ -775,7 +775,7 @@ mod tests {
             "\\[\\text{Minimum WLL} = \\frac{\\text{Load Weight}}{\\text{Sling Legs} \\times \\text{Combined RF} \\times \\text{AF}} = \\frac{2{,}000}{1 \\times 0.7500 \\times 1.000} = 2{,}666.7\\ \\text{kg}\\]"
         ));
         for expected in [
-            "<h2>5. NOTE</h2>",
+            "<h2>6. NOTE</h2>",
             "Choke Notes",
             "(1) Percent of sling rated capacity in a choker hitch. The rating reduction is applied to the tag WLL, not to the resolved main-leg tension.",
             "Selected external angle: 120 \u{00b0} \u{2014} reduction factor 1.00.",
@@ -810,7 +810,7 @@ mod tests {
     #[test]
     fn a_single_leg_prints_no_tag_capacity_block() {
         let capacity = sections(&direct_hook()).1;
-        assert!(capacity.contains("<h2>4. FINAL CAPACITY &amp; EQUIPMENT SELECTION</h2>"));
+        assert!(capacity.contains("<h2>5. FINAL CAPACITY &amp; EQUIPMENT SELECTION</h2>"));
         assert!(!capacity.contains("Sling Leg Capacity Each"));
         assert!(capacity.contains(
             "\\[\\text{WLL Utilisation} = \\frac{\\text{Minimum WLL}}{\\text{Installed tag WLL}} \\times 100\\% = \\frac{2{,}000.0}{5{,}000.0} \\times 100\\% = 40.00\\%\\]"
@@ -887,12 +887,12 @@ mod tests {
     #[test]
     fn the_whole_sling_block_numbers_its_sections_in_order() {
         let html = report_with(&two_leg_direct());
-        for number in 1..=5 {
+        for number in 1..=6 {
             assert!(html.contains(&format!("<h2>{number}. ")), "missing section {number}");
         }
-        assert_eq!(count_h2(&html), 5);
-        assert!(html.contains("<h2>2. GEOMETRIC &amp; HEADROOM CALCULATIONS</h2>"));
-        assert!(html.contains("<h2>5. NOTE</h2>"));
+        assert_eq!(count_h2(&html), 6);
+        assert!(html.contains("<h2>3. GEOMETRIC &amp; HEADROOM CALCULATIONS</h2>"));
+        assert!(html.contains("<h2>6. NOTE</h2>"));
     }
 
     #[test]

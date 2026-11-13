@@ -1,6 +1,6 @@
 //! The uniform-lift report sections, ported from `ReportUniform.kt`.
 
-use crate::report::{equation, fmt, heading, p, plain, subheading, table, tex_deg, tex_num};
+use crate::report::{card_grid, equation, fmt, heading, p, plain, subheading, tex_deg, tex_num};
 use crate::sling::{
     HitchSpec, SecondaryGroup, SlingResult, ANGLE_BASIS_EXTERNAL,
 };
@@ -149,13 +149,10 @@ pub fn dimension_rows(result: &SlingResult, spec: &HitchSpec) -> Vec<(String, St
     )]
 }
 
-/// Section 1: what the sling is and what it is carrying.
+/// Section 2: what the sling is and what it is carrying.
 pub fn section_inputs(result: &SlingResult, spec: &HitchSpec) -> String {
-    let weight = result.load_weight;
     let length = result.sling_length;
-    let mut parts = vec![heading(1, "Lift Input Parameters")];
     let mut rows: Vec<(String, String)> = vec![
-        ("Load Weight".to_string(), fmt(Some(weight), 1, "kg")),
         (
             "Sling Configuration".to_string(),
             configuration_label(spec),
@@ -216,13 +213,11 @@ pub fn section_inputs(result: &SlingResult, spec: &HitchSpec) -> String {
             ));
         }
     }
-    parts.push(table(&rows));
-    parts.push(p(
-        "Load Weight is the gross load at hook. The 75% allowable window \
-         applies to the crane load chart only and is shown in the crane section.",
-        "",
-    ));
-    parts.join("")
+    format!(
+        "<section class=\"input-card\">{}{}</section>",
+        heading(2, "Lift Input Parameters"),
+        card_grid(&rows)
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -275,7 +270,7 @@ pub fn geometry_section(result: &SlingResult, spec: &HitchSpec) -> String {
     let angle = result.angle;
     let af = result.angle_factor;
     let headroom = result.hook_to_load;
-    let mut out = vec![heading(2, "Geometric & Headroom Calculations")];
+    let mut out = vec![heading(3, "Geometric & Headroom Calculations")];
 
     // --- The bridles -------------------------------------------------------
     if key == "three_leg_direct" || key == "four_leg_direct" {
@@ -1024,40 +1019,56 @@ mod tests {
         section_inputs(&result, hitch_spec(&result.hitch).unwrap())
     }
 
+    fn input_card(label: &str, value: &str) -> String {
+        format!(
+            "<td><span class=\"metric-k\">{label}</span>\
+             <span class=\"metric-v input-v\">{value}</span></td>"
+        )
+    }
+
     #[test]
     fn the_input_section_matches_the_reference() {
         let html = inputs("direct_hook");
         for expected in [
-            "<h2>1. LIFT INPUT PARAMETERS</h2>",
-            "<tr><th>Sling Configuration</th><td>1-Leg Sling Direct hook Hitch (1 Effective Leg)</td></tr>",
-            "<tr><th>Sling assembly count</th><td>1 continuous sling</td></tr>",
-            "<tr><th>Sling Total Length</th><td>7.0 m</td></tr>",
-            "<tr><th>Load Dimensions</th><td>Not required for a direct vertical hitch</td></tr>",
-            "Load Weight is the gross load at hook. The 75% allowable window applies to the crane load chart only and is shown in the crane section.",
+            "<h2>2. LIFT INPUT PARAMETERS</h2>".to_string(),
+            input_card(
+                "Sling Configuration",
+                "1-Leg Sling Direct hook Hitch (1 Effective Leg)",
+            ),
+            input_card("Sling assembly count", "1 continuous sling"),
+            input_card("Sling Total Length", "7.0 m"),
+            input_card(
+                "Load Dimensions",
+                "Not required for a direct vertical hitch",
+            ),
         ] {
-            assert!(html.contains(expected), "missing {expected}");
+            assert!(html.contains(&expected), "missing {expected}");
         }
+        assert!(!html.contains("Load Weight"));
     }
 
     #[test]
     fn a_nested_input_section_names_its_piles_and_its_second_sling() {
         let html = inputs("two_leg_nested_3leg");
         for expected in [
-            "<tr><th>Sling Configuration</th><td>3-Leg Sling in Each Leg of 2-Leg Sling Hitch (6 Effective Legs)</td></tr>",
-            "<tr><th>Sling assembly count</th><td>2-sling bridle set</td></tr>",
-            "<tr><th>No of Piles</th><td>3</td></tr>",
-            "<tr><th>Second Sling Total Length</th><td>0.600 m</td></tr>",
-            "<tr><th>Secondary Pick Spacing</th><td>0.200 m</td></tr>",
-            "<tr><th>Sling Legs per Pile</th><td>2</td></tr>",
+            input_card(
+                "Sling Configuration",
+                "3-Leg Sling in Each Leg of 2-Leg Sling Hitch (6 Effective Legs)",
+            ),
+            input_card("Sling assembly count", "2-sling bridle set"),
+            input_card("No of Piles", "3"),
+            input_card("Second Sling Total Length", "0.600 m"),
+            input_card("Secondary Pick Spacing", "0.200 m"),
+            input_card("Sling Legs per Pile", "2"),
         ] {
-            assert!(html.contains(expected), "missing {expected}");
+            assert!(html.contains(&expected), "missing {expected}");
         }
     }
 
     #[test]
     fn a_two_leg_nested_system_has_no_pile_row() {
         let html = inputs("two_leg_nested_2leg");
-        assert!(html.contains("<tr><th>Second Sling Total Length</th><td>0.600 m</td></tr>"));
+        assert!(html.contains(&input_card("Second Sling Total Length", "0.600 m")));
         assert!(!html.contains("No of Piles"));
         assert!(!html.contains("Sling Legs per Pile"));
     }
@@ -1066,7 +1077,7 @@ mod tests {
     fn the_direct_hook_geometry_matches_the_reference() {
         let html = geometry("direct_hook");
         for expected in [
-            "<h2>2. GEOMETRIC &amp; HEADROOM CALCULATIONS</h2>",
+            "<h2>3. GEOMETRIC &amp; HEADROOM CALCULATIONS</h2>",
             "\\[\\text{Wrap Length} = 0.000\\ \\text{m}\\]",
             "\\[\\text{Free Leg Length} = \\text{Total Length} - \\text{Wrap Length} = 7.0 - 0.000 = 7.000\\ \\text{m}\\]",
             "\\[\\text{Angle} = 0.0^\\circ\\]",
@@ -1153,7 +1164,7 @@ mod tests {
         for spec in crate::sling::HITCH_SPECS {
             let html = geometry(spec.key);
             assert!(
-                html.contains("<h2>2. GEOMETRIC &amp; HEADROOM CALCULATIONS</h2>"),
+                html.contains("<h2>3. GEOMETRIC &amp; HEADROOM CALCULATIONS</h2>"),
                 "{} heading",
                 spec.key
             );

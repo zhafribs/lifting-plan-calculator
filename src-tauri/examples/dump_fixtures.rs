@@ -137,6 +137,8 @@ fn main() {
             crane_error: solved.crane.error.clone(),
             signoff: Default::default(),
             issued_at: None,
+            working_diagram: None,
+            footer_center: None,
         },
         &["crane", "uniform", "nonuniform", "tandem"]
             .iter()

@@ -2,6 +2,7 @@
 
 use std::path::Path;
 use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
 use serde::Deserialize;
 
@@ -252,6 +253,8 @@ pub fn build_report(
     include: Vec<String>,
     issued_at: String,
     signoff: PlanSignoff,
+    working_diagram: Option<String>,
+    footer_center: Option<String>,
 ) -> String {
     let solved = solve_all_internal(&state);
     let tandem = match solved.tandem.result {
@@ -269,6 +272,8 @@ pub fn build_report(
         crane_error: solved.crane.error,
         signoff,
         issued_at: Some(issued_at).filter(|value| !value.is_empty()),
+        working_diagram,
+        footer_center,
     };
     wrap_katex(&build_report_html(&inputs, &include))
 }
@@ -331,6 +336,177 @@ pub async fn save_report(
     Ok(Some(target.to_string_lossy().to_string()))
 }
 
+/// A PDF renderer: Chromium on Linux, Edge or Chrome on Windows. Both are
+/// headless Chromium builds, so the same flags and the report's own
+/// `@page { margin: 25.4mm }` produce the 1-inch margin.
+fn pdf_browser_candidates() -> Vec<std::path::PathBuf> {
+    #[cfg(target_os = "windows")]
+    {
+        let mut candidates = Vec::new();
+        for variable in ["PROGRAMFILES(X86)", "PROGRAMFILES", "LOCALAPPDATA"] {
+            if let Ok(base) = std::env::var(variable) {
+                let base = std::path::Path::new(&base);
+                candidates.push(base.join("Microsoft/Edge/Application/msedge.exe"));
+                candidates.push(base.join("Google/Chrome/Application/chrome.exe"));
+            }
+        }
+        candidates
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        ["chromium", "chromium-browser", "google-chrome", "google-chrome-stable", "brave-browser"]
+            .iter()
+            .map(std::path::PathBuf::from)
+            .collect()
+    }
+}
+
+fn find_pdf_browser() -> Option<std::path::PathBuf> {
+    pdf_browser_candidates().into_iter().find(|candidate| {
+        if candidate.components().count() > 1 {
+            candidate.is_file()
+        } else {
+            std::process::Command::new(candidate)
+                .arg("--version")
+                .output()
+                .map(|output| output.status.success())
+                .unwrap_or(false)
+        }
+    })
+}
+
+/// `file:///…` with spaces escaped, for Windows paths as well as Unix ones.
+fn file_url(path: &Path) -> String {
+    let path = path.to_string_lossy().replace('\\', "/");
+    let path = path.trim_start_matches('/');
+    format!("file:///{}", path.replace(' ', "%20"))
+}
+
+fn write_katex_assets(app: &tauri::AppHandle, root: &Path) -> Result<(), String> {
+    let resolver = app.asset_resolver();
+    let katex_dir = root.join("vendor/katex");
+    std::fs::create_dir_all(katex_dir.join("fonts"))
+        .map_err(|error| format!("The PDF report assets could not be written: {error}"))?;
+    for file in crate::dto::KATEX_FILES {
+        let bare = format!("vendor/katex/{file}");
+        let rooted = format!("/{bare}");
+        if let Some(asset) = resolver.get(bare).or_else(|| resolver.get(rooted)) {
+            std::fs::write(katex_dir.join(file), asset.bytes)
+                .map_err(|error| format!("The PDF report assets could not be written: {error}"))?;
+        }
+    }
+    Ok(())
+}
+
+fn render_pdf(app: &tauri::AppHandle, html: &str, target: &Path) -> Result<(), String> {
+    let browser = find_pdf_browser().ok_or_else(|| {
+        "No PDF renderer was found. Install Chromium on Linux; Windows ships Edge. \
+         Alternatively, save the HTML and print it with the margins set to Default."
+            .to_string()
+    })?;
+
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_millis())
+        .unwrap_or(0);
+    let temp = std::env::temp_dir().join(format!(
+        "lifting-plan-pdf-{}-{stamp}",
+        std::process::id()
+    ));
+    std::fs::create_dir_all(&temp)
+        .map_err(|error| format!("The PDF workspace could not be created: {error}"))?;
+    let html_path = temp.join("report.html");
+    std::fs::write(&html_path, html)
+        .map_err(|error| format!("The PDF report could not be prepared: {error}"))?;
+    write_katex_assets(app, &temp)?;
+    let profile = temp.join("profile");
+    std::fs::create_dir_all(&profile)
+        .map_err(|error| format!("The PDF workspace could not be created: {error}"))?;
+
+    let mut child = std::process::Command::new(&browser)
+        .arg("--headless")
+        .arg("--disable-gpu")
+        .arg("--no-sandbox")
+        .arg("--no-pdf-header-footer")
+        .arg(format!("--user-data-dir={}", profile.display()))
+        .arg(format!("--print-to-pdf={}", target.display()))
+        .arg(file_url(&html_path))
+        .spawn()
+        .map_err(|error| format!("The PDF renderer could not start: {error}"))?;
+
+    let deadline = Instant::now() + Duration::from_secs(90);
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Ok(None) if Instant::now() < deadline => {
+                std::thread::sleep(Duration::from_millis(100));
+            }
+            Ok(None) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                let _ = std::fs::remove_dir_all(&temp);
+                let _ = std::fs::remove_file(target);
+                return Err("The PDF renderer did not finish within 90 seconds.".to_string());
+            }
+            Err(error) => {
+                let _ = std::fs::remove_dir_all(&temp);
+                let _ = std::fs::remove_file(target);
+                return Err(format!("The PDF renderer could not be followed: {error}"));
+            }
+        }
+    };
+    let _ = std::fs::remove_dir_all(&temp);
+
+    if !status.success() {
+        let _ = std::fs::remove_file(target);
+        return Err(format!(
+            "The PDF renderer exited with {status}. The report was not saved."
+        ));
+    }
+    let size = std::fs::metadata(target)
+        .map_err(|error| format!("The PDF was not written: {error}"))?
+        .len();
+    if size == 0 {
+        let _ = std::fs::remove_file(target);
+        return Err("The PDF renderer wrote an empty file.".to_string());
+    }
+    Ok(())
+}
+
+/// Write the report as a PDF with the report's own 1-inch page margin, using a
+/// headless Chromium build rather than the system print dialog.
+#[tauri::command]
+pub async fn save_pdf(
+    app: tauri::AppHandle,
+    html: String,
+    suggested_name: String,
+) -> Result<Option<String>, String> {
+    let handle = rfd::AsyncFileDialog::new()
+        .set_title("Save lifting plan as PDF")
+        .set_file_name(&suggested_name)
+        .add_filter("PDF document", &["pdf"])
+        .save_file()
+        .await;
+    let Some(handle) = handle else {
+        return Ok(None);
+    };
+    let mut target = handle.path().to_path_buf();
+    if !target
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .map(|extension| extension.eq_ignore_ascii_case("pdf"))
+        .unwrap_or(false)
+    {
+        target.set_extension("pdf");
+    }
+
+    let target_for_render = target.clone();
+    tauri::async_runtime::spawn_blocking(move || render_pdf(&app, &html, &target_for_render))
+        .await
+        .map_err(|error| format!("The PDF export failed: {error}"))??;
+    Ok(Some(target.to_string_lossy().to_string()))
+}
+
 /// Open a path or URL with the platform's own opener.
 pub fn open_with_desktop(target: &str) -> Result<(), String> {
     // The desktop opener differs per platform: `xdg-open` on Linux, `start` on
@@ -365,5 +541,27 @@ fn ensure_nonuniform_variant_marker(result: &NonuniformResult) -> &'static str {
     match result {
         NonuniformResult::Asym(_) => "asym",
         NonuniformResult::Tandem(_) => "tandem",
+    }
+}
+
+#[cfg(test)]
+mod pdf_export_tests {
+    use super::*;
+
+    #[test]
+    fn file_urls_escape_spaces_and_use_forward_slashes() {
+        assert_eq!(
+            file_url(Path::new("/tmp/a b.html")),
+            "file:///tmp/a%20b.html"
+        );
+        assert_eq!(
+            file_url(Path::new("C:\\Users\\A B\\report.html")),
+            "file:///C:/Users/A%20B/report.html"
+        );
+    }
+
+    #[test]
+    fn a_pdf_browser_candidate_list_is_always_present() {
+        assert!(!pdf_browser_candidates().is_empty());
     }
 }

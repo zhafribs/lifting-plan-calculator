@@ -3,6 +3,7 @@
 import { el, svgIcon, debounce } from "../dom.js";
 import { api, errorText } from "../api.js";
 import { card, field, textInput } from "../components.js";
+import { captureWorkingDiagram } from "../graph/snapshot.js";
 
 export function createReportScreen(ctx) {
   const { store, catalog, toast } = ctx;
@@ -10,8 +11,16 @@ export function createReportScreen(ctx) {
   const sections = { crane: true, uniform: true, nonuniform: true, tandem: true };
   let lastHtml = "";
   let lastSavedPath = null;
+  const DEFAULT_FOOTER =
+    "Prepared with Lifting Plan Calculator by Zhafri Syazwi ✉ zhafribs@gmail.com";
+  let footerText = DEFAULT_FOOTER;
   // The issue stamp belongs to the session, not to each keystroke.
-  const issuedAt = new Date().toLocaleString();
+  const now = new Date();
+  const issuedAt = [
+    String(now.getDate()).padStart(2, "0"),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    now.getFullYear(),
+  ].join("-");
   // Sign-off lines live here, not in the lift state: they are printed on the
   // plan and never reach the engine.
   const signoff = { reference: "", prepared_by: "", checked_by: "", approved_by: "" };
@@ -39,6 +48,35 @@ export function createReportScreen(ctx) {
     });
     checkBoxes[key] = input;
   }
+
+  const diagramInput = el("input", { type: "checkbox" });
+  diagramInput.addEventListener("change", () => {
+    if (!diagramInput.checked) {
+      schedulePreview(0);
+      return;
+    }
+    const url = captureWorkingDiagram();
+    if (!url) {
+      diagramInput.checked = false;
+      toast(
+        "The working range diagram could not be drawn; check the Graph tab inputs.",
+        "error",
+      );
+      return;
+    }
+    schedulePreview(0);
+  });
+  const diagramRow = el(
+    "label",
+    { class: "check" },
+    diagramInput,
+    el(
+      "span",
+      {},
+      el("div", { class: "t", text: "Working range diagram" }),
+      el("div", { class: "d", text: "The current crane and jib configuration" }),
+    ),
+  );
 
   const frame = el("iframe", { title: "Report preview" });
   const frameWrap = el("div", { class: "report-frame" }, frame);
@@ -111,6 +149,26 @@ export function createReportScreen(ctx) {
     "Print",
   );
 
+  const pdfButton = el(
+    "button",
+    {
+      class: "btn wide",
+      onClick: async () => {
+        try {
+          const html = await ensureHtml();
+          const path = await api.savePdf(html, "lifting-plan.pdf");
+          if (path) {
+            toast(`PDF saved to ${path}`, "ok");
+          }
+        } catch (error) {
+          toast(errorText(error), "error");
+        }
+      },
+    },
+    svgIcon("file", 15),
+    "Save as PDF...",
+  );
+
   const openButton = el(
     "button",
     {
@@ -147,9 +205,9 @@ export function createReportScreen(ctx) {
           body: el(
             "div",
             { class: "stack" },
-            ...Object.entries(checkNodes).map(([key, [title, desc]]) => {
+            ...Object.entries(checkNodes).flatMap(([key, [title, desc]]) => {
               const row = el("label", { class: "check" }, checkBoxes[key], el("span", {}, el("div", { class: "t", text: title }), el("div", { class: "d", text: desc })));
-              return row;
+              return key === "crane" ? [row, diagramRow] : [row];
             }),
           ),
           foot: el("span", { class: "faint", text: "The preview follows the other tabs live." }),
@@ -176,9 +234,38 @@ export function createReportScreen(ctx) {
           foot: el("span", { class: "faint", text: `Issued ${issuedAt}` }),
         }),
         card({
+          title: "Footer",
+          body: el(
+            "div",
+            { class: "stack" },
+            field({
+              label: "Centre text",
+              input: textInput({
+                value: footerText,
+                onInput: (value) => {
+                  footerText = value;
+                  schedulePreview(0);
+                },
+              }),
+            }),
+          ),
+          foot: el("span", { class: "faint", text: "Printed at the centre of every page." }),
+        }),
+        card({
           title: "Export",
-          body: el("div", { class: "stack" }, saveButton, printButton, openButton),
-          foot: el("span", { class: "faint", text: "Saved HTML keeps a copy of the KaTeX assets beside it, so it prints with the equations typeset." }),
+          body: el(
+            "div",
+            { class: "stack" },
+            el("p", {
+              class: "faint small",
+              text: "Working-range diagram: use Use in report in the Graph tab.",
+            }),
+            saveButton,
+            pdfButton,
+            printButton,
+            openButton,
+          ),
+          foot: el("span", { class: "faint", text: "Save as PDF writes A4 with 1-inch margins (Chromium on Linux, Edge on Windows). Saved HTML keeps a copy of the KaTeX assets beside it; when printing it, keep Margins on Default (1 inch)." }),
         }),
       ),
       frameWrap,
@@ -194,7 +281,9 @@ export function createReportScreen(ctx) {
       .filter(([, on]) => on)
       .map(([key]) => key);
     try {
-      const html = await api.buildReport(store.state, include, issuedAt, signoff);
+      const diagram = diagramInput.checked ? captureWorkingDiagram() : null;
+      if (diagramInput.checked && !diagram) diagramInput.checked = false;
+      const html = await api.buildReport(store.state, include, issuedAt, signoff, diagram, footerText);
       lastHtml = html;
       // srcdoc pages do not resolve the wrapper's relative asset paths, so the
       // stylesheet and scripts are pinned against the app's own base URL.

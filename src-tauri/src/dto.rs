@@ -16,6 +16,19 @@ use crate::nonuniform::{
 };
 use crate::sling::{example_inputs, HitchSpec, OneLegInputs, SlingResult, HITCH_SPECS};
 
+/// Who produces, checks and approves the plan, and the reference it carries.
+///
+/// Session-only, like everything else here: a plan is signed on paper, and the
+/// app's job is to print the lines and the date.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct PlanSignoff {
+    pub reference: String,
+    pub prepared_by: String,
+    pub checked_by: String,
+    pub approved_by: String,
+}
+
 /// The whole document, as the UI holds it.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]

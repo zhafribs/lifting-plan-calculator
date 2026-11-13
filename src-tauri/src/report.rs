@@ -7,6 +7,7 @@
 //! is unavailable.
 
 use crate::crane::{CraneResult, DESIGN_LOAD_RATIO};
+use crate::dto::PlanSignoff;
 use crate::model::LiftTotals;
 use crate::nonuniform::{NonuniformResult, TandemResult};
 use crate::report_capacity::{capacity_section, notes_section, shows_notes, factors_section};
@@ -240,6 +241,10 @@ pub struct ReportInputs {
     pub tandem_error: Option<String>,
     /// Why the crane check could not be solved, or None when it could.
     pub crane_error: Option<String>,
+    /// The plan's own reference and sign-off lines.
+    pub signoff: PlanSignoff,
+    /// When the plan was produced, as the client reported it.
+    pub issued_at: Option<String>,
 }
 
 /// The sections a report may carry, in the builder's own source order.
@@ -281,6 +286,31 @@ pub fn next_section_number(parts: &[String]) -> usize {
     highest + 1
 }
 
+/// The plan's own lines: reference, issue date and the three signatures.
+///
+/// Printed even when empty — a plan is signed on paper, and a blank line is
+/// what gets a name written on it. `table` escapes every cell.
+fn plan_details(signoff: &PlanSignoff, issued_at: Option<&str>) -> String {
+    let entry = |value: &str| {
+        if value.trim().is_empty() {
+            crate::figures::NOTHING.to_string()
+        } else {
+            value.trim().to_string()
+        }
+    };
+    format!(
+        "{}{}",
+        subheading("Plan details"),
+        table(&[
+            ("Plan reference".to_string(), entry(&signoff.reference)),
+            ("Issued".to_string(), entry(issued_at.unwrap_or_default())),
+            ("Prepared by".to_string(), entry(&signoff.prepared_by)),
+            ("Checked by".to_string(), entry(&signoff.checked_by)),
+            ("Approved by".to_string(), entry(&signoff.approved_by)),
+        ])
+    )
+}
+
 /// The selected report sections as HTML.
 ///
 /// Missing or incomplete state is rendered as an explicit setup message rather
@@ -292,6 +322,7 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
         REPORT_CSS.to_string(),
         "<div class=\"report\">".to_string(),
         "<h1>Lifting Plan Calculation</h1>".to_string(),
+        plan_details(&inputs.signoff, inputs.issued_at.as_deref()),
     ];
 
     if selected("crane") {
@@ -391,6 +422,21 @@ fn crane_section(crane: &CraneResult, gross: f64) -> String {
                 fmt(Some(crane.crane_capacity_kg), 2, "kg")
             } else {
                 "Not entered".to_string()
+            },
+        ),
+        (
+            "Booked rating check".to_string(),
+            match (crane.booked_ok, crane.required_capacity_kg) {
+                (Some(true), Some(required)) => format!(
+                    "{} \u{2265} {} required at 75%",
+                    fmt(Some(crane.crane_capacity_kg), 2, "kg"),
+                    fmt(Some(required), 2, "kg")
+                ),
+                (Some(false), Some(required)) => format!(
+                    "BELOW the {} required at 75%",
+                    fmt(Some(required), 2, "kg")
+                ),
+                _ => "Not checked".to_string(),
             },
         ),
         (
@@ -524,6 +570,53 @@ mod tests {
     }
 
     #[test]
+    fn the_plan_prints_its_own_details_and_sign_off_lines() {
+        let inputs = ReportInputs {
+            totals: LiftTotals::of(
+                &[LoadItem {
+                    weight_kg: 2000.0,
+                    ..LoadItem::default()
+                }],
+                &[] as &[TackleItem],
+            ),
+            signoff: crate::dto::PlanSignoff {
+                reference: "LP-2026-014".to_string(),
+                prepared_by: "A. Riggs".to_string(),
+                checked_by: "S. Appointed".to_string(),
+                approved_by: String::new(),
+            },
+            issued_at: Some("2026-11-13 09:41".to_string()),
+            ..ReportInputs::default()
+        };
+        let html = build_report_html(&inputs, &["crane".to_string()]);
+        assert!(html.contains("<tr><th>Plan reference</th><td>LP-2026-014</td></tr>"));
+        assert!(html.contains("<tr><th>Issued</th><td>2026-11-13 09:41</td></tr>"));
+        assert!(html.contains("<tr><th>Prepared by</th><td>A. Riggs</td></tr>"));
+        assert!(html.contains("<tr><th>Checked by</th><td>S. Appointed</td></tr>"));
+        assert!(html.contains("<tr><th>Approved by</th><td>\u{2014}</td></tr>"));
+    }
+
+    #[test]
+    fn a_plan_with_no_details_still_prints_the_blank_lines() {
+        let inputs = ReportInputs::default();
+        let html = build_report_html(&inputs, &["crane".to_string()]);
+        for label in ["Plan reference", "Issued", "Prepared by", "Checked by", "Approved by"] {
+            assert!(
+                html.contains(&format!("<tr><th>{label}</th><td>\u{2014}</td></tr>")),
+                "missing blank {label} line"
+            );
+        }
+    }
+
+    #[test]
+    fn the_plan_states_the_booked_rating_check() {
+        let html = report(example_crane(), &["crane"]);
+        assert!(html.contains(
+            "<tr><th>Booked rating check</th><td>90,000.00 kg \u{2265} 2,666.67 kg required at 75%</td></tr>"
+        ));
+    }
+
+    #[test]
     fn the_crane_table_carries_the_references_own_rows() {
         let html = report(example_crane(), &["crane"]);
         for expected in [
@@ -596,8 +689,10 @@ mod tests {
     fn a_section_is_gated_on_the_include_set() {
         let nothing = report(example_crane(), &[]);
         assert!(nothing.contains("<h1>Lifting Plan Calculation</h1>"));
+        // The plan's own details are always printed; the solved sections are not.
+        assert!(nothing.contains("Plan details"));
+        assert!(!nothing.contains("<th>Crane Model</th>"));
         assert!(!nothing.contains("Kobelco CKE90G-2"));
-        assert!(!nothing.contains("<table"));
         assert!(report(example_crane(), &["crane"]).contains("Kobelco CKE90G-2"));
     }
 

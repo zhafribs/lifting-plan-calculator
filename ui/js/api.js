@@ -17,7 +17,8 @@ export const api = {
   pickChartFile: () => invoke("pick_chart_file"),
   importChart: (state, path) => invoke("import_chart", { state, path }),
   chartUpdate: (crane, action) => invoke("chart_update", { crane, action }),
-  buildReport: (state, include) => invoke("build_report", { state, include }),
+  buildReport: (state, include, issuedAt, signoff) =>
+    invoke("build_report", { state, include, issuedAt, signoff }),
   saveReport: (html, suggestedName) => invoke("save_report", { html, suggestedName }),
   openReportFile: (path) => invoke("open_report_file", { path }),
   checkUpdate: () => invoke("check_update"),

@@ -479,6 +479,15 @@ export function createCraneScreen(ctx) {
       kvRows([
         ["Crane", result.crane_name || "—"],
         ["Crane rated capacity", result.crane_capacity_kg ? fmt(result.crane_capacity_kg, 2, "kg") : "—"],
+        [
+          "Booked rating check",
+          result.booked_ok === true
+            ? `≥ ${fmt(result.required_capacity_kg, 2, "kg")} required`
+            : result.booked_ok === false
+              ? `Below ${fmt(result.required_capacity_kg, 2, "kg")} required`
+              : "—",
+          result.booked_ok === false ? "over" : "",
+        ],
         ["Boom length", result.boom_m ? fmt(result.boom_m, 2, "m") : "—"],
         ["Boom angle", result.boom_angle_deg ? fmt(result.boom_angle_deg, 2, "°") : "—"],
         jibActive

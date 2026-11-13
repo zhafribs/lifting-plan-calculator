@@ -136,6 +136,8 @@ fn main() {
             tandem: tandem_result,
             tandem_error: solved.tandem.error.clone(),
             crane_error: solved.crane.error.clone(),
+            signoff: Default::default(),
+            issued_at: None,
         },
         &["crane", "uniform", "nonuniform", "tandem"]
             .iter()

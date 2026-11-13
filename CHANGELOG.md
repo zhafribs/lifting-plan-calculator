@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The crane's booked rating is now checked against the capacity the lift needs
+  at 75%, and governs when it fails: a crane too small for the lift can no
+  longer pass on a chart that reads high. See `docs/adr/0002-booked-rating-check.md`.
+- A plan carries its own details: reference, issue date, and Prepared /
+  Checked / Approved lines, printed even when blank so a paper copy can be
+  signed.
+
 ### Changed
 
 - A working radius (or a jib boom angle) outside the load chart's rated range is

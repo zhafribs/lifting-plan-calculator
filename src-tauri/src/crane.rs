@@ -270,6 +270,11 @@ pub struct CraneResult {
     pub chart_path: Option<String>,
     pub chart_capacity_kg: Option<f64>,
     pub capacity_usage_percent: Option<f64>,
+    /// The capacity this lift needs at the 75% rule: the gross load over 0.75.
+    pub required_capacity_kg: Option<f64>,
+    /// Whether the crane's booked rating clears `required_capacity_kg`. None
+    /// when no booked rating or no load has been entered.
+    pub booked_ok: Option<bool>,
     pub capacity_source: String,
     pub capacity_status: String,
     pub capacity_band: Option<UsageState>,
@@ -411,6 +416,19 @@ pub fn solve_crane(inputs: &CraneInputs, gross: f64) -> Result<CraneResult, Cran
         _ => None,
     };
 
+    // The chart answers "can the crane do it here"; the booked rating answers
+    // "is this machine big enough at all". A 20 t crane cannot pass a 30 t lift
+    // on a chart that happens to read high.
+    let required_capacity = if gross > 0.0 {
+        calc::required_chart_capacity(gross, CRANE_USAGE_RATIO).ok()
+    } else {
+        None
+    };
+    let booked_ok = match required_capacity {
+        Some(required) if capacity_kg > 0.0 => Some(capacity_kg >= required),
+        _ => None,
+    };
+
     let mut band: Option<UsageState> = None;
     // A workbook that is loaded but has nothing at this boom is not the same
     // as no chart at all, and the operator needs the difference.
@@ -438,6 +456,20 @@ pub fn solve_crane(inputs: &CraneInputs, gross: f64) -> Result<CraneResult, Cran
         status = "Enter the lift weight to check capacity.".to_string();
     }
 
+    // The booked rating governs when it fails: a crane too small for the lift
+    // cannot be made acceptable by a chart that reads high.
+    if booked_ok == Some(false) {
+        if let Some(required) = required_capacity {
+            band = Some(UsageState::Over);
+            status = format!(
+                "WARNING \u{2014} the crane's booked rating {} is below the {} required at the 75% rule.",
+                fmt(Some(capacity_kg), 2, "kg"),
+                fmt(Some(required), 2, "kg")
+            );
+            colour = COLOUR_OVER.to_string();
+        }
+    }
+
     Ok(CraneResult {
         crane_name: inputs.name.clone(),
         crane_capacity_t: inputs.capacity_t,
@@ -461,6 +493,8 @@ pub fn solve_crane(inputs: &CraneInputs, gross: f64) -> Result<CraneResult, Cran
         },
         chart_capacity_kg: chart_capacity,
         capacity_usage_percent: usage,
+        required_capacity_kg: required_capacity,
+        booked_ok,
         capacity_source: if use_manual {
             "Manual chart".to_string()
         } else if inputs.chart_source == "excel" && chart_capacity.is_some() {
@@ -854,6 +888,48 @@ mod tests {
         let result = solve_crane(&inputs, 500.0).unwrap();
         assert_eq!(result.boom_m, None);
         assert!((result.boom_angle_deg.unwrap() - 48.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_crane_booked_below_the_required_capacity_fails_on_the_booking() {
+        let inputs = CraneInputs {
+            capacity_t: 10.0,
+            chart_points: vec![(5.0, 30000.0)],
+            working_radius: 5.0,
+            chart_source: "excel".to_string(),
+            ..CraneInputs::default()
+        };
+        // 20 t gross needs 26,666.67 kg at 75%; the chart reads 30 t at 5 m.
+        let result = solve_crane(&inputs, 20000.0).unwrap();
+        assert_eq!(result.booked_ok, Some(false));
+        assert_eq!(result.capacity_band, Some(UsageState::Over));
+        assert_eq!(result.capacity_colour, COLOUR_OVER);
+        assert!((result.chart_capacity_kg.unwrap() - 30000.0).abs() < 1e-9);
+        assert_eq!(
+            result.capacity_status,
+            "WARNING \u{2014} the crane's booked rating 10,000.00 kg is below the \
+             26,666.67 kg required at the 75% rule."
+        );
+    }
+
+    #[test]
+    fn a_booked_rating_that_clears_the_requirement_leaves_the_chart_verdict() {
+        let result = solve_crane(&example_crane_inputs(), 2000.0).unwrap();
+        assert_eq!(result.booked_ok, Some(true));
+        assert!((result.required_capacity_kg.unwrap() - 2000.0 / 0.75).abs() < 1e-9);
+        assert_eq!(result.capacity_band, Some(UsageState::Within));
+    }
+
+    #[test]
+    fn no_booked_rating_means_no_booking_check() {
+        let inputs = CraneInputs {
+            capacity_t: 0.0,
+            ..example_crane_inputs()
+        };
+        let result = solve_crane(&inputs, 2000.0).unwrap();
+        assert_eq!(result.booked_ok, None);
+        assert_eq!(result.required_capacity_kg, Some(2000.0 / 0.75));
+        assert_eq!(result.capacity_band, Some(UsageState::Within));
     }
 
     #[test]

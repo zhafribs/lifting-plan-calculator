@@ -6,7 +6,7 @@ use std::sync::Mutex;
 use serde::Deserialize;
 
 use crate::crane::{solve_crane, CraneInputs};
-use crate::dto::{build_catalog, table_for, AppState, Catalog, ChartImport, ChartTable, SolveAll};
+use crate::dto::{build_catalog, table_for, AppState, Catalog, ChartImport, ChartTable, PlanSignoff, SolveAll};
 use crate::excel::{
     self, boom_changed, forget_chart, imported_inputs, radius_changed, LoadChartData,
 };use crate::nonuniform::{solve_nonuniform, NonuniformResult};
@@ -247,7 +247,12 @@ pub fn chart_update(
 
 /// The full report page, with the sections the caller asked for.
 #[tauri::command]
-pub fn build_report(state: AppState, include: Vec<String>) -> String {
+pub fn build_report(
+    state: AppState,
+    include: Vec<String>,
+    issued_at: String,
+    signoff: PlanSignoff,
+) -> String {
     let solved = solve_all_internal(&state);
     let tandem = match solved.tandem.result {
         Some(NonuniformResult::Tandem(result)) => Some(result),
@@ -262,6 +267,8 @@ pub fn build_report(state: AppState, include: Vec<String>) -> String {
         tandem,
         tandem_error: solved.tandem.error,
         crane_error: solved.crane.error,
+        signoff,
+        issued_at: Some(issued_at).filter(|value| !value.is_empty()),
     };
     wrap_katex(&build_report_html(&inputs, &include))
 }

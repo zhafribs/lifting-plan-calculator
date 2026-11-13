@@ -2,7 +2,7 @@
 
 import { el, svgIcon, debounce } from "../dom.js";
 import { api, errorText } from "../api.js";
-import { card } from "../components.js";
+import { card, field, textInput } from "../components.js";
 
 export function createReportScreen(ctx) {
   const { store, catalog, toast } = ctx;
@@ -10,6 +10,18 @@ export function createReportScreen(ctx) {
   const sections = { crane: true, uniform: true, nonuniform: true, tandem: true };
   let lastHtml = "";
   let lastSavedPath = null;
+  // The issue stamp belongs to the session, not to each keystroke.
+  const issuedAt = new Date().toLocaleString();
+  // Sign-off lines live here, not in the lift state: they are printed on the
+  // plan and never reach the engine.
+  const signoff = { reference: "", prepared_by: "", checked_by: "", approved_by: "" };
+
+  const planFields = [
+    ["reference", "Plan reference"],
+    ["prepared_by", "Prepared by"],
+    ["checked_by", "Checked by"],
+    ["approved_by", "Approved by"],
+  ];
 
   const checkBoxes = {};
   const checkNodes = {
@@ -143,6 +155,27 @@ export function createReportScreen(ctx) {
           foot: el("span", { class: "faint", text: "The preview follows the other tabs live." }),
         }),
         card({
+          title: "Plan details",
+          body: el(
+            "div",
+            { class: "stack" },
+            ...planFields.map(([key, label]) =>
+              field({
+                label,
+                input: textInput({
+                  value: signoff[key],
+                  placeholder: key === "reference" ? "LP-YYYY-NNN" : "",
+                  onInput: (value) => {
+                    signoff[key] = value;
+                    schedulePreview(0);
+                  },
+                }),
+              }),
+            ),
+          ),
+          foot: el("span", { class: "faint", text: `Issued ${issuedAt}` }),
+        }),
+        card({
           title: "Export",
           body: el("div", { class: "stack" }, saveButton, printButton, openButton),
           foot: el("span", { class: "faint", text: "Saved HTML keeps a copy of the KaTeX assets beside it, so it prints with the equations typeset." }),
@@ -161,7 +194,7 @@ export function createReportScreen(ctx) {
       .filter(([, on]) => on)
       .map(([key]) => key);
     try {
-      const html = await api.buildReport(store.state, include);
+      const html = await api.buildReport(store.state, include, issuedAt, signoff);
       lastHtml = html;
       // srcdoc pages do not resolve the wrapper's relative asset paths, so the
       // stylesheet and scripts are pinned against the app's own base URL.

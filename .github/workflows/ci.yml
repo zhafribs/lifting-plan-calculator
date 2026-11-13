@@ -23,7 +23,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # The notes check compares every tag against docs/releases/.
+          fetch-depth: 0
 
       - name: Install system dependencies
         run: |
@@ -33,12 +36,12 @@ jobs:
             zlib1g-dev libsoup-3.0-dev pkg-config
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
           components: clippy
 
       - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           workspaces: src-tauri
 
@@ -58,3 +61,13 @@ jobs:
             node --check /tmp/jschk/check.mjs
           done < <(find ui/js -name '*.js' -print0)
           echo "checked $(find ui/js -name '*.js' | wc -l) modules"
+
+      # Every tag has its own notes file, and the release workflow publishes
+      # exactly that file. A broken record is a red build, not a broken release.
+      # The self-test runs first: it proves the checker still rejects the defect
+      # it was written for, so a future edit cannot quietly weaken it.
+      - name: Self-test the release-notes checker
+        run: ./packaging/check-release-notes.sh --self-test
+
+      - name: Check the release notes
+        run: ./packaging/check-release-notes.sh

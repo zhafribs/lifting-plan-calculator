@@ -442,7 +442,7 @@ pub fn solve_crane(inputs: &CraneInputs, gross: f64) -> Result<CraneResult, Cran
         let state = calc::crane_usage_band(usage);
         band = Some(state);
         status = format!(
-            "{} \u{2014} {}% of capacity at working radius",
+            "{} \u{2014} {}% of chart capacity at working radius",
             state.wording(),
             fmt(Some(usage), 2, "")
         );
@@ -658,7 +658,7 @@ mod tests {
         assert_eq!(result.capacity_source, "Manual chart");
         assert_eq!(
             result.capacity_status,
-            "WITHIN LIMIT \u{2014} 12.50% of capacity at working radius"
+            "WITHIN LIMIT \u{2014} 12.50% of chart capacity at working radius"
         );
         assert_eq!(result.capacity_band, Some(UsageState::Within));
         assert_eq!(result.capacity_colour, "#2e7d52");

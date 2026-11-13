@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The printed plan's head is a summary card rather than a dense bordered grid:
+  a left-aligned "Lifting Plan" title with the crane and its configuration, the
+  capacity verdict beside the crane under a "Capacity check" label, the plan
+  details as a quiet strip, the six deciding figures as cards, and the chart
+  source as a caption. The sign-off labels are shorter ("Reference", "Issued",
+  …), and the booked rating is explained where it is shown.
+- The capacity verdict now says "of chart capacity at working radius", so it
+  cannot be read as the crane's booked capacity.
 - The printed plan's footer states its scope: a calculation aid only, not a
   certification of the lift, the crane or its operation, with every figure to be
   checked against the load chart and the site's lift plan. The credit line stays.

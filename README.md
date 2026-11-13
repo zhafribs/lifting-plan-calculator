@@ -142,7 +142,7 @@ shows its over-capacity band.
 **Summary report** — the printable plan, with each figure shown as its formula.
 This capture predates 2.5.0, which added the *Plan details* card, and 2.5.1,
 which packed the plan's head into the top third of the sheet; it also predates
-the scope line now printed at the foot of the plan:
+the scope line now printed at the foot of the plan and the summary-card head:
 
 ![Summary report](docs/screenshots/07-summary.png)
 

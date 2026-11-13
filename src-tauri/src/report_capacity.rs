@@ -912,7 +912,7 @@ mod tests {
             &["uniform".to_string()],
         );
         assert!(!html.contains("LIFT INPUT PARAMETERS"));
-        assert!(html.contains("<h1>Lifting Plan Calculation</h1>"));
+        assert!(html.contains("<h1>Lifting Plan</h1>"));
     }
 
     fn count_h2(html: &str) -> usize {

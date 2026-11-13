@@ -5,6 +5,23 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- The printed plan's footer states its scope: a calculation aid only, not a
+  certification of the lift, the crane or its operation, with every figure to be
+  checked against the load chart and the site's lift plan. The credit line stays.
+- The About screen no longer says the figures are the developer's
+  responsibility; it points the reader at the inputs and the load chart, which
+  is where the plan's accuracy actually comes from.
+- Release notes are written one file per tag in `docs/releases/`, and the
+  release workflow publishes exactly that file — a release page can no longer
+  repeat the notes before it.
+
+Nothing yet in the engine. Add user-visible changes here; the release notes for
+the next tag are written from this section (see `docs/releases/README.md`).
+
 ## [2.5.1] - 2026-11-13
 
 ### Changed

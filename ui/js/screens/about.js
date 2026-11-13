@@ -124,7 +124,7 @@ export function createAboutScreen(ctx) {
           ["Assistants", "Google AI, opencode, DeepSeek v4.1-flash"],
           ["Desktop stack", "Tauri (Rust engine) with a bundled KaTeX report renderer"],
         ]),
-        el("p", { class: "faint small", style: { margin: "10px 2px 0" }, text: "The assistants wrote code; the engineering decisions, the checks and the responsibility for the figures are the developer's." }),
+        el("p", { class: "faint small", style: { margin: "10px 2px 0" }, text: "The assistants wrote code; the engineering decisions and the checks are the authors'. The figures are only as good as the inputs and the load chart: check both, and check the plan you sign, against the source." }),
       ),
     }),
     el("p", { class: "faint small", style: { textAlign: "center", margin: "18px 0" }, text: "This desktop build opens straight into the calculator and needs no sign-in; all calculations run locally on this machine." }),

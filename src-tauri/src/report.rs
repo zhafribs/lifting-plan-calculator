@@ -416,9 +416,12 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
     }
 
     parts.push(
-        "<div class=\"report-footer\">This app is design and develop by \
-         Zhafri Syazwi <span class=\"email-icon\">&#9993;</span> \
-         zhafribs@gmail.com</div>"
+        "<div class=\"report-footer\"><b>Calculation aid only.</b> This plan \
+         does not certify the lift, the crane, the equipment or its operation. \
+         Check every figure against the manufacturer's load chart and your \
+         site's lift plan before the lift. Prepared with Lifting Plan \
+         Calculator by Zhafri Syazwi \
+         <span class=\"email-icon\">&#9993;</span> zhafribs@gmail.com</div>"
             .to_string(),
     );
     parts.push("</div>".to_string());

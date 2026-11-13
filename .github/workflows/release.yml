@@ -12,6 +12,9 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
+  # Pinned so the cached CLI binary has an explicit key: bump this to pick up a
+  # newer CLI, and the cache refreshes itself on the next run.
+  TAURI_CLI_VERSION: "2.12.4"
 
 jobs:
   linux-appimage:
@@ -37,8 +40,34 @@ jobs:
         with:
           workspaces: src-tauri
 
+      # The CLI is a one-time ~5 minute compile with `cargo install`. Its
+      # release carries prebuilt binaries, so fetch one and cache it instead.
+      - name: Cache the Tauri CLI
+        id: tauri-cli
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-tauri
+          key: cargo-tauri-${{ runner.os }}-${{ env.TAURI_CLI_VERSION }}
+
       - name: Install the Tauri CLI
-        run: cargo install tauri-cli --locked
+        if: steps.tauri-cli.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://github.com/tauri-apps/tauri/releases/download/tauri-cli-v${TAURI_CLI_VERSION}/cargo-tauri-x86_64-unknown-linux-gnu.tgz"
+          mkdir -p "$HOME/.cargo/bin"
+          curl -sSfL "$url" | tar -xz -C "$HOME/.cargo/bin" cargo-tauri
+          chmod +x "$HOME/.cargo/bin/cargo-tauri"
+
+      - name: Show the Tauri CLI version
+        run: cargo tauri --version
+
+      # linuxdeploy and appimagetool, fetched by the bundler on first use.
+      - name: Cache the bundler tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/tauri
+          key: tauri-tools-${{ runner.os }}-${{ env.TAURI_CLI_VERSION }}
 
       - name: Build the AppImage and its zsync sidecar
         env:
@@ -69,8 +98,35 @@ jobs:
         with:
           workspaces: src-tauri
 
+      - name: Cache the Tauri CLI
+        id: tauri-cli
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-tauri.exe
+          key: cargo-tauri-${{ runner.os }}-${{ env.TAURI_CLI_VERSION }}
+
       - name: Install the Tauri CLI
-        run: cargo install tauri-cli --locked
+        if: steps.tauri-cli.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $url = "https://github.com/tauri-apps/tauri/releases/download/tauri-cli-v$env:TAURI_CLI_VERSION/cargo-tauri-x86_64-pc-windows-msvc.zip"
+          $zip = Join-Path $env:RUNNER_TEMP "cargo-tauri.zip"
+          $out = Join-Path $env:RUNNER_TEMP "cargo-tauri"
+          Invoke-WebRequest -Uri $url -OutFile $zip
+          Expand-Archive -Path $zip -DestinationPath $out -Force
+          $dest = Join-Path $env:USERPROFILE ".cargo\bin"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Copy-Item (Join-Path $out "cargo-tauri.exe") $dest
+
+      - name: Show the Tauri CLI version
+        run: cargo tauri --version
+
+      # WiX and NSIS, fetched by the bundler on first use.
+      - name: Cache the bundler tools
+        uses: actions/cache@v4
+        with:
+          path: ~/AppData/Local/tauri
+          key: tauri-tools-${{ runner.os }}-${{ env.TAURI_CLI_VERSION }}
 
       # WiX (for the .msi) and NSIS (for the setup .exe) are fetched and driven
       # by the Tauri bundler; windows-latest already has the MSVC toolchain and

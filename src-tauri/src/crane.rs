@@ -10,7 +10,7 @@ use std::fmt;
 use serde::{Deserialize, Serialize};
 
 use crate::calc::{self, CalcException, UsageState, CRANE_USAGE_RATIO};
-use crate::figures::{self, fmt};
+use crate::figures::fmt;
 
 /// A crane input that cannot be solved, in words an operator can act on.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -564,13 +564,6 @@ pub fn manual_boom(radius: f64, rows: &[ChartRow]) -> Option<f64> {
 
 /// The crane design load ratio, exposed for the report.
 pub const DESIGN_LOAD_RATIO: f64 = CRANE_USAGE_RATIO;
-
-#[allow(dead_code)]
-fn unused_figures_marker() {
-    // Keeps the figures import obviously used in the module header; the
-    // compiler folds this away.
-    let _ = figures::NOTHING;
-}
 
 #[cfg(test)]
 mod tests {

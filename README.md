@@ -13,7 +13,10 @@ and as **MSI / NSIS installers** for Windows.
 
 Every figure is solved by the Rust engine (ported line-for-line from the
 Android Kotlin source) and covered by a test suite ported from the Kotlin unit
-tests. No sign-in, no network, no stored state: all calculations run locally.
+tests. There is no sign-in and no stored plan: all calculations run locally.
+The only network call is the update check you ask for on the About screen, and
+the only file written is a small `~/.cache/lifting-plan-calculator/ui.log`
+breadcrumb used to diagnose startup problems.
 
 ![Lifting Plan Calculator](docs/screenshots/01-overall.png)
 

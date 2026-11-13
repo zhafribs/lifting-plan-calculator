@@ -16,8 +16,9 @@
 # Tauri generated schemas
 /src-tauri/gen/schemas/
 
-# Local graphify knowledge graph
-/graphify-out/
+# Graphify knowledge graph: keep the built graph, ignore transient state
+/graphify-out/cache/
+/graphify-out/.graphify_*
 
 # OS / editor noise
 .DS_Store

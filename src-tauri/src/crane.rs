@@ -377,7 +377,13 @@ pub fn solve_crane(inputs: &CraneInputs, gross: f64) -> Result<CraneResult, Cran
     };
 
     let mut band: Option<UsageState> = None;
-    let mut status = "Enter the load chart to check capacity.".to_string();
+    // A workbook that is loaded but has nothing at this boom is not the same
+    // as no chart at all, and the operator needs the difference.
+    let mut status = if inputs.chart_source == "excel" {
+        "No charted capacity for this boom \u{2014} pick another boom.".to_string()
+    } else {
+        "Enter the load chart to check capacity.".to_string()
+    };
     let mut colour = COLOUR_NEUTRAL.to_string();
     if let Some(usage) = usage {
         let state = calc::crane_usage_band(usage);
@@ -590,6 +596,20 @@ mod tests {
         assert!((result.boom_m.unwrap() - 40.0).abs() < 1e-9);
         assert!((result.boom_angle_deg.unwrap() - 48.0).abs() < 1e-9);
         assert_eq!(result.chart_rows, 1);
+    }
+
+    #[test]
+    fn an_empty_boom_says_so_instead_of_asking_for_the_chart() {
+        let inputs = CraneInputs {
+            chart_source: "excel".to_string(),
+            ..CraneInputs::default()
+        };
+        let result = solve_crane(&inputs, 2000.0).unwrap();
+        assert_eq!(result.chart_capacity_kg, None);
+        assert_eq!(
+            result.capacity_status,
+            "No charted capacity for this boom \u{2014} pick another boom."
+        );
     }
 
     #[test]

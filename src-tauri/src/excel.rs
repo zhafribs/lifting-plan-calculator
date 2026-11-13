@@ -189,12 +189,15 @@ impl LoadChartData {
         calc::lookup_chart_capacity(&pairs, radius)
     }
 
-    /// Which boom column to read, by nearest match.
+    /// Which boom column to read, by nearest match. No boom reads the last
+    /// workbook entry, the same fallback [`selected_boom_index`] uses; reading
+    /// the first column instead would answer from a different boom than the
+    /// table and the radius picker are built from.
     pub fn boom_index(&self, boom_length: Option<f64>) -> usize {
-        if self.booms.is_empty() || boom_length.is_none() {
+        if self.booms.is_empty() {
             return 0;
         }
-        let wanted = boom_length.unwrap_or_default();
+        let wanted = boom_length.unwrap_or_else(|| *self.booms.last().unwrap());
         let mut best = 0;
         let mut best_diff = f64::MAX;
         for (index, boom) in self.booms.iter().enumerate() {
@@ -1051,8 +1054,14 @@ fn applied(
     gross: f64,
 ) -> CraneInputs {
     let suggested = suggest_radius(chart, gross, boom);
-    // A declined suggestion leaves the radius where it was.
-    let radius = suggested.unwrap_or(inputs.working_radius);
+    // A declined suggestion leaves the radius where it was. On a fresh import
+    // with nothing that carries the lift there is no radius to keep, so the
+    // chart's shortest one is used: the check then reports the overload at the
+    // chart's best figure instead of leaving the tab blank.
+    let radius = suggested
+        .or(Some(inputs.working_radius).filter(|radius| *radius > 0.0))
+        .or_else(|| chart_radii(chart, boom).first().copied())
+        .unwrap_or(0.0);
     let points = chart_points(chart, boom).unwrap_or_default();
     let mirrored = mirrored_point(chart, radius, boom);
     // A boom with no charted rows has nothing to mirror. Keeping the previous
@@ -1265,17 +1274,10 @@ pub fn jib_changed(
 pub fn chart_table(chart: &LoadChartData, boom: Option<f64>) -> (Vec<String>, Vec<Vec<String>>) {
     let mut rows: Vec<Vec<String>> = Vec::new();
     if chart.matrix {
-        for row in &chart.rows {
-            let Some(radius) = row.radius else {
-                continue;
-            };
-            if radius <= 0.0 {
-                continue;
-            }
-            let Some(capacity) = chart.capacity_at(radius, boom).ok() else {
-                continue;
-            };
-            if capacity > 0.0 {
+        // Only the radii this boom column actually charts: reading the other
+        // rows would clamp the last capacity down the rest of the table.
+        for (radius, capacity, _) in usable_rows(chart, boom) {
+            if radius > 0.0 && capacity > 0.0 {
                 rows.push(vec![
                     fmt(Some(radius), 2, "m"),
                     fmt(Some(capacity), 2, "kg"),
@@ -1677,6 +1679,47 @@ xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">
         assert!((jibs[0].offset - 5.0).abs() < 1e-9);
         assert!((jibs[5].length - 12.8).abs() < 1e-9);
         assert!((jibs[5].offset - 45.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_boom_table_lists_only_its_own_charted_radii() {
+        let chart = read_chart(&build_workbook("Chart", &sparse_matrix_rows())).unwrap();
+        let (headers, rows) = chart_table(&chart, Some(9.8));
+        assert_eq!(headers, vec!["Radius", "Capacity"]);
+        assert_eq!(rows.len(), 3);
+        assert_eq!(rows[2], vec!["10.00 m", "12,000.00 kg"]);
+        // The all-blank column has nothing to list, and nothing to invent.
+        assert!(chart_table(&chart, Some(13.3)).1.is_empty());
+    }
+
+    #[test]
+    fn importing_a_chart_that_cannot_carry_the_lift_starts_at_its_shortest_radius() {
+        let bytes = include_bytes!("../../docs/examples/TL-200M-Load-Chart Full.xlsx");
+        let chart = read_chart(bytes).unwrap();
+        let imported = imported_inputs(&CraneInputs::default(), &chart, "TL-200M", 20350.0);
+        // Nothing at the 31 m boom carries 20 350 kg at the 75% rule, so the
+        // import starts at the shortest charted radius and the check reports
+        // the overload rather than leaving the tab blank.
+        assert!((imported.working_radius - 5.0).abs() < 1e-9);
+        assert!((imported.rows[0].capacity - 6000.0).abs() < 1e-9);
+        let solved = crate::crane::solve_crane(&imported, 20350.0).unwrap();
+        assert!((solved.chart_capacity_kg.unwrap() - 6000.0).abs() < 1e-9);
+        assert_eq!(solved.capacity_band, Some(crate::calc::UsageState::Over));
+    }
+
+    #[test]
+    fn the_bundled_tl200m_workbook_parses_to_its_own_tables() {
+        let bytes = include_bytes!("../../docs/examples/TL-200M-Load-Chart Full.xlsx");
+        let chart = read_chart(bytes).unwrap();
+        assert!(chart.matrix);
+        assert_eq!(chart.booms, vec![9.8, 13.3, 16.9, 20.4, 23.9, 27.5, 31.0]);
+        assert_eq!(chart.unit, "ton");
+        assert_eq!(chart.position, Some((-1.6, 2.2)));
+        assert!((chart.capacity_at(5.0, Some(9.8)).unwrap() - 14850.0).abs() < 1e-9);
+        let jibs = jib_options(&chart);
+        assert_eq!(jibs.len(), 2);
+        assert!((jibs[1].length - 7.2).abs() < 1e-9);
+        assert!((jibs[1].offset - 30.0).abs() < 1e-9);
     }
 
     #[test]

@@ -11,13 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A boom switch to a column with no charted capacities leaves the manual entry
   blank instead of publishing the previous boom's capacity under the new boom's
-  label.
+  label; the Crane tab then says this boom has no charted capacity rather than
+  asking for a chart that is already loaded.
+- The chart table lists only the radii the selected boom column charts, instead
+  of repeating the last charted capacity down every remaining workbook radius.
+- A chart imported for a lift no charted radius carries starts at the shortest
+  charted radius and reports the overload, instead of leaving the tab blank.
 
 ### Added
 
-- The TR-350M-1 example load chart (`docs/examples/`) and a test that parses it
-  end to end, covering the main boom matrix, the crane position and the jib
-  tables.
+- The TR-350M-1 and TL-200M example load charts (`docs/examples/`) and tests
+  that parse them end to end, covering the main boom matrix, the crane position
+  and the jib tables.
 
 ## [2.4.0] - 2026-10-11
 

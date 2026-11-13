@@ -490,9 +490,9 @@ pub fn detect_header_row(
     rows: &[Vec<Option<CellValue>>],
     max_rows: usize,
 ) -> (Option<usize>, BTreeMap<String, usize>) {
-    for index in 0..rows.len().min(max_rows) {
+    for (index, row) in rows.iter().enumerate().take(max_rows) {
         let mut mapping: BTreeMap<String, usize> = BTreeMap::new();
-        for (column, cell) in rows[index].iter().enumerate() {
+        for (column, cell) in row.iter().enumerate() {
             if cell.is_none() || text(cell).trim().is_empty() {
                 continue;
             }

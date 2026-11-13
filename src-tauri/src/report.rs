@@ -195,8 +195,7 @@ pub fn label_value(label: &str, value: &str) -> String {
 
 pub fn label_or_not_entered(value: Option<&str>) -> String {
     match value {
-        None => "Not entered".to_string(),
-        Some(value) if value.is_empty() => "Not entered".to_string(),
+        None | Some("") => "Not entered".to_string(),
         Some(value) => value.to_string(),
     }
 }

@@ -279,22 +279,25 @@ pub fn geometry_section(result: &SlingResult, spec: &HitchSpec) -> String {
 
     // --- The bridles -------------------------------------------------------
     if key == "three_leg_direct" || key == "four_leg_direct" {
-        let radius_spread: f64;
-        let radius_latex: String;
-        if key == "three_leg_direct" {
+        let (radius_spread, radius_latex) = if key == "three_leg_direct" {
             let pick_distance = result.pick_distance;
-            radius_spread = pick_distance / 3.0f64.sqrt();
-            radius_latex = format!(
+            let spread = pick_distance / 3.0f64.sqrt();
+            (
+                spread,
+                format!(
                 "\\text{{Radius Spread}} = \\frac{{\\text{{Pick Distance}}}}{{\\sqrt{{3}}}} = \
                  \\frac{{{}}}{{\\sqrt{{3}}}} = {}\\ \\text{{m}}",
                 tex_num(Some(pick_distance), 3),
-                tex_num(Some(radius_spread), 3)
-            );
+                tex_num(Some(spread), 3)
+            ),
+            )
         } else {
             let pick_length = result.pick_length;
             let pick_width = result.pick_width;
-            radius_spread = (pick_length / 2.0).hypot(pick_width / 2.0);
-            radius_latex = format!(
+            let spread = (pick_length / 2.0).hypot(pick_width / 2.0);
+            (
+                spread,
+                format!(
                 "\\text{{Radius Spread}} = \
                  \\sqrt{{\\left(\\frac{{\\text{{Length}}}}{{2}}\\right)^2 + \
                  \\left(\\frac{{\\text{{Width}}}}{{2}}\\right)^2}} = \
@@ -302,9 +305,10 @@ pub fn geometry_section(result: &SlingResult, spec: &HitchSpec) -> String {
                  \\left(\\frac{{{}}}{{2}}\\right)^2}} = {}\\ \\text{{m}}",
                 tex_num(Some(pick_length), 1),
                 tex_num(Some(pick_width), 1),
-                tex_num(Some(radius_spread), 3)
-            );
-        }
+                tex_num(Some(spread), 3)
+            ),
+            )
+        };
         out.push(subheading(
             "Centroid Radius (Horizontal Distance from Center to Any Pick Point):",
         ));

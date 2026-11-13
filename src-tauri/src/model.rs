@@ -176,19 +176,25 @@ mod tests {
 
     #[test]
     fn a_half_typed_line_weighs_zero() {
-        let mut item = LoadItem::default();
-        item.load_type = LoadType::PerVolume;
-        // density defaulted, volume still zero
+        let item = LoadItem {
+            load_type: LoadType::PerVolume,
+            // density defaulted, volume still zero
+            ..LoadItem::default()
+        };
         assert_eq!(item.weight(), 0.0);
     }
 
     #[test]
     fn totals_add_load_and_tackle() {
-        let mut load = LoadItem::default();
-        load.weight_kg = 1000.0;
-        let mut tackle = TackleItem::default();
-        tackle.weight_kg = 100.0;
-        tackle.qty = 2;
+        let load = LoadItem {
+            weight_kg: 1000.0,
+            ..LoadItem::default()
+        };
+        let tackle = TackleItem {
+            weight_kg: 100.0,
+            qty: 2,
+            ..TackleItem::default()
+        };
         let totals = LiftTotals::of(&[load], &[tackle]);
         assert_eq!(totals.load, 1000.0);
         assert_eq!(totals.tackle, 200.0);

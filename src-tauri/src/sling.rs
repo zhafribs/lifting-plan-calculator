@@ -163,6 +163,9 @@ impl HitchSpec {
     }
 }
 
+// The arguments are the spec table's own columns; naming them here keeps the
+// table readable at the definition site.
+#[allow(clippy::too_many_arguments)]
 const fn spec(
     key: &'static str,
     label: &'static str,
@@ -1377,10 +1380,8 @@ pub fn solve_one_leg(
         "FAIL \u{2014} configured WLL is below the requirement".to_string()
     };
 
-    let secondary_equipment_ok: Option<bool> = match secondary_capacity {
-        None => None,
-        Some(_) => Some(secondary_utilisation.unwrap_or(0.0) <= 100.0),
-    };
+    let secondary_equipment_ok: Option<bool> =
+        secondary_capacity.map(|_| secondary_utilisation.unwrap_or(0.0) <= 100.0);
     let secondary_equipment_status = if secondary_capacity.is_none() {
         "No secondary tag WLL entered".to_string()
     } else if secondary_utilisation.unwrap_or(0.0) <= 100.0 {
@@ -1544,9 +1545,13 @@ mod tests {
         );
     }
 
+    /// One reference row: key, efficiency, capacity, required WLL, angle,
+    /// sling legs, tag legs, tag utilisation.
+    type ReferenceRow = (&'static str, f64, f64, f64, f64, i64, i64, f64);
+
     #[test]
     fn every_arrangement_matches_the_reference() {
-        let expected: [(&str, f64, f64, f64, f64, i64, i64, f64); 19] = [
+        let expected: [ReferenceRow; 19] = [
             ("direct_hook", 1.0, 2000.0, 2000.0, 7.0, 1, 1, 0.0),
             ("round_choke", 1.0, 2000.0, 2666.6666666666665, 3.9357576155998326, 1, 1, 0.0),
             ("rect_choke", 1.0, 2000.0, 4000.0, 5.653589838486225, 1, 1, 0.0),

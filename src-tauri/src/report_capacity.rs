@@ -285,6 +285,8 @@ fn tag_capacity_block(
 }
 
 /// The "WLL Utilisation" block.
+// The parameters are the block's own column list, read together at each call.
+#[allow(clippy::too_many_arguments)]
 fn utilisation_block(
     required: f64,
     capacity_label: &str,

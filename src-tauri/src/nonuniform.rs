@@ -292,6 +292,9 @@ fn tag_utilisation_exact(required_wll: f64, capacity: Option<f64>) -> Option<f64
 }
 
 /// What every scenario reports, so the shared rows have one home.
+// The tandem answer is the much larger of the two. Boxing one of them only
+// moves the difference to the other variant, so the ported shape stays.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum NonuniformResult {

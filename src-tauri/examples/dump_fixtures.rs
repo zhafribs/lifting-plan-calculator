@@ -105,7 +105,6 @@ fn main() {
         sling,
         nonuniform,
         tandem,
-        ..AppState::default()
     };
 
     let solved = solve_all(&state);

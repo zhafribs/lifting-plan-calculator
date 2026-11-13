@@ -186,7 +186,7 @@ impl LoadChartData {
                 })
                 .collect()
         };
-        calc::lookup_chart_capacity(&pairs, radius)
+        calc::lookup_chart_capacity(&pairs, radius).map_err(CalcException::from)
     }
 
     /// Which boom column to read, by nearest match. No boom reads the last

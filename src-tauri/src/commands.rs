@@ -261,6 +261,7 @@ pub fn build_report(state: AppState, include: Vec<String>) -> String {
         nonuniform_error: solved.nonuniform.error,
         tandem,
         tandem_error: solved.tandem.error,
+        crane_error: solved.crane.error,
     };
     wrap_katex(&build_report_html(&inputs, &include))
 }

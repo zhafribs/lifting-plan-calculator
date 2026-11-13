@@ -135,6 +135,7 @@ fn main() {
             nonuniform_error: solved.nonuniform.error.clone(),
             tandem: tandem_result,
             tandem_error: solved.tandem.error.clone(),
+            crane_error: solved.crane.error.clone(),
         },
         &["crane", "uniform", "nonuniform", "tandem"]
             .iter()

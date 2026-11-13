@@ -243,13 +243,13 @@ pub fn manual_radius(rows: &[ChartRow], current: f64) -> Option<f64> {
     }
 }
 
-/// A worked lift: a 90 t crane with one charted point, read at 8.00 m.
+/// A worked lift: a 90 t crane with one charted point, read at that point.
 pub fn example_crane_inputs() -> CraneInputs {
     CraneInputs {
         name: "Kobelco CKE90G-2".to_string(),
         capacity_t: 90.0,
         rows: vec![ChartRow {
-            radius: 10.0,
+            radius: 8.0,
             capacity: 16000.0,
             angle: 48.0,
             boom: 40.0,
@@ -286,6 +286,27 @@ pub const COLOUR_OVER: &str = "#b23b3b";
 /// Body colour for a figure that is not a judgement, as the desktop's neutral.
 pub const COLOUR_NEUTRAL: &str = "#2a3347";
 
+/// A chart lookup that words a refusal for the tab and chart that asked.
+///
+/// A chart rates the points it lists. Saying so — and naming the range — is
+/// what keeps "not rated here" from reading like a passed check.
+fn lookup_rated(
+    points: &[(f64, f64)],
+    key: f64,
+    subject: &str,
+    chart: &str,
+    unit: &str,
+) -> Result<f64, CraneInputException> {
+    calc::lookup_chart_capacity(points, key).map_err(|error| match error {
+        calc::ChartError::Outside { low, high } => CraneInputException(format!(
+            "The {subject} is outside {chart}, which rates {} to {}.",
+            fmt(Some(low), 2, unit),
+            fmt(Some(high), 2, unit)
+        )),
+        other => CraneInputException(other.to_string()),
+    })
+}
+
 /// The crane's capacity check at the working radius.
 ///
 /// The winner of the two charts is chosen by the source's own rule:
@@ -307,13 +328,20 @@ pub fn solve_crane(inputs: &CraneInputs, gross: f64) -> Result<CraneResult, Cran
     };
     let radius = inputs.working_radius;
 
+    // Only the chart in charge is read. A leftover copy of the other one must
+    // not answer, and must not refuse a radius the operator's own chart rates.
+    let manual_in_charge = inputs.chart_source != "excel" || inputs.chart_points.is_empty();
+
     // The workbook at the working radius.
     let mut chart_capacity: Option<f64> = None;
-    if !inputs.chart_points.is_empty() && radius > 0.0 {
-        chart_capacity = Some(
-            calc::lookup_chart_capacity(&inputs.chart_points, radius)
-                .map_err(|exc| CraneInputException(exc.0))?,
-        );
+    if !manual_in_charge && radius > 0.0 {
+        chart_capacity = Some(lookup_rated(
+            &inputs.chart_points,
+            radius,
+            "working radius",
+            "the load chart",
+            "m",
+        )?);
     }
 
     let manual_pairs = inputs.chart_pairs();
@@ -325,17 +353,21 @@ pub fn solve_crane(inputs: &CraneInputs, gross: f64) -> Result<CraneResult, Cran
         manual_pairs.first().map(|pair| pair.0).unwrap_or(0.0)
     };
 
+    // The manual entry is only read when it can be the chart in charge. A
+    // mirror row of the workbook is not a rating of its own, so it must not
+    // refuse a radius the workbook is about to answer.
     let mut manual_capacity: Option<f64> = None;
-    if !manual_pairs.is_empty() && effective_radius > 0.0 {
-        manual_capacity = Some(
-            calc::lookup_chart_capacity(&manual_pairs, effective_radius)
-                .map_err(|exc| CraneInputException(exc.0))?,
-        );
+    if manual_in_charge && !manual_pairs.is_empty() && effective_radius > 0.0 {
+        manual_capacity = Some(lookup_rated(
+            &manual_pairs,
+            effective_radius,
+            "working radius",
+            "the manual chart",
+            "m",
+        )?);
     }
 
-    let use_manual = !manual_pairs.is_empty()
-        && (inputs.chart_source != "excel" || inputs.chart_points.is_empty())
-        && manual_capacity.is_some();
+    let use_manual = manual_in_charge && manual_capacity.is_some();
     if use_manual {
         chart_capacity = manual_capacity;
     }
@@ -361,10 +393,13 @@ pub fn solve_crane(inputs: &CraneInputs, gross: f64) -> Result<CraneResult, Cran
     if inputs.jib_active() && inputs.chart_source == "excel" && !inputs.chart_jib_points.is_empty()
     {
         chart_capacity = match boom_angle {
-            Some(angle) => Some(
-                calc::lookup_chart_capacity(&inputs.chart_jib_points, angle)
-                    .map_err(|exc| CraneInputException(exc.0))?,
-            ),
+            Some(angle) => Some(lookup_rated(
+                &inputs.chart_jib_points,
+                angle,
+                "boom angle",
+                "the jib chart",
+                "\u{00b0}",
+            )?),
             None => None,
         };
     }
@@ -655,7 +690,7 @@ mod tests {
                 ..ChartRow::default()
             }],
             chart_points: vec![(5.0, 10000.0), (10.0, 5000.0)],
-            working_radius: 7.5,
+            working_radius: 12.0,
             ..CraneInputs::default()
         };
         let result = solve_crane(&inputs, 2000.0).unwrap();
@@ -822,10 +857,59 @@ mod tests {
     }
 
     #[test]
+    fn the_worked_example_reads_a_radius_its_own_chart_rates() {
+        let inputs = example_crane_inputs();
+        let pairs = inputs.chart_pairs();
+        let span = (pairs.first().unwrap().0, pairs.last().unwrap().0);
+        assert!(inputs.working_radius >= span.0 && inputs.working_radius <= span.1);
+        assert!(solve_crane(&inputs, 2000.0).is_ok());
+    }
+
+    #[test]
+    fn a_radius_outside_the_chart_is_refused_with_the_range_it_rates() {
+        let inputs = CraneInputs {
+            chart_points: vec![(5.0, 10000.0), (10.0, 5000.0)],
+            working_radius: 22.0,
+            chart_source: "excel".to_string(),
+            ..CraneInputs::default()
+        };
+        assert_eq!(
+            solve_crane(&inputs, 2000.0).unwrap_err().0,
+            "The working radius is outside the load chart, which rates 5.00 m to 10.00 m."
+        );
+    }
+
+    #[test]
+    fn a_jib_angle_outside_the_jib_sheet_is_refused_with_its_own_range() {
+        let inputs = CraneInputs {
+            chart_points: vec![(5.0, 10000.0), (10.0, 5000.0)],
+            working_radius: 5.0,
+            chart_source: "excel".to_string(),
+            chart_booms: vec![34.0],
+            chart_boom: Some(34.0),
+            chart_jibs: vec![JibOption {
+                length: 7.2,
+                offset: 5.0,
+            }],
+            jib_config: "boom_jib".to_string(),
+            jib_length: Some(7.2),
+            jib_offset: Some(5.0),
+            chart_jib_points: vec![(45.0, 2500.0), (80.0, 5000.0)],
+            boom_angle_deg: Some(20.0),
+            ..CraneInputs::default()
+        };
+        assert_eq!(
+            solve_crane(&inputs, 2000.0).unwrap_err().0,
+            "The boom angle is outside the jib chart, which rates 45.00 \u{00b0} to 80.00 \u{00b0}."
+        );
+    }
+
+    #[test]
     fn negative_radius_on_the_chart_is_named() {
         let inputs = CraneInputs {
             chart_points: vec![(10.0, 0.0)],
             working_radius: 5.0,
+            chart_source: "excel".to_string(),
             ..CraneInputs::default()
         };
         assert_eq!(

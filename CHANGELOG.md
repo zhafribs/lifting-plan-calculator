@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- A working radius (or a jib boom angle) outside the load chart's rated range is
+  refused, naming the range the chart rates, instead of carrying the nearest
+  charted capacity into a figure. The plan states the refusal in its crane
+  section. See `docs/adr/0001-rated-capacity-envelope.md`.
+- The Load example charts the radius it reads (8.00 m), so its fired figures are
+  a rated lift rather than a clamped one.
+
 ### Fixed
 
 - A boom switch to a column with no charted capacities leaves the manual entry

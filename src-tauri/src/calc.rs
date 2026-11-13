@@ -162,31 +162,66 @@ pub fn design_weight(gross: f64) -> CalcResult<f64> {
     required_chart_capacity(gross, CRANE_USAGE_RATIO)
 }
 
+/// Why a load chart could not answer for a point.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ChartError {
+    /// The chart holds no usable points at all.
+    Empty,
+    /// A charted capacity is zero or negative, so the chart is not a rating.
+    NonPositiveCapacity,
+    /// A negative point was asked for.
+    Negative,
+    /// The point lies outside the charted span, which is all a chart rates.
+    Outside { low: f64, high: f64 },
+}
+
+impl fmt::Display for ChartError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ChartError::Empty => f.write_str("Load chart is empty - nothing to look up."),
+            ChartError::NonPositiveCapacity => {
+                f.write_str("Load chart contains a non-positive capacity.")
+            }
+            ChartError::Negative => f.write_str("Working radius cannot be negative."),
+            ChartError::Outside { low, high } => {
+                write!(f, "Outside the charted range ({low} to {high}).")
+            }
+        }
+    }
+}
+
+impl std::error::Error for ChartError {}
+
+impl From<ChartError> for CalcException {
+    fn from(value: ChartError) -> Self {
+        CalcException(value.to_string())
+    }
+}
+
 /// Look up the rated capacity (kg) on a load chart at `radius`.
 ///
-/// Below the smallest charted radius the capacity falls back to the closest
-/// charted value; beyond the largest it falls back to the most distant value
-/// (conservative). Between two charted radii a linear interpolation is used.
-pub fn lookup_chart_capacity(rows: &[(f64, f64)], radius: f64) -> CalcResult<f64> {
+/// Between two charted radii a linear interpolation is used. Outside the
+/// charted span the lookup refuses: a chart rates the radii it lists, and a
+/// figure carried in from the nearest row would be a rating nobody published.
+/// That refusal is the difference between "not rated" and "within limit".
+pub fn lookup_chart_capacity(rows: &[(f64, f64)], radius: f64) -> Result<f64, ChartError> {
     let mut chart: Vec<(f64, f64)> = rows.iter().copied().filter(|it| it.0 >= 0.0).collect();
     chart.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
     if chart.is_empty() {
-        return Err(err("Load chart is empty - nothing to look up."));
+        return Err(ChartError::Empty);
     }
     for (_, capacity) in &chart {
         if *capacity <= 0.0 {
-            return Err(err("Load chart contains a non-positive capacity."));
+            return Err(ChartError::NonPositiveCapacity);
         }
     }
     if radius < 0.0 {
-        return Err(err("Working radius cannot be negative."));
+        return Err(ChartError::Negative);
     }
-
-    if radius <= chart[0].0 {
-        return Ok(chart[0].1);
-    }
-    if radius >= chart[chart.len() - 1].0 {
-        return Ok(chart[chart.len() - 1].1);
+    let low = chart[0].0;
+    let high = chart[chart.len() - 1].0;
+    if radius < low || radius > high {
+        return Err(ChartError::Outside { low, high });
     }
 
     let mut lo = chart[0];
@@ -320,17 +355,42 @@ mod tests {
     #[test]
     fn chart_lookup_interpolates_between_charted_radii() {
         let chart = vec![(5.0, 10000.0), (10.0, 5000.0)];
-        assert!((lookup_chart_capacity(&chart, 3.0).unwrap() - 10000.0).abs() < 1e-9);
         assert!((lookup_chart_capacity(&chart, 5.0).unwrap() - 10000.0).abs() < 1e-9);
         assert!((lookup_chart_capacity(&chart, 7.5).unwrap() - 7500.0).abs() < 1e-9);
         assert!((lookup_chart_capacity(&chart, 10.0).unwrap() - 5000.0).abs() < 1e-9);
-        assert!((lookup_chart_capacity(&chart, 22.0).unwrap() - 5000.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn chart_lookup_refuses_a_radius_the_chart_does_not_rate() {
+        let chart = vec![(5.0, 10000.0), (10.0, 5000.0)];
+        assert_eq!(
+            lookup_chart_capacity(&chart, 3.0).unwrap_err(),
+            ChartError::Outside {
+                low: 5.0,
+                high: 10.0
+            }
+        );
+        assert_eq!(
+            lookup_chart_capacity(&chart, 22.0).unwrap_err(),
+            ChartError::Outside {
+                low: 5.0,
+                high: 10.0
+            }
+        );
+        // A one-point chart rates exactly its own radius, nothing else.
+        let single = vec![(10.0, 16000.0)];
+        assert!((lookup_chart_capacity(&single, 10.0).unwrap() - 16000.0).abs() < 1e-9);
+        assert!(matches!(
+            lookup_chart_capacity(&single, 8.0).unwrap_err(),
+            ChartError::Outside { .. }
+        ));
     }
 
     #[test]
     fn lookup_rejects_an_empty_chart() {
+        assert_eq!(lookup_chart_capacity(&[], 1.0).unwrap_err(), ChartError::Empty);
         assert_eq!(
-            lookup_chart_capacity(&[], 1.0).unwrap_err().0,
+            lookup_chart_capacity(&[], 1.0).unwrap_err().to_string(),
             "Load chart is empty - nothing to look up."
         );
     }

@@ -238,6 +238,8 @@ pub struct ReportInputs {
     pub tandem: Option<TandemResult>,
     /// Why the tandem lift could not be solved, or None when it could.
     pub tandem_error: Option<String>,
+    /// Why the crane check could not be solved, or None when it could.
+    pub crane_error: Option<String>,
 }
 
 /// The sections a report may carry, in the builder's own source order.
@@ -295,6 +297,14 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
     if selected("crane") {
         if let Some(crane) = &inputs.crane {
             parts.push(crane_section(crane, gross));
+        } else if let Some(error) = &inputs.crane_error {
+            // The check could not be made. Saying so keeps a plan from looking
+            // like it simply had no crane section.
+            parts.push(subheading("Crane capacity check"));
+            parts.push(p(
+                &format!("{error} The crane check is not part of this plan."),
+                "",
+            ));
         }
     }
 
@@ -488,6 +498,29 @@ mod tests {
             &inputs,
             &include.iter().map(|value| value.to_string()).collect::<Vec<_>>(),
         )
+    }
+
+    #[test]
+    fn a_crane_check_that_could_not_be_made_is_named_in_the_plan() {
+        let inputs = ReportInputs {
+            totals: LiftTotals::of(
+                &[LoadItem {
+                    weight_kg: 2000.0,
+                    ..LoadItem::default()
+                }],
+                &[] as &[TackleItem],
+            ),
+            crane: None,
+            crane_error: Some(
+                "The working radius is outside the load chart, which rates 5.00 m to 10.00 m."
+                    .to_string(),
+            ),
+            ..ReportInputs::default()
+        };
+        let html = build_report_html(&inputs, &["crane".to_string()]);
+        assert!(html.contains("Crane capacity check"));
+        assert!(html.contains("rates 5.00 m to 10.00 m"));
+        assert!(html.contains("The crane check is not part of this plan."));
     }
 
     #[test]

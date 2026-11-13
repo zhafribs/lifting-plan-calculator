@@ -56,6 +56,20 @@ pub const REPORT_CSS: &str = r#"
 .report .pass { color: #176b3a; font-weight: bold; }
 .report .fail { color: #9b1c1c; font-weight: bold; }
 .report .small { font-size: 7pt; } .report .note { font-size: 7pt; } .report .status { font-size: 7pt; } .report .meta { font-size: 7pt; } .report .report-footer { font-size: 7pt; } .report p { font-size: 7pt; } .report td, .report th { font-size: 7pt; } .report .equation { font-size: 6.5pt; } .report h1 { font-size: 12pt; } .report h2 { font-size: 9pt; } .report h3 { font-size: 8pt; }
+/* The plan's head: title, details and the crane verdict packed into the top
+   third of the first page. Values are 7pt like the body; the two-up table
+   halves the rows a key/value list costs. */
+.report h1 { font-size: 10pt; margin: 0 0 2pt; }
+.report h3 { margin: 3pt 0 1pt; }
+.report table.two-up { margin: 1pt 0 3pt; }
+.report table.two-up th { width: 17%; }
+.report table.two-up td { width: 33%; }
+.report table.two-up td, .report table.two-up th { padding: 0.5pt 2pt; }
+.report .verdict { font-size: 8pt; font-weight: bold; margin: 2pt 0 2pt; padding: 1.5pt 4pt;
+    border-left: 3pt solid #7c8998; background: #f4f6f8; line-height: 1.15; }
+.report .verdict.within { border-left-color: #2e7d52; color: #176b3a; }
+.report .verdict.caution { border-left-color: #b06a1e; color: #8a5517; }
+.report .verdict.over { border-left-color: #b23b3b; color: #9b1c1c; }
 </style>
 "#;
 
@@ -285,10 +299,30 @@ pub fn next_section_number(parts: &[String]) -> usize {
     highest + 1
 }
 
+/// A compact key/value table: two pairs per row, half the height of [`table`].
+///
+/// The plan's head is read as one block — machine, chart, verdict — so it is
+/// laid out two pairs wide to keep the whole block inside a third of the page.
+fn table_two_up(rows: &[(String, String)]) -> String {
+    let mut out = String::from("<table class=\"kv two-up\"><tbody>");
+    for chunk in rows.chunks(2) {
+        out.push_str("<tr>");
+        for (key, value) in chunk {
+            out.push_str(&format!("<th>{}</th><td>{}</td>", escape(key), escape(value)));
+        }
+        if chunk.len() == 1 {
+            out.push_str("<th></th><td></td>");
+        }
+        out.push_str("</tr>");
+    }
+    out.push_str("</tbody></table>");
+    out
+}
+
 /// The plan's own lines: reference, issue date and the three signatures.
 ///
 /// Printed even when empty — a plan is signed on paper, and a blank line is
-/// what gets a name written on it. `table` escapes every cell.
+/// what gets a name written on it. `table_two_up` escapes every cell.
 fn plan_details(signoff: &PlanSignoff, issued_at: Option<&str>) -> String {
     let entry = |value: &str| {
         if value.trim().is_empty() {
@@ -300,7 +334,7 @@ fn plan_details(signoff: &PlanSignoff, issued_at: Option<&str>) -> String {
     format!(
         "{}{}",
         subheading("Plan details"),
-        table(&[
+        table_two_up(&[
             ("Plan reference".to_string(), entry(&signoff.reference)),
             ("Issued".to_string(), entry(issued_at.unwrap_or_default())),
             ("Prepared by".to_string(), entry(&signoff.prepared_by)),
@@ -406,25 +440,73 @@ fn crane_section(crane: &CraneResult, gross: f64) -> String {
         .collect::<Vec<String>>()
         .join(" ");
 
-    parts.push(table(&[
-        (
-            "Crane Model".to_string(),
+    let pair = |key: &str, value: String| {
+        format!(
+            "<th>{}</th><td>{}</td>",
+            escape(key),
+            escape(&value)
+        )
+    };
+    let mut grid = String::from("<table class=\"kv two-up\"><tbody>");
+    grid.push_str(&format!(
+        "<tr>{}{}</tr>",
+        pair(
+            "Crane Model",
             if crane.crane_name.is_empty() {
                 "Not entered".to_string()
             } else {
                 crane.crane_name.clone()
-            },
+            }
         ),
-        (
-            "Crane rated capacity".to_string(),
+        pair(
+            "Crane rated capacity",
             if crane.crane_capacity_kg != 0.0 {
                 fmt(Some(crane.crane_capacity_kg), 2, "kg")
             } else {
                 "Not entered".to_string()
-            },
+            }
+        )
+    ));
+    grid.push_str(&format!(
+        "<tr>{}{}</tr>",
+        pair(
+            "Boom length",
+            match crane.boom_m {
+                Some(boom) if boom != 0.0 => fmt(Some(boom), 2, "m"),
+                _ => "Not entered".to_string(),
+            }
         ),
-        (
-            "Booked rating check".to_string(),
+        pair(
+            "Boom angle",
+            match crane.boom_angle_deg {
+                Some(angle) if angle != 0.0 => fmt(Some(angle), 2, "\u{00b0}"),
+                _ => "Not entered".to_string(),
+            }
+        )
+    ));
+    grid.push_str(&format!(
+        "<tr>{}{}</tr>",
+        pair(
+            "Working radius",
+            if crane.radius_m != 0.0 {
+                fmt(Some(crane.radius_m), 2, "m")
+            } else {
+                "Not entered".to_string()
+            }
+        ),
+        pair(
+            "Chart capacity at radius",
+            match chart_capacity {
+                Some(capacity) => fmt(Some(capacity), 2, "kg"),
+                None => "Not evaluated".to_string(),
+            }
+        )
+    ));
+    grid.push_str(&format!(
+        "<tr>{}{}</tr>",
+        pair("Gross load at hook", fmt(Some(gross), 2, "kg")),
+        pair(
+            "Booked rating check",
             match (crane.booked_ok, crane.required_capacity_kg) {
                 (Some(true), Some(required)) => format!(
                     "{} \u{2265} {} required at 75%",
@@ -436,50 +518,35 @@ fn crane_section(crane: &CraneResult, gross: f64) -> String {
                     fmt(Some(required), 2, "kg")
                 ),
                 _ => "Not checked".to_string(),
-            },
-        ),
-        (
-            "Boom length".to_string(),
-            match crane.boom_m {
-                Some(boom) if boom != 0.0 => fmt(Some(boom), 2, "m"),
-                _ => "Not entered".to_string(),
-            },
-        ),
-        (
-            "Boom Angle".to_string(),
-            match crane.boom_angle_deg {
-                Some(angle) if angle != 0.0 => fmt(Some(angle), 2, "\u{00b0}"),
-                _ => "Not entered".to_string(),
-            },
-        ),
-        (
-            "Working radius".to_string(),
-            if crane.radius_m != 0.0 {
-                fmt(Some(crane.radius_m), 2, "m")
-            } else {
-                "Not entered".to_string()
-            },
-        ),
-        (
-            "Chart capacity at radius".to_string(),
-            match chart_capacity {
-                Some(capacity) => fmt(Some(capacity), 2, "kg"),
-                None => "Not evaluated".to_string(),
-            },
-        ),
-        (
-            "Chart source".to_string(),
-            if chart_source.is_empty() {
-                "Not evaluated".to_string()
-            } else {
-                chart_source
-            },
-        ),
-        (
-            "Gross load at hook".to_string(),
-            fmt(Some(gross), 2, "kg"),
-        ),
-    ]));
+            }
+        )
+    ));
+    grid.push_str(&format!(
+        "<tr><th>Chart source</th><td colspan=\"3\">{}</td></tr>",
+        escape(if chart_source.is_empty() {
+            "Not evaluated"
+        } else {
+            &chart_source
+        })
+    ));
+    grid.push_str("</tbody></table>");
+    parts.push(grid);
+
+    // The verdict, in the band's own words, straight after the figures it
+    // judges and before the working that produced them.
+    let band_class = crane
+        .capacity_band
+        .map(|band| band.key())
+        .unwrap_or("neutral");
+    parts.push(format!(
+        "<p class=\"verdict {}\">{}</p>",
+        band_class,
+        escape(if capacity_status.is_empty() {
+            "Not evaluated"
+        } else {
+            &capacity_status
+        })
+    ));
 
     // W is a crane load-chart sizing load. It belongs to the crane check only
     // and is deliberately not used by the sling sections.
@@ -508,14 +575,6 @@ fn crane_section(crane: &CraneResult, gross: f64) -> String {
             )));
         }
     }
-    parts.push(p(
-        if capacity_status.is_empty() {
-            "Not evaluated"
-        } else {
-            &capacity_status
-        },
-        "",
-    ));
 
     parts.join("")
 }
@@ -588,11 +647,11 @@ mod tests {
             ..ReportInputs::default()
         };
         let html = build_report_html(&inputs, &["crane".to_string()]);
-        assert!(html.contains("<tr><th>Plan reference</th><td>LP-2026-014</td></tr>"));
-        assert!(html.contains("<tr><th>Issued</th><td>2026-11-13 09:41</td></tr>"));
-        assert!(html.contains("<tr><th>Prepared by</th><td>A. Riggs</td></tr>"));
-        assert!(html.contains("<tr><th>Checked by</th><td>S. Appointed</td></tr>"));
-        assert!(html.contains("<tr><th>Approved by</th><td>\u{2014}</td></tr>"));
+        assert!(html.contains("<th>Plan reference</th><td>LP-2026-014</td>"));
+        assert!(html.contains("<th>Issued</th><td>2026-11-13 09:41</td>"));
+        assert!(html.contains("<th>Prepared by</th><td>A. Riggs</td>"));
+        assert!(html.contains("<th>Checked by</th><td>S. Appointed</td>"));
+        assert!(html.contains("<th>Approved by</th><td>\u{2014}</td>"));
     }
 
     #[test]
@@ -601,7 +660,7 @@ mod tests {
         let html = build_report_html(&inputs, &["crane".to_string()]);
         for label in ["Plan reference", "Issued", "Prepared by", "Checked by", "Approved by"] {
             assert!(
-                html.contains(&format!("<tr><th>{label}</th><td>\u{2014}</td></tr>")),
+                html.contains(&format!("<th>{label}</th><td>\u{2014}</td>")),
                 "missing blank {label} line"
             );
         }
@@ -611,7 +670,7 @@ mod tests {
     fn the_plan_states_the_booked_rating_check() {
         let html = report(example_crane(), &["crane"]);
         assert!(html.contains(
-            "<tr><th>Booked rating check</th><td>90,000.00 kg \u{2265} 2,666.67 kg required at 75%</td></tr>"
+            "<th>Booked rating check</th><td>90,000.00 kg \u{2265} 2,666.67 kg required at 75%</td>"
         ));
     }
 
@@ -619,13 +678,13 @@ mod tests {
     fn the_crane_table_carries_the_references_own_rows() {
         let html = report(example_crane(), &["crane"]);
         for expected in [
-            "<tr><th>Crane Model</th><td>Kobelco CKE90G-2</td></tr>",
-            "<tr><th>Crane rated capacity</th><td>90,000.00 kg</td></tr>",
-            "<tr><th>Boom length</th><td>40.00 m</td></tr>",
-            "<tr><th>Boom Angle</th><td>48.00 \u{00b0}</td></tr>",
-            "<tr><th>Working radius</th><td>8.00 m</td></tr>",
-            "<tr><th>Chart capacity at radius</th><td>16,000.00 kg</td></tr>",
-            "<tr><th>Gross load at hook</th><td>2,000.00 kg</td></tr>",
+            "<th>Crane Model</th><td>Kobelco CKE90G-2</td>",
+            "<th>Crane rated capacity</th><td>90,000.00 kg</td>",
+            "<th>Boom length</th><td>40.00 m</td>",
+            "<th>Boom angle</th><td>48.00 \u{00b0}</td>",
+            "<th>Working radius</th><td>8.00 m</td>",
+            "<th>Chart capacity at radius</th><td>16,000.00 kg</td>",
+            "<th>Gross load at hook</th><td>2,000.00 kg</td>",
         ] {
             assert!(html.contains(expected), "missing {expected}");
         }
@@ -633,12 +692,13 @@ mod tests {
 
     #[test]
     fn the_chart_source_row_is_a_deliberate_divergence_from_the_desktop() {
-        assert!(report(example_crane(), &["crane"]).contains("<tr><th>Chart source</th><td>"));
+        assert!(report(example_crane(), &["crane"])
+            .contains("<tr><th>Chart source</th><td colspan=\"3\">"));
         let blank = report(
             solve_crane(&crate::crane::CraneInputs::default(), 2000.0).unwrap(),
             &["crane"],
         );
-        assert!(blank.contains("<tr><th>Chart source</th><td>Not evaluated</td></tr>"));
+        assert!(blank.contains("<th>Chart source</th><td colspan=\"3\">Not evaluated</td>"));
     }
 
     #[test]
@@ -660,18 +720,22 @@ mod tests {
              {\\text{Chart capacity at radius}} \\times 100\\% = \
              \\frac{2{,}000.00}{16{,}000.00} \\times 100\\% = 12.5\\%\\]"
         ));
-        assert!(html.contains("<p>WITHIN LIMIT \u{2014} 12.50% of capacity at working radius</p>"));
+        assert!(html.contains(
+            "<p class=\"verdict within\">WITHIN LIMIT \u{2014} 12.50% of capacity at working radius</p>"
+        ));
     }
 
     #[test]
     fn a_blank_crane_says_not_entered_rather_than_zero() {
         let blank = solve_crane(&crate::crane::CraneInputs::default(), 2000.0).unwrap();
         let html = report(blank.clone(), &["crane"]);
-        assert!(html.contains("<tr><th>Crane Model</th><td>Not entered</td></tr>"));
-        assert!(html.contains("<tr><th>Working radius</th><td>Not entered</td></tr>"));
-        assert!(html.contains("<tr><th>Chart capacity at radius</th><td>Not evaluated</td></tr>"));
+        assert!(html.contains("<th>Crane Model</th><td>Not entered</td>"));
+        assert!(html.contains("<th>Working radius</th><td>Not entered</td>"));
+        assert!(html.contains("<th>Chart capacity at radius</th><td>Not evaluated</td>"));
         assert_eq!(blank.capacity_status, "Enter the load chart to check capacity.");
-        assert!(html.contains("<p>Enter the load chart to check capacity.</p>"));
+        assert!(html.contains(
+            "<p class=\"verdict neutral\">Enter the load chart to check capacity.</p>"
+        ));
     }
 
     #[test]

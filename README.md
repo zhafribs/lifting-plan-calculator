@@ -177,8 +177,11 @@ packaging/Dockerfile         the same, for Docker users
   workbook of your own; the TL-200M also ships as its manufacturer's
   specification PDF, which the workbook transcribes.
 - **Printing**: the report preview is a web view; *Print* opens the system print
-  dialog, and *Save as HTML* writes a portable copy. If the desktop cannot
-  print from a web view, save the file and print it from a browser.
+  dialog, and *Save as HTML* writes a portable copy. The page declares an A4
+  sheet with a one-inch margin on every side; a browser's print dialog must
+  leave its margin selector on **Default**, because *Minimum* and *None*
+  override the document's own margin. If the desktop cannot print from a web
+  view, save the file and print it from a browser.
 - **Data**: nothing is stored between launches by design; every run opens a
   blank sheet. Use the report's *Save as HTML* to keep a plan.
 - **NVIDIA note**: WebKitGTK's DMA-BUF renderer can crash on some NVIDIA driver

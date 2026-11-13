@@ -5,6 +5,15 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- The report's first page packs its head into the top third of the sheet: the
+  plan details and the crane figures are laid out two pairs wide, and the
+  capacity verdict sits in its own band straight after the figures it judges,
+  before the working that produced them.
+
 ## [2.5.0] - 2026-11-13
 
 ### Added

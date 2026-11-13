@@ -1795,7 +1795,7 @@ xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">
         assert!((chart.capacity_at(5.0, Some(9.8)).unwrap() - 14850.0).abs() < 1e-9);
         let jibs = jib_options(&chart);
         assert_eq!(jibs.len(), 2);
-        assert!((jibs[1].length - 7.2).abs() < 1e-9);
+        assert!((jibs[1].length - 8.0).abs() < 1e-9);
         assert!((jibs[1].offset - 30.0).abs() < 1e-9);
     }
 

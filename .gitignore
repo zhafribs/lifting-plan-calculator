@@ -5,8 +5,10 @@
 
 # Operator data: load-chart workbooks are not source
 *.xlsx
-# ...except the one example workbook the tests parse
+*.pdf
+# ...except the one example workbook the tests parse, and its source chart
 !/docs/examples/*.xlsx
+!/docs/examples/*.pdf
 
 # Scratch (frontend fixture dumps, local test exports)
 /ff16/

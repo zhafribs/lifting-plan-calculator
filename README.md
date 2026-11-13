@@ -174,7 +174,8 @@ packaging/Dockerfile         the same, for Docker users
   automatically. The working radius is suggested as the farthest charted radius
   that still meets the 75% rule. Two example charts ship in `docs/examples/`
   (a 35 t TR350M-1 and a 20 t TL-200M) if you want to try the import without a
-  workbook of your own.
+  workbook of your own; the TL-200M also ships as its manufacturer's
+  specification PDF, which the workbook transcribes.
 - **Printing**: the report preview is a web view; *Print* opens the system print
   dialog, and *Save as HTML* writes a portable copy. If the desktop cannot
   print from a web view, save the file and print it from a browser.

@@ -5,7 +5,7 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.5.0] - 2026-11-13
 
 ### Added
 
@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A plan carries its own details: reference, issue date, and Prepared /
   Checked / Approved lines, printed even when blank so a paper copy can be
   signed.
+- The TR-350M-1 and TL-200M example load charts (`docs/examples/`) and tests
+  that parse them end to end, covering the main boom matrix, the crane position
+  and the jib tables.
 
 ### Changed
 
@@ -39,12 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   of repeating the last charted capacity down every remaining workbook radius.
 - A chart imported for a lift no charted radius carries starts at the shortest
   charted radius and reports the overload, instead of leaving the tab blank.
-
-### Added
-
-- The TR-350M-1 and TL-200M example load charts (`docs/examples/`) and tests
-  that parse them end to end, covering the main boom matrix, the crane position
-  and the jib tables.
 
 ## [2.4.0] - 2026-10-11
 

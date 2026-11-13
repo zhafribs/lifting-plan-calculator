@@ -466,7 +466,7 @@ pub fn parse_jib_sheet(rows: &[Vec<Option<CellValue>>]) -> Option<Vec<JibColumn>
         return None;
     }
 
-    let (_, multiplier) = detect_unit(&values);
+    let (_, multiplier) = declared_unit(rows).unwrap_or_else(|| detect_unit(&values));
     for column in &mut columns {
         column.points = column
             .points
@@ -566,6 +566,34 @@ pub fn detect_unit(capacities: &[f64]) -> (String, f64) {
     }
 }
 
+/// The unit the workbook declares in its own words, when it says so.
+///
+/// A chart's title usually names its unit ("… Unit: ton"). Reading it beats
+/// guessing from magnitude, which misreads every small chart written in kg as
+/// tonnes — a thousand-fold understatement of usage.
+fn declared_unit(rows: &[Vec<Option<CellValue>>]) -> Option<(String, f64)> {
+    for row in rows {
+        for cell in row {
+            let Some(CellValue::Text(text)) = cell else {
+                continue;
+            };
+            let lower = text.to_lowercase();
+            let Some(index) = lower.find("unit") else {
+                continue;
+            };
+            let rest = lower[index + 4..]
+                .trim_start_matches(|character: char| !character.is_ascii_alphanumeric());
+            if rest.starts_with("ton") {
+                return Some(("ton".to_string(), 1000.0));
+            }
+            if rest.starts_with("kg") || rest.starts_with("kilogram") {
+                return Some(("kg".to_string(), 1.0));
+            }
+        }
+    }
+    None
+}
+
 fn parse_column_rows(
     rows: &[Vec<Option<CellValue>>],
     header_row: usize,
@@ -580,6 +608,12 @@ fn parse_column_rows(
     let norm = normalise(&header_text(rows, header_row, load_column));
     if norm.contains("ton") || norm == "t" || norm == "mt" {
         load_unit = 1000.0;
+    } else if norm.starts_with("kg") || norm.starts_with("kilogram") || norm.contains("kg") {
+        load_unit = 1.0;
+    } else if let Some((_, declared)) = declared_unit(rows) {
+        // The header is the closest place a unit belongs; the title is the
+        // fallback for a workbook that names it once, at the top.
+        load_unit = declared;
     }
 
     let mut data_rows: Vec<ChartDataRow> = Vec::new();
@@ -656,7 +690,7 @@ fn parse_matrix_rows(
         return None;
     }
 
-    let (unit, multiplier) = detect_unit(&cell_values);
+    let (unit, multiplier) = declared_unit(rows).unwrap_or_else(|| detect_unit(&cell_values));
     let scaled: Vec<ChartDataRow> = data_rows
         .into_iter()
         .map(|row| ChartDataRow {
@@ -1506,6 +1540,49 @@ xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">
         let chart = matrix_chart();
         assert!((chart.capacity_at(10.0, Some(27.5)).unwrap() - 3500.0).abs() < 1e-9);
         assert!((chart.capacity_at(10.0, Some(31.0)).unwrap() - 2500.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_declared_kg_chart_is_not_read_as_tonnes() {
+        let rows = vec![
+            vec![S("TOTAL RATED LOADS \u{2014} Unit: kg")],
+            vec![S("Radius"), N(9.8), N(13.3)],
+            vec![N(3.0), N(2000.0), N(1500.0)],
+            vec![N(5.0), N(1200.0), N(900.0)],
+        ];
+        let chart = read_chart(&build_workbook("Chart", &rows)).unwrap();
+        assert_eq!(chart.unit, "kg");
+        assert!((chart.capacity_at(3.0, Some(9.8)).unwrap() - 2000.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_declared_ton_chart_keeps_tonnes_even_when_the_figures_are_large() {
+        let rows = vec![
+            vec![S("TOTAL RATED LOADS \u{2014} Unit: ton")],
+            vec![S("Radius"), N(9.8), N(13.3)],
+            vec![N(3.0), N(2500.0), N(2200.0)],
+        ];
+        let chart = read_chart(&build_workbook("Chart", &rows)).unwrap();
+        assert_eq!(chart.unit, "ton");
+        assert!((chart.capacity_at(3.0, Some(9.8)).unwrap() - 2_500_000.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_column_chart_takes_the_unit_from_its_title_when_the_header_is_silent() {
+        let rows = vec![
+            vec![S("TOTAL RATED LOADS \u{2014} Unit: ton")],
+            vec![S("Radius"), S("Load"), S("Boom")],
+            vec![N(5.0), N(20.0), N(20.0)],
+        ];
+        let chart = read_chart(&build_workbook("Chart", &rows)).unwrap();
+        assert!((chart.capacity_at(5.0, None).unwrap() - 20000.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_chart_that_declares_nothing_still_falls_back_to_its_figures() {
+        // No unit text anywhere: the magnitude decides, as it always has.
+        assert_eq!(matrix_chart().unit, "ton");
+        assert_eq!(read_chart(&build_workbook("Chart", &descending_rows())).unwrap().unit, "kg");
     }
 
     #[test]

@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A workbook that names its own unit ("Unit: ton") is read from that text; the
+  magnitude guess is kept only for a chart that declares nothing. A small chart
+  written in kg was previously read as tonnes, understating usage a thousand
+  times.
 - A boom switch to a column with no charted capacities leaves the manual entry
   blank instead of publishing the previous boom's capacity under the new boom's
   label; the Crane tab then says this boom has no charted capacity rather than

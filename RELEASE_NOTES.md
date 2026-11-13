@@ -1,5 +1,36 @@
 # Release Notes
 
+## 2.5.1
+
+### Changed
+
+- **A shorter first page on the plan.** The plan details, the crane figures and
+  the capacity verdict now sit in the top third of the sheet instead of running
+  down most of it: key/value rows are laid out two pairs wide, and the verdict
+  (`WITHIN LIMIT` / `CAUTION` / `WARNING`) is its own coloured band directly
+  under the figures it judges, with the working below it.
+
+### Fixed
+
+- The example TL-200M workbook charts its jib at the manufacturer's **8.0 m**
+  (it said 7.2 m). The crane's specification sheet now ships in
+  `docs/examples/` beside the workbook, so the figures can be checked against
+  the source.
+
+### Notes
+
+- Printing from a browser: leave the print dialog's margin selector on
+  **Default**. The page sets a one-inch A4 margin of its own, but *Minimum* and
+  *None* override any document's margin.
+
+### Artifacts
+
+- `Lifting-Plan-Calculator-2.5.1-linux-x86_64.AppImage` (plus `.zsync`) —
+  Ubuntu 22.04+, Fedora 36+ and Arch (glibc 2.35 floor)
+- `Lifting-Plan-Calculator-2.5.1-windows-x86_64.msi` — Windows 10/11, x64
+- `Lifting-Plan-Calculator-2.5.1-windows-x86_64-setup.exe` — NSIS installer
+- `SHA256SUMS.txt` — verify any asset with `sha256sum -c SHA256SUMS.txt`
+
 ## 2.5.0
 
 ### Added

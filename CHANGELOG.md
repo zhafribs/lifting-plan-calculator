@@ -5,7 +5,7 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.5.1] - 2026-11-13
 
 ### Changed
 
@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   plan details and the crane figures are laid out two pairs wide, and the
   capacity verdict sits in its own band straight after the figures it judges,
   before the working that produced them.
+
+### Fixed
+
+- The example TL-200M workbook charts its jib at the manufacturer's 8.0 m
+  rather than 7.2 m; the specification sheet now ships beside it in
+  `docs/examples/`.
 
 ## [2.5.0] - 2026-11-13
 

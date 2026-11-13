@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [2.5.2] - 2026-11-13
+
 ### Changed
 
 - The printed plan's head is a summary card rather than a dense bordered grid:
@@ -26,9 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release notes are written one file per tag in `docs/releases/`, and the
   release workflow publishes exactly that file — a release page can no longer
   repeat the notes before it.
-
-Nothing yet in the engine. Add user-visible changes here; the release notes for
-the next tag are written from this section (see `docs/releases/README.md`).
 
 ## [2.5.1] - 2026-11-13
 

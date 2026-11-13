@@ -44,7 +44,7 @@ jobs:
       # release carries prebuilt binaries, so fetch one and cache it instead.
       - name: Cache the Tauri CLI
         id: tauri-cli
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cargo/bin/cargo-tauri
           key: cargo-tauri-${{ runner.os }}-${{ env.TAURI_CLI_VERSION }}
@@ -64,7 +64,7 @@ jobs:
 
       # linuxdeploy and appimagetool, fetched by the bundler on first use.
       - name: Cache the bundler tools
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/tauri
           key: tauri-tools-${{ runner.os }}-${{ env.TAURI_CLI_VERSION }}
@@ -100,7 +100,7 @@ jobs:
 
       - name: Cache the Tauri CLI
         id: tauri-cli
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cargo/bin/cargo-tauri.exe
           key: cargo-tauri-${{ runner.os }}-${{ env.TAURI_CLI_VERSION }}
@@ -123,7 +123,7 @@ jobs:
 
       # WiX and NSIS, fetched by the bundler on first use.
       - name: Cache the bundler tools
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/AppData/Local/tauri
           key: tauri-tools-${{ runner.os }}-${{ env.TAURI_CLI_VERSION }}

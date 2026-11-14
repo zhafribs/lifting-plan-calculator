@@ -7,6 +7,13 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "build"
+    # These two carry the COM types the Windows printer passes between crates.
+    # They must move together with tauri: bumping one alone changes the
+    # windows-core instance and the `cast` calls stop type-checking, which is
+    # how the 2.8.0 dependency bump broke the Windows build.
+    ignore:
+      - dependency-name: "webview2-com"
+      - dependency-name: "windows-core"
     groups:
       rust-dependencies:
         patterns:

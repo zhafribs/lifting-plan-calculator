@@ -577,8 +577,13 @@ fn render_pdf_into(
         file_url(&html_path),
         target.to_path_buf(),
     );
+    // Windows prints with the WebView2 the app already runs on, so the export
+    // works when Edge has been removed; Edge is the fallback.
     #[cfg(target_os = "windows")]
-    let printed = render_with_browser(&html_path, &temp, target);
+    let printed = match crate::pdf_windows::print_to_pdf(app, &html_path, target) {
+        Ok(()) => Ok(()),
+        Err(_first) => render_with_browser(&html_path, &temp, target),
+    };
 
     let _ = std::fs::remove_dir_all(&temp);
     printed?;

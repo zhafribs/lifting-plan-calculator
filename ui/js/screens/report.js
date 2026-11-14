@@ -365,7 +365,11 @@ export function createReportScreen(ctx) {
   );
 
   const schedulePreview = debounce(() => {
-    rebuild();
+    // Typing refreshes the live frame at once; the page view follows a moment
+    // after the typing stops, so it catches up on its own.
+    rebuild().then(() => {
+      if (previewMode === "pages") schedulePdf();
+    });
   }, 250);
 
   async function buildNow() {
@@ -489,11 +493,11 @@ export function createReportScreen(ctx) {
     }
   }
 
-  // A page view costs a print, so it waits for a pause of a second and a half
-  // and never queues a second render behind a running one.
+  // A page view costs a print, so it waits for a pause in the typing and never
+  // queues a second render behind a running one.
   const schedulePdf = debounce(() => {
     if (previewMode === "pages") refreshPdf();
-  }, 1500);
+  }, 900);
 
   function setSections(list) {
     for (const key of Object.keys(sections)) sections[key] = list.includes(key);

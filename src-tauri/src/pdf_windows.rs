@@ -20,10 +20,16 @@ use webview2_com::Microsoft::Web::WebView2::Win32::{
 use webview2_com::PrintToPdfCompletedHandler;
 use windows_core::{Interface, PCWSTR};
 
-/// How long the report may take to load before the window is given up on.
-const LOAD_TIMEOUT: Duration = Duration::from_secs(20);
-/// How long the print may take once the page is up.
-const PRINT_TIMEOUT: Duration = Duration::from_secs(60);
+/// How long the whole print may take: load, settle and write.
+const TIMEOUT: Duration = Duration::from_secs(30);
+/// Time for web fonts and KaTeX metrics to settle after the page loads.
+const SETTLE: Duration = Duration::from_millis(250);
+
+/// A runtime that cannot print will not start printing on the next attempt
+/// either, so a failure is remembered for the session: otherwise every typing
+/// pause would pay the timeout again.
+static UNAVAILABLE: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
 
 /// Print `html_path` to `target` with the app's own WebView2.
 pub fn print_to_pdf(
@@ -31,6 +37,10 @@ pub fn print_to_pdf(
     html_path: &Path,
     target: &Path,
 ) -> Result<(), String> {
+    if UNAVAILABLE.load(std::sync::atomic::Ordering::Relaxed) {
+        return Err("This WebView2 runtime could not print earlier in this session.".to_string());
+    }
+    let deadline = std::time::Instant::now() + TIMEOUT;
     let url = tauri::Url::from_file_path(html_path)
         .map_err(|_| "The report file could not be opened for printing.".to_string())?;
     // A distinct label per export: two saves must not collide in the manager.
@@ -63,8 +73,11 @@ pub fn print_to_pdf(
 
     let result = (|| -> Result<(), String> {
         loaded_rx
-            .recv_timeout(LOAD_TIMEOUT)
+            .recv_timeout(deadline.saturating_duration_since(std::time::Instant::now()))
             .map_err(|_| "The report did not finish loading for printing.".to_string())?;
+        // `load-finished` does not wait for web fonts; without a moment's
+        // settle the first page can print with fallback metrics.
+        std::thread::sleep(SETTLE);
 
         let (done_tx, done_rx) = mpsc::channel();
         let target = target.to_path_buf();
@@ -82,11 +95,14 @@ pub fn print_to_pdf(
             .map_err(|error| format!("The print could not be started: {error}"))?;
 
         done_rx
-            .recv_timeout(PRINT_TIMEOUT)
-            .map_err(|_| "The PDF did not finish within 60 seconds.".to_string())?
+            .recv_timeout(deadline.saturating_duration_since(std::time::Instant::now()))
+            .map_err(|_| "The PDF did not finish in time.".to_string())?
     })();
 
     let _ = window.close();
+    if result.is_err() {
+        UNAVAILABLE.store(true, std::sync::atomic::Ordering::Relaxed);
+    }
     result
 }
 
@@ -127,7 +143,8 @@ fn print(
         settings.SetShouldPrintHeaderAndFooter(false.into()).ok();
 
         let wide: Vec<u16> = target
-            .to_string_lossy()
+            .to_str()
+            .ok_or_else(|| "That file name cannot be printed to.".to_string())?
             .encode_utf16()
             .chain(std::iter::once(0))
             .collect();

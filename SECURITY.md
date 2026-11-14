@@ -35,11 +35,18 @@ welcome.
 
 ### The PDF export downloads nothing
 
-*Save as PDF* prints the report with the app's own WebKitGTK view, in-process.
-This is an invariant, not an implementation detail: the AppImage carries no
-browser, downloads no renderer, and executes no program it fetched. A change
-that fetches or runs a renderer at export time is a security regression and
-should be treated as one.
+*Save as PDF* prints the report in-process, with the engine the app already runs
+on: WebKitGTK on Linux, the WebView2 runtime on Windows. This is an invariant,
+not an implementation detail: neither bundle carries a browser, neither
+downloads a renderer, and neither executes a program it fetched. A change that
+fetches or runs a renderer at export time is a security regression and should be
+treated as one.
+
+On Windows, if the WebView2 runtime cannot print, the export falls back to the
+Edge or Chrome the machine already has, which is the one place the export starts
+an external program; nothing is downloaded there either. The printed document is
+the app's own `file://` HTML, which holds no capability and cannot reach the
+app's commands.
 
 ### Network access
 

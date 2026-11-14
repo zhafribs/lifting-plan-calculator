@@ -134,6 +134,22 @@ jobs:
       # golden number, and every page that exists is checked. The committed
       # fixture the unit tests use was printed by 2.54, which covers the Skia
       # output this job may not reach.
+      # The probe goes through the app itself: the window, the command path and
+      # the platform's printer, which the example above does not exercise.
+      - name: Export through the app itself
+        env:
+          WEBKIT_DISABLE_COMPOSITING_MODE: "1"
+          WEBKIT_DISABLE_DMABUF_RENDERER: "1"
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: |
+          set -euo pipefail
+          xvfb-run -a dbus-run-session -- \
+            cargo run --quiet --manifest-path src-tauri/Cargo.toml -- \
+              --export-pdf-test=/tmp/probe.pdf
+          test -s /tmp/probe.pdf
+          pdftotext /tmp/probe.pdf - | grep -q 'Export probe'
+          pdftotext /tmp/probe.pdf - | grep -q 'PROBE-0001'
+
       - name: Check the printed plan
         run: |
           set -euo pipefail
@@ -223,3 +239,20 @@ jobs:
 
       - name: cargo check
         run: cargo check --manifest-path src-tauri/Cargo.toml --all-targets
+
+      # Compiling is not printing. This runs the app and exports a probe report
+      # through WebView2, which is what the Windows export actually uses.
+      - name: Build for the export probe
+        run: cargo build --manifest-path src-tauri/Cargo.toml
+
+      - name: Export a probe PDF through the app
+        shell: pwsh
+        run: |
+          $target = Join-Path $env:RUNNER_TEMP "probe.pdf"
+          & "src-tauri/target/debug/lifting-plan-calculator.exe" "--export-pdf-test=$target"
+          if ($LASTEXITCODE -ne 0) { throw "the export probe failed (exit $LASTEXITCODE)" }
+          if (-not (Test-Path $target)) { throw "no probe PDF was written" }
+          $bytes = [System.IO.File]::ReadAllBytes($target)
+          if ($bytes.Length -lt 1000) { throw "the probe PDF is implausibly small" }
+          $header = [System.Text.Encoding]::ASCII.GetString($bytes, 0, 5)
+          if ($header -ne "%PDF-") { throw "the probe output is not a PDF" }

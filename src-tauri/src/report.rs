@@ -21,6 +21,20 @@ use crate::sling::{hitch_spec, SlingResult};
 pub const DEFAULT_FOOTER: &str =
     "Prepared with Lifting Plan Calculator by Zhafri Syazwi — zhafribs@gmail.com";
 
+/// The `@page` margin boxes that draw the footer when a browser prints the
+/// report. The PDF export removes them and stamps the footer onto the pages
+/// itself, so the footer does not depend on which engine printed or how new it
+/// is; this copy exists so that removal cannot silently miss.
+const PAGE_FOOTER_CSS: &str = r#"@page {
+    @bottom-left { content: var(--plan-reference, "No reference"); font-size: 6pt;
+        color: #555; font-family: "Liberation Serif", "DejaVu Serif", serif; }
+    @bottom-center { content: var(--footer-center, "Prepared with Lifting Plan Calculator by Zhafri Syazwi — zhafribs@gmail.com"); font-size: 6pt;
+        color: #555; font-family: "Liberation Serif", "DejaVu Serif", serif; }
+    @bottom-right { content: counter(page) " / " counter(pages); font-size: 6pt;
+        color: #555; font-family: "Liberation Serif", "DejaVu Serif", serif; }
+}
+"#;
+
 pub const REPORT_CSS: &str = r#"
 <style>
 @page {
@@ -626,6 +640,13 @@ pub fn footer_texts(reference: &str, center: Option<&str>) -> (String, String) {
     (reference, center.to_string())
 }
 
+/// The report as the print engines should receive it: the same document without
+/// the `@page` margin boxes, because the export stamps the footer onto the pages
+/// after printing. The live preview and the browser Print button keep them.
+pub fn print_html(html: &str) -> String {
+    html.replace(PAGE_FOOTER_CSS, "")
+}
+
 /// The selected report sections as HTML.
 ///
 /// Missing or incomplete state is rendered as an explicit setup message rather
@@ -1191,6 +1212,34 @@ mod tests {
             ]),
             2
         );
+    }
+
+    #[test]
+    fn the_print_copy_drops_the_margin_boxes_but_keeps_the_page() {
+        let html = build_report_html(
+            &ReportInputs {
+                totals: LiftTotals { gross: 0.0, ..Default::default() },
+                crane: None,
+                sling: None,
+                nonuniform: None,
+                nonuniform_error: None,
+                tandem: None,
+                tandem_error: None,
+                crane_error: None,
+                signoff: PlanSignoff::default(),
+                issued_at: None,
+                working_diagram: None,
+                footer_center: None,
+            },
+            &[],
+        );
+        assert!(html.contains("@bottom-center"), "the report itself keeps them");
+        let print = print_html(&html);
+        assert!(!print.contains("@bottom-center"), "the export must not draw a second footer");
+        assert!(!print.contains("@bottom-left"));
+        // The document is otherwise intact.
+        assert!(print.contains(".report"));
+        assert!(print.contains("--plan-reference"));
     }
 
     #[test]

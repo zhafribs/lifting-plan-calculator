@@ -565,7 +565,10 @@ fn render_pdf_into(
 ) -> Result<(), String> {
     let temp = private_workspace()?;
     let html_path = temp.join("report.html");
-    std::fs::write(&html_path, html)
+    // The footer is stamped onto the finished pages on every platform, so the
+    // engines are handed the report without its `@page` margin boxes: no engine
+    // version can decide whether a plan carries its reference and page numbers.
+    std::fs::write(&html_path, crate::report::print_html(html))
         .map_err(|error| format!("The PDF report could not be prepared: {error}"))?;
     write_katex_assets(app, &temp)?;
 
@@ -578,37 +581,35 @@ fn render_pdf_into(
         target.to_path_buf(),
     );
     // Windows prints with the WebView2 the app already runs on, so the export
-    // works when Edge has been removed; Edge is the fallback.
+    // works when Edge has been removed; Edge is the fallback. Each attempt
+    // prints to its own file, so a print that is still finishing when the
+    // fallback starts cannot overwrite the winner.
     #[cfg(target_os = "windows")]
-    let printed = match crate::pdf_windows::print_to_pdf(app, &html_path, target) {
-        Ok(()) => Ok(()),
-        Err(first) => {
-            // A failed in-app print can leave a partial file at the chosen
-            // path; the fallback writes the same path, and both reasons are
-            // reported if it fails too.
-            let _ = std::fs::remove_file(target);
-            render_with_browser(&html_path, &temp, target).map_err(|second| {
-                format!("The app's own printer failed ({first}); Edge then failed too ({second}).")
-            })
+    let printed = {
+        let in_app = temp.join("webview2.pdf");
+        let via_edge = temp.join("edge.pdf");
+        let in_app_result = crate::pdf_windows::print_to_pdf(app, &html_path, &in_app);
+        match in_app_result {
+            Ok(()) => std::fs::rename(&in_app, target)
+                .map_err(|error| format!("The PDF could not be written: {error}")),
+            Err(first) => {
+                let _ = std::fs::remove_file(&in_app);
+                match render_with_browser(&html_path, &temp, &via_edge) {
+                    Ok(()) => std::fs::rename(&via_edge, target)
+                        .map_err(|error| format!("The PDF could not be written: {error}")),
+                    Err(second) => Err(format!(
+                        "The app's own printer failed ({first}); Edge then failed too ({second})."
+                    )),
+                }
+            }
         }
     };
 
     let _ = std::fs::remove_dir_all(&temp);
     printed?;
 
-    let size = std::fs::metadata(target)
-        .map_err(|error| format!("The PDF was not written: {error}"))?
-        .len();
-    if size == 0 {
-        let _ = std::fs::remove_file(target);
-        return Err("The PDF renderer wrote an empty file.".to_string());
-    }
-    // WebKitGTK does not draw the report's `@page` margin boxes, so the footer
-    // is written onto the pages here. Chromium draws it itself.
-    #[cfg(not(target_os = "windows"))]
+    check_pdf(target)?;
     crate::pdf::stamp(target, footer)?;
-    #[cfg(target_os = "windows")]
-    let _ = footer;
     Ok(())
 }
 
@@ -680,6 +681,21 @@ fn move_into_place(staging: &Path, target: &Path) -> Result<(), String> {
             Err(format!("The PDF could not be written to that folder: {error}"))
         }
     }
+}
+
+/// Reject a print that wrote nothing, or something that is not a PDF.
+fn check_pdf(target: &Path) -> Result<(), String> {
+    use std::io::Read;
+    let mut file = std::fs::File::open(target)
+        .map_err(|error| format!("The PDF was not written: {error}"))?;
+    let mut header = [0u8; 5];
+    file.read_exact(&mut header)
+        .map_err(|_| "The PDF renderer wrote an empty file.".to_string())?;
+    if &header != b"%PDF-" {
+        let _ = std::fs::remove_file(target);
+        return Err("The PDF renderer did not produce a PDF. The report was not saved.".to_string());
+    }
+    Ok(())
 }
 
 /// Windows: print with the Edge the system already carries.
@@ -785,6 +801,37 @@ pub async fn save_pdf(
     .await
     .map_err(|error| format!("The PDF export failed: {error}"))??;
     Ok(Some(target.to_string_lossy().to_string()))
+}
+
+/// Render a one-page probe report through the real export path and check the
+/// result. This is the hook the Windows CI job runs: it proves that the PDF
+/// export works on the platform, which a compile check cannot.
+pub fn export_probe(app: &tauri::AppHandle, target: &Path) -> Result<(), String> {
+    let footer = crate::pdf::Footer {
+        reference: "PROBE-0001".to_string(),
+        center: crate::report::DEFAULT_FOOTER.to_string(),
+    };
+    let html = format!(
+        "<!DOCTYPE html><html><head><meta charset=\"utf-8\">{}</head>\
+         <body><div class=\"report\"><h1>Export probe</h1>\
+         <p>PROBE-MARKER</p></div></body></html>",
+        crate::report::REPORT_CSS
+    );
+    render_pdf(app, &html, target, &footer)?;
+    check_pdf(target)?;
+
+    // The footer must be on the page, and the page must be a real one.
+    let bytes = std::fs::read(target)
+        .map_err(|error| format!("The probe PDF could not be read: {error}"))?;
+    if !bytes.windows(9).any(|window| window == b"LPCFooter") {
+        return Err("The probe PDF has no footer drawn on it.".to_string());
+    }
+    let document = lopdf::Document::load(target)
+        .map_err(|error| format!("The probe PDF could not be parsed: {error}"))?;
+    if document.get_pages().is_empty() {
+        return Err("The probe PDF has no pages.".to_string());
+    }
+    Ok(())
 }
 
 /// Open a path or URL with the platform's own opener.

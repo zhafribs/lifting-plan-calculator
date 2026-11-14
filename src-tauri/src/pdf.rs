@@ -18,7 +18,6 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 use lopdf::{dictionary, Dictionary, Document, Object, ObjectId, Stream};
-use ttf_parser::Face;
 
 /// The footer's typeface, embedded in the binary so the export needs nothing
 /// installed on the machine.
@@ -125,38 +124,213 @@ fn footer_content(
     ops
 }
 
-/// The glyph the embedded font has for a character, or `.notdef` when it has
-/// none — the same box the report's own font stack would show.
-fn glyph(child: char) -> u16 {
-    static FACE: std::sync::OnceLock<Option<Face<'static>>> = std::sync::OnceLock::new();
-    let face = FACE.get_or_init(|| Face::parse(FONT, 0).ok());
-    face.as_ref()
-        .and_then(|face| face.glyph_index(child))
-        .map(|glyph| glyph.0)
-        .unwrap_or(0)
+/// The metrics this module needs from the embedded font. The tables are read
+/// directly rather than through a font crate: the face is compiled into the
+/// binary, so nothing here parses untrusted input.
+struct Font {
+    units_per_em: u16,
+    /// Advance widths by glyph id, in font units.
+    advances: Vec<u16>,
+    /// Character to glyph, from the font's own `cmap`.
+    cmap: BTreeMap<u32, u16>,
+    bbox: (i16, i16, i16, i16),
+    ascent: i16,
+    descent: i16,
+    cap_height: i16,
 }
 
-fn glyph_ids(text: &str) -> Vec<u16> {
-    text.chars().map(glyph).collect()
+fn font() -> Result<&'static Font, String> {
+    static FONT_DATA: std::sync::OnceLock<Result<Font, String>> = std::sync::OnceLock::new();
+    FONT_DATA
+        .get_or_init(|| Font::parse(FONT))
+        .as_ref()
+        .map_err(Clone::clone)
+}
+
+impl Font {
+    fn parse(data: &[u8]) -> Result<Font, String> {
+        let table = |tag: &[u8; 4]| -> Result<&[u8], String> {
+            let count = be16(data, 4)? as usize;
+            for index in 0..count {
+                let entry = 12 + index * 16;
+                if data.get(entry..entry + 4) == Some(tag) {
+                    let offset = be32(data, entry + 8)? as usize;
+                    let length = be32(data, entry + 12)? as usize;
+                    return data
+                        .get(offset..offset + length)
+                        .ok_or_else(|| "The footer font is truncated.".to_string());
+                }
+            }
+            Err(format!(
+                "The footer font has no '{}' table.",
+                String::from_utf8_lossy(tag)
+            ))
+        };
+
+        let head = table(b"head")?;
+        let units_per_em = be16(head, 18)?;
+        let bbox = (
+            be16(head, 36)? as i16,
+            be16(head, 38)? as i16,
+            be16(head, 40)? as i16,
+            be16(head, 42)? as i16,
+        );
+        let maxp = table(b"maxp")?;
+        let glyphs = be16(maxp, 4)?;
+        let hhea = table(b"hhea")?;
+        let ascent = be16(hhea, 4)? as i16;
+        let descent = be16(hhea, 6)? as i16;
+        let metrics_count = be16(hhea, 34)? as usize;
+
+        let hmtx = table(b"hmtx")?;
+        let mut advances = Vec::with_capacity(glyphs as usize);
+        for index in 0..metrics_count {
+            advances.push(be16(hmtx, index * 4)?);
+        }
+        let last = advances.last().copied().unwrap_or(0);
+        while advances.len() < glyphs as usize {
+            advances.push(last);
+        }
+
+        let cap_height = table(b"OS/2")
+            .ok()
+            .and_then(|os2| {
+                let version = be16(os2, 0).ok()?;
+                (version >= 2).then(|| be16(os2, 88).ok().map(|value| value as i16))?
+            })
+            .filter(|value| *value > 0)
+            .unwrap_or(ascent);
+
+        Ok(Font {
+            units_per_em,
+            advances,
+            cmap: read_cmap(table(b"cmap")?)?,
+            bbox,
+            ascent,
+            descent,
+            cap_height,
+        })
+    }
+
+    fn glyph(&self, character: char) -> u16 {
+        self.cmap.get(&(character as u32)).copied().unwrap_or(0)
+    }
+
+    fn advance(&self, glyph: u16) -> u16 {
+        self.advances.get(glyph as usize).copied().unwrap_or(0)
+    }
+
+    fn width(&self, text: &str, size: f32) -> f32 {
+        let advance: u32 = text
+            .chars()
+            .map(|character| self.advance(self.glyph(character)) as u32)
+            .sum();
+        advance as f32 / self.units_per_em as f32 * size
+    }
+
+    /// Font units to the 1000-unit text space a PDF font descriptor uses.
+    fn scaled(&self, value: i16) -> i64 {
+        (value as f32 / self.units_per_em as f32 * 1000.0).round() as i64
+    }
+}
+
+fn be16(data: &[u8], offset: usize) -> Result<u16, String> {
+    data.get(offset..offset + 2)
+        .map(|bytes| u16::from_be_bytes([bytes[0], bytes[1]]))
+        .ok_or_else(|| "The footer font is truncated.".to_string())
+}
+
+fn be32(data: &[u8], offset: usize) -> Result<u32, String> {
+    data.get(offset..offset + 4)
+        .map(|bytes| u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
+        .ok_or_else(|| "The footer font is truncated.".to_string())
+}
+
+/// The font's character map: format 4 for the Basic Multilingual Plane, and
+/// format 12 where the face is newer, which also covers anything above it.
+fn read_cmap(data: &[u8]) -> Result<BTreeMap<u32, u16>, String> {
+    let count = be16(data, 2)? as usize;
+    let mut best: Option<u32> = None;
+    for index in 0..count {
+        let entry = 4 + index * 8;
+        let platform = be16(data, entry)?;
+        let encoding = be16(data, entry + 2)?;
+        let offset = be32(data, entry + 4)?;
+        // Prefer the full-repertoire subtables over the legacy BMP ones.
+        let rank = match (platform, encoding) {
+            (3, 10) | (0, 4) | (0, 6) => 2,
+            (3, 1) | (0, 3) => 1,
+            _ => continue,
+        };
+        if best.is_none_or(|current| rank > current) {
+            best = Some(rank | (offset << 2));
+        }
+    }
+    let Some(best) = best else {
+        return Err("The footer font has no usable character map.".to_string());
+    };
+    let offset = (best >> 2) as usize;
+    let format = be16(data, offset)?;
+    let mut out = BTreeMap::new();
+    match format {
+        4 => {
+            let segments = be16(data, offset + 6)? as usize / 2;
+            let ends = offset + 14;
+            let starts = ends + segments * 2 + 2;
+            let deltas = starts + segments * 2;
+            let range_offsets = deltas + segments * 2;
+            for segment in 0..segments {
+                let end = be16(data, ends + segment * 2)?;
+                let start = be16(data, starts + segment * 2)?;
+                let delta = be16(data, deltas + segment * 2)? as i16;
+                let range = be16(data, range_offsets + segment * 2)?;
+                if start == 0xFFFF {
+                    continue;
+                }
+                for code in start..=end {
+                    let glyph = if range == 0 {
+                        (code as i32 + delta as i32) as u16
+                    } else {
+                        let address =
+                            range_offsets + segment * 2 + range as usize + (code - start) as usize * 2;
+                        match be16(data, address) {
+                            Ok(0) | Err(_) => continue,
+                            Ok(glyph) => (glyph as i32 + delta as i32) as u16,
+                        }
+                    };
+                    if glyph != 0 {
+                        out.insert(code as u32, glyph);
+                    }
+                }
+            }
+        }
+        12 => {
+            let groups = be32(data, offset + 12)? as usize;
+            for group in 0..groups {
+                let base = offset + 16 + group * 12;
+                let start = be32(data, base)?;
+                let end = be32(data, base + 4)?;
+                let first = be32(data, base + 8)?;
+                for code in start..=end {
+                    out.insert(code, (first + (code - start)) as u16);
+                }
+            }
+        }
+        _ => return Err("The footer font's character map is not supported.".to_string()),
+    }
+    Ok(out)
 }
 
 /// The drawn width of `text` at `size`, from the font's own metrics.
 fn text_width(text: &str, size: f32) -> f32 {
-    static METRICS: std::sync::OnceLock<Option<(u16, Vec<u16>)>> = std::sync::OnceLock::new();
-    let Some((units_per_em, widths)) = METRICS
-        .get_or_init(|| {
-            let face = Face::parse(FONT, 0).ok()?;
-            Some((face.units_per_em(), (0..face.number_of_glyphs()).map(|glyph| face.glyph_hor_advance(ttf_parser::GlyphId(glyph)).unwrap_or(0)).collect()))
-        })
-        .as_ref()
-    else {
-        return 0.0;
-    };
-    let advance: u32 = glyph_ids(text)
-        .iter()
-        .map(|glyph| widths.get(*glyph as usize).copied().unwrap_or(0) as u32)
-        .sum();
-    advance as f32 / *units_per_em as f32 * size
+    font().map(|font| font.width(text, size)).unwrap_or(0.0)
+}
+
+fn glyph_ids(text: &str) -> Vec<u16> {
+    match font() {
+        Ok(font) => text.chars().map(|character| font.glyph(character)).collect(),
+        Err(_) => Vec::new(),
+    }
 }
 
 /// Embed the footer's font as a Type0 font with the glyphs the footer uses, so
@@ -165,29 +339,23 @@ fn embed_font<'a>(
     doc: &mut Document,
     texts: impl Iterator<Item = &'a str>,
 ) -> Result<ObjectId, String> {
-    let face = Face::parse(FONT, 0)
-        .map_err(|error| format!("The footer font could not be read: {error}"))?;
-    let units = face.units_per_em() as f32;
-    let scale = |value: i16| (value as f32 / units * 1000.0).round() as i64;
+    let font = font()?;
 
     // Every glyph the footer needs, with its width and the character it stands for.
     let mut used: BTreeMap<u16, (u16, char)> = BTreeMap::new();
     for text in texts {
         for character in text.chars() {
-            let id = glyph(character);
-            used.entry(id).or_insert((
-                face.glyph_hor_advance(ttf_parser::GlyphId(id)).unwrap_or(0),
-                character,
-            ));
+            let id = font.glyph(character);
+            used.entry(id).or_insert((font.advance(id), character));
         }
     }
 
     let mut widths: Vec<Object> = Vec::new();
     for (id, (advance, _)) in &used {
         widths.push(Object::Integer(*id as i64));
-        widths.push(Object::Array(vec![
-            Object::Integer((*advance as f32 / units * 1000.0).round() as i64),
-        ]));
+        widths.push(Object::Array(vec![Object::Integer(
+            (*advance as f32 / font.units_per_em as f32 * 1000.0).round() as i64,
+        )]));
     }
 
     let mut to_unicode = String::from(
@@ -206,22 +374,21 @@ fn embed_font<'a>(
     }
     to_unicode.push_str("endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend\n");
 
-    let bbox = face.global_bounding_box();
     let file = font_file(doc);
     let descriptor = doc.add_object(dictionary! {
         "Type" => "FontDescriptor",
         "FontName" => FONT_NAME,
         "Flags" => 4,
         "FontBBox" => vec![
-            Object::Integer(scale(bbox.x_min)),
-            Object::Integer(scale(bbox.y_min)),
-            Object::Integer(scale(bbox.x_max)),
-            Object::Integer(scale(bbox.y_max)),
+            Object::Integer(font.scaled(font.bbox.0)),
+            Object::Integer(font.scaled(font.bbox.1)),
+            Object::Integer(font.scaled(font.bbox.2)),
+            Object::Integer(font.scaled(font.bbox.3)),
         ],
         "ItalicAngle" => 0,
-        "Ascent" => scale(face.ascender()),
-        "Descent" => scale(face.descender()),
-        "CapHeight" => scale(face.capital_height().unwrap_or(face.ascender())),
+        "Ascent" => font.scaled(font.ascent),
+        "Descent" => font.scaled(font.descent),
+        "CapHeight" => font.scaled(font.cap_height),
         "StemV" => 80,
         "FontFile2" => file,
     });
@@ -632,14 +799,15 @@ mod tests {
     fn the_embedded_font_covers_the_names_a_plan_carries() {
         // Latin with diacritics, Vietnamese and Cyrillic all have glyphs, so a
         // reference written in those scripts still prints.
+        let font = font().expect("the embedded font parses");
         for text in ["ü", "é", "ế", "ộ", "Nguyễn", "Ánh", "Ж", "я", "—"] {
             for character in text.chars() {
-                assert_ne!(glyph(character), 0, "no glyph for {character:?}");
+                assert_ne!(font.glyph(character), 0, "no glyph for {character:?}");
             }
         }
         // A character the face does not have falls back to .notdef, which is the
         // box the report's own font stack would show for it.
-        assert_eq!(glyph('\u{2709}'), 0);
+        assert_eq!(font.glyph('\u{2709}'), 0);
     }
 
     #[test]

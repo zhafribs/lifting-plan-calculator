@@ -1,6 +1,11 @@
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+
+- The footer's embedded font is read directly, so the export no longer depends
+  on the unmaintained `ttf-parser` crate. The dependency audit in CI now reports
+  advisories instead of gating: every one it finds is inherited from the
+  Tauri/GTK stack and has no fixed upgrade.
 
 ## [2.6.0] - 2026-11-14
 

@@ -2057,7 +2057,6 @@ dependencies = [
  "serde_json",
  "tauri",
  "tauri-build",
- "ttf-parser",
  "ureq",
  "webkit2gtk",
  "zip",

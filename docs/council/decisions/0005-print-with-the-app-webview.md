@@ -95,7 +95,12 @@ All landed in 2.6.0:
 - One margin constant shared by the report's CSS, the GTK page setup and the
   footer's position; refuse a rotated page rather than mis-stamp it.
 - Private 0700 workspace for the report's HTML and KaTeX assets.
-- `cargo audit` in CI.
+- `cargo audit` in CI, as a report rather than a gate: its first run found 16
+  advisories, all inherited from the Tauri/GTK stack (glib, rustls,
+  webpki-roots, zip, zstd, calamine, tokio, proc-macro-error) except
+  `ttf-parser`, which the footer's font reader introduced. That crate is
+  unmaintained with no fixed upgrade, so the follow-up reads the embedded face's
+  tables directly and the dependency is gone.
 
 ## Decision
 

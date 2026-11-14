@@ -1,5 +1,19 @@
 ## [Unreleased]
 
+Nothing yet.
+
+## [2.7.0] - 2026-11-14
+
+### Added
+
+- Summary's report preview opens on **Pages**: the report as the A4 pages that
+  will be saved, with zoom in and out, fit-to-width and a `Page N of M` counter.
+  Page breaks are now visible before printing, and *Save as PDF* writes exactly
+  the bytes the page view showed when the plan has not changed since.
+- The **Live** view keeps the fast HTML preview for typing; the page view is
+  rendered on demand — when it opens, when a section is toggled, or when a field
+  is left — never on every keystroke.
+
 ### Changed
 
 - The footer's embedded font is read directly, so the export no longer depends

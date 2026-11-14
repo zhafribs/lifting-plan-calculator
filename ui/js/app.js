@@ -241,6 +241,9 @@ async function main() {
     screenEl.scrollTop = 0;
     if (current.sync) current.sync(store.state);
     if (current.render) current.render(store.solved);
+    // Screens that cost something to redraw refresh here, when they are opened,
+    // rather than on every state publish.
+    if (current.show) current.show();
   }
 
   function showReport(sections) {

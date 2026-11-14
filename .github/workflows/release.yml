@@ -31,6 +31,9 @@ jobs:
       # One page per tag. The check is the same script CI runs over every tag,
       # narrowed to this one, so the release gate is never weaker than the merge
       # gate.
+      - name: Check the vendored viewer
+        run: ./packaging/check-vendored.sh
+
       - name: Check the notes, the version and the council record
         if: ${{ github.event_name == 'push' }}
         run: ./packaging/check-release-notes.sh --tag "$GITHUB_REF_NAME"
@@ -157,6 +160,13 @@ jobs:
           "$GITHUB_WORKSPACE/$image" --appimage-extract >/dev/null
           if ! find squashfs-root -name 'libprintbackend-file.so' | grep -q .; then
             echo "ERROR: the AppImage has no GTK file print backend; Save as PDF cannot work." >&2
+            exit 1
+          fi
+          # The frontend is embedded in the binary, so the viewer's presence is
+          # proved by its own marker rather than by a loose file.
+          binary="$(find squashfs-root -type f -name 'lifting-plan-calculator' | head -1)"
+          if ! grep -q 'pdf.worker' "$binary"; then
+            echo "ERROR: the vendored PDF viewer is missing from the bundle." >&2
             exit 1
           fi
           if find squashfs-root -name 'chrome-headless-shell*' | grep -q .; then

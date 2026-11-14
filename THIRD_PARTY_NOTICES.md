@@ -42,3 +42,8 @@ The footer's typeface is embedded in the PDF export and in this application:
 | Component | Version | License | Purpose | Full text |
 | --- | --- | --- | --- | --- |
 | [Liberation Serif](https://github.com/liberationfonts/liberation-fonts) | 2.x | SIL Open Font License 1.1 | The footer text on every exported page | `src-tauri/assets/fonts/LICENSE-LiberationSerif.txt` |
+| [pdf.js](https://github.com/mozilla/pdf.js) (`pdfjs-dist`) | 3.11.174 | Apache-2.0 | Drawing the report's pages in Summary | `licenses/pdfjs-Apache-2.0.txt` and `ui/vendor/pdfjs/LICENSE` |
+
+The two pdf.js files are committed unmodified and pinned by SHA-256 in
+`ui/vendor/pdfjs/CHECKSUMS.txt`; `packaging/check-vendored.sh` fails the build if
+they change. Nothing is fetched at build or run time.

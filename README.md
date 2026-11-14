@@ -277,6 +277,11 @@ to the GitHub release — and the installers are unsigned, so Windows shows its
   (a 35 t TR-350M-1 and a 20 t TL-200M) if you want to try the import without a
   workbook of your own; the TL-200M also ships as its manufacturer's
   specification PDF, which the workbook transcribes.
+- **The report preview is the PDF.** Summary opens on **Pages**: the report drawn
+  as the A4 pages that will be saved, with zoom in and out, fit-to-width and a
+  `Page N of M` counter, so page breaks are visible before printing. The **Live**
+  toggle keeps the fast HTML preview for typing. *Save as PDF* writes exactly the
+  bytes the page view is showing when the plan has not changed since.
 - **Printing and PDF**: the report preview is a web view; *Save as PDF* writes
   the report directly to A4 with a one-inch margin on every side, using the
   app's own WebKitGTK view — nothing is bundled and no browser has to be

@@ -51,6 +51,20 @@ jobs:
       - name: cargo clippy
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
+      # The page view's zoom and fitting arithmetic, run without a webview.
+      - name: Test the page view arithmetic
+        run: |
+          set -e
+          work="$(mktemp -d)"
+          cp ui/js/pdf-math.js ui/js/pdf-math.test.mjs "$work/"
+          printf '{"type":"module"}' > "$work/package.json"
+          node --test "$work"
+
+      # The vendored PDF parser is pinned by hash: a different file is a
+      # deliberate change, not an update.
+      - name: Check the vendored viewer
+        run: ./packaging/check-vendored.sh
+
       - name: Syntax-check the frontend
         run: |
           set -e

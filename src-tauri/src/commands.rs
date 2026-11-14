@@ -426,6 +426,121 @@ pub struct PdfFooter {
     pub center: Option<String>,
 }
 
+/// The footer a report is printed with: the plan reference, and the credit line
+/// or the report's default.
+fn printed_footer(footer: Option<&PdfFooter>) -> crate::pdf::Footer {
+    let (reference, center) = crate::report::footer_texts(
+        footer
+            .and_then(|footer| footer.reference.as_deref())
+            .unwrap_or(""),
+        footer.and_then(|footer| footer.center.as_deref()),
+    );
+    crate::pdf::Footer { reference, center }
+}
+
+/// The last preview, kept so *Save as PDF* writes exactly the pages the
+/// operator was looking at instead of printing them a second time.
+struct CachedPreview {
+    key: u64,
+    bytes: Vec<u8>,
+}
+
+static PREVIEW_CACHE: Mutex<Option<CachedPreview>> = Mutex::new(None);
+static PREVIEW_GENERATION: std::sync::atomic::AtomicU64 =
+    std::sync::atomic::AtomicU64::new(0);
+/// One print at a time: the GTK main thread drives every print through the same
+/// web view, and a preview must not queue behind a stale one.
+static PREVIEW_LOCK: Mutex<()> = Mutex::new(());
+
+const SUPERSEDED: &str = "The preview was superseded by a newer change.";
+
+/// A cheap, stable key for a report: its HTML and the footer it is printed with.
+fn report_key(html: &str, footer: &crate::pdf::Footer) -> u64 {
+    // FNV-1a, 64-bit: comparing the whole report would cost as much as the
+    // render it is avoiding.
+    let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+    for bytes in [html.as_bytes(), footer.reference.as_bytes(), footer.center.as_bytes()] {
+        for byte in bytes {
+            hash ^= *byte as u64;
+            hash = hash.wrapping_mul(0x1000_0000_01b3);
+        }
+        hash ^= 0xff;
+        hash = hash.wrapping_mul(0x1000_0000_01b3);
+    }
+    hash
+}
+
+/// Whether a newer preview has been asked for since `generation` was taken. A
+/// superseded request must neither print nor store: its pages are already out
+/// of date by the time they would be ready.
+fn superseded(generation: u64) -> bool {
+    PREVIEW_GENERATION.load(std::sync::atomic::Ordering::Relaxed) != generation
+}
+
+fn cached_preview(key: u64) -> Option<Vec<u8>> {
+    PREVIEW_CACHE
+        .lock()
+        .ok()
+        .and_then(|cache| cache.as_ref().filter(|entry| entry.key == key).map(|entry| entry.bytes.clone()))
+}
+
+/// Render a report into memory, through the same print and footer as the
+/// export. The workspace is removed on both paths.
+fn render_plan_bytes(
+    app: &tauri::AppHandle,
+    html: &str,
+    footer: &crate::pdf::Footer,
+) -> Result<Vec<u8>, String> {
+    let workspace = private_workspace()?;
+    let path = workspace.join("plan.pdf");
+    let rendered = render_pdf_into(app, html, &path, footer);
+    let bytes = match rendered {
+        Ok(()) => std::fs::read(&path)
+            .map_err(|error| format!("The preview could not be read back: {error}")),
+        Err(error) => Err(error),
+    };
+    let _ = std::fs::remove_dir_all(&workspace);
+    bytes
+}
+
+/// Render the report for the Summary preview. The UI shows these pages, and
+/// *Save as PDF* writes these same bytes when the plan has not changed since.
+#[tauri::command]
+pub async fn preview_pdf(
+    app: tauri::AppHandle,
+    html: String,
+    footer: Option<PdfFooter>,
+) -> Result<tauri::ipc::Response, String> {
+    let footer = printed_footer(footer.as_ref());
+    let key = report_key(&html, &footer);
+    if let Some(bytes) = cached_preview(key) {
+        return Ok(tauri::ipc::Response::new(bytes));
+    }
+
+    let generation = PREVIEW_GENERATION.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+    let bytes = tauri::async_runtime::spawn_blocking(move || {
+        let _guard = PREVIEW_LOCK
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        // A newer request arrived while this one waited: printing this report
+        // now would waste a web view print and race the cache.
+        if superseded(generation) {
+            return Err(SUPERSEDED.to_string());
+        }
+        let bytes = render_plan_bytes(&app, &html, &footer)?;
+        if superseded(generation) {
+            return Err(SUPERSEDED.to_string());
+        }
+        if let Ok(mut cache) = PREVIEW_CACHE.lock() {
+            *cache = Some(CachedPreview { key, bytes: bytes.clone() });
+        }
+        Ok(bytes)
+    })
+    .await
+    .map_err(|error| format!("The preview could not be rendered: {error}"))??;
+    Ok(tauri::ipc::Response::new(bytes))
+}
+
 fn render_pdf(app: &tauri::AppHandle, html: &str, target: &Path, footer: &crate::pdf::Footer) -> Result<(), String> {
     // The pages are printed, and then footered, into a staging file beside the
     // target. Only a finished PDF ever reaches the path the operator chose, so a
@@ -514,6 +629,18 @@ fn staged_path(target: &Path) -> std::path::PathBuf {
         .map(|name| name.to_string_lossy().to_string())
         .unwrap_or_else(|| "lifting-plan.pdf".to_string());
     target.with_file_name(format!(".{name}.part-{}", std::process::id()))
+}
+
+/// Write finished PDF bytes to the path the operator chose, through the same
+/// staging file as a render, so a failure never leaves a partial plan.
+fn write_bytes(bytes: &[u8], target: &Path) -> Result<(), String> {
+    let staging = staged_path(target);
+    std::fs::write(&staging, bytes)
+        .map_err(|error| {
+            let _ = std::fs::remove_file(&staging);
+            format!("The PDF could not be written to that folder: {error}")
+        })?;
+    move_into_place(&staging, target)
 }
 
 /// Move the finished PDF to the path the operator chose.
@@ -624,20 +751,23 @@ pub async fn save_pdf(
         target.set_extension("pdf");
     }
 
-    // The footer the report itself prints: the plan reference, and the credit
-    // line or its default.
-    let (reference, center) = crate::report::footer_texts(
-        footer
-            .as_ref()
-            .and_then(|footer| footer.reference.as_deref())
-            .unwrap_or(""),
-        footer.as_ref().and_then(|footer| footer.center.as_deref()),
-    );
-    let footer = crate::pdf::Footer { reference, center };
+    let footer = printed_footer(footer.as_ref());
+    let key = report_key(&html, &footer);
+    let cached = cached_preview(key);
 
     let target_for_render = target.clone();
-    tauri::async_runtime::spawn_blocking(move || {
-        render_pdf(&app, &html, &target_for_render, &footer)
+    tauri::async_runtime::spawn_blocking(move || match cached {
+        // The operator is saving what the preview showed: write those bytes,
+        // so the file cannot differ from the pages on screen.
+        Some(bytes) => write_bytes(&bytes, &target_for_render),
+        // One print at a time, so saving and previewing cannot fight over the
+        // GTK main thread.
+        None => {
+            let _guard = PREVIEW_LOCK
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            render_pdf(&app, &html, &target_for_render, &footer)
+        }
     })
     .await
     .map_err(|error| format!("The PDF export failed: {error}"))??;
@@ -750,6 +880,60 @@ mod pdf_export_tests {
             .expect_err("a missing staging file must not replace the target");
         assert!(error.contains("left as it was"), "{error}");
         assert_eq!(std::fs::read(&target).unwrap(), b"previous plan");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_newer_preview_supersedes_an_older_one() {
+        // The generation gate is what stops a superseded request from printing
+        // or storing. Only this test touches the counter, so it can drive it.
+        let mine = PREVIEW_GENERATION
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            + 1;
+        assert!(!superseded(mine));
+        PREVIEW_GENERATION.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        assert!(superseded(mine), "a newer request must supersede this one");
+    }
+
+    #[test]
+    fn a_report_key_changes_with_the_report_and_its_footer() {
+        let footer = crate::pdf::Footer {
+            reference: "LP-1".to_string(),
+            center: "Credit".to_string(),
+        };
+        let base = report_key("<p>plan</p>", &footer);
+        assert_eq!(base, report_key("<p>plan</p>", &footer));
+
+        let other_footer = crate::pdf::Footer {
+            reference: "LP-2".to_string(),
+            center: "Credit".to_string(),
+        };
+        assert_ne!(base, report_key("<p>plan</p>", &other_footer));
+        assert_ne!(base, report_key("<p>plan 2</p>", &footer));
+        // A credit-line edit is a different printed footer, so a different key.
+        let other_credit = crate::pdf::Footer {
+            reference: "LP-1".to_string(),
+            center: "Someone else".to_string(),
+        };
+        assert_ne!(base, report_key("<p>plan</p>", &other_credit));
+    }
+
+    #[test]
+    fn finishing_a_pdf_from_memory_replaces_the_file_in_one_step() {
+        let dir = std::env::temp_dir().join(format!("lpc-bytes-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let target = dir.join("plan.pdf");
+        std::fs::write(&target, b"old").unwrap();
+
+        write_bytes(b"%PDF-1.7 preview", &target).unwrap();
+        assert_eq!(std::fs::read(&target).unwrap(), b"%PDF-1.7 preview");
+        // Nothing is left beside it.
+        let leftovers: Vec<_> = std::fs::read_dir(&dir)
+            .unwrap()
+            .filter_map(Result::ok)
+            .filter(|entry| entry.file_name().to_string_lossy().contains(".part-"))
+            .collect();
+        assert!(leftovers.is_empty(), "{leftovers:?}");
         let _ = std::fs::remove_dir_all(&dir);
     }
 

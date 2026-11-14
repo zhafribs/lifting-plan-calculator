@@ -4,6 +4,7 @@ import { el, svgIcon, debounce } from "../dom.js";
 import { api, errorText } from "../api.js";
 import { card, field, textInput } from "../components.js";
 import { captureWorkingDiagram } from "../graph/snapshot.js";
+import { createPdfViewer } from "../pdf-viewer.js";
 
 export function createReportScreen(ctx) {
   const { store, catalog, toast } = ctx;
@@ -45,6 +46,7 @@ export function createReportScreen(ctx) {
     input.addEventListener("change", () => {
       sections[key] = input.checked;
       schedulePreview(0);
+      schedulePdf(0);
     });
     checkBoxes[key] = input;
   }
@@ -53,6 +55,7 @@ export function createReportScreen(ctx) {
   diagramInput.addEventListener("change", () => {
     if (!diagramInput.checked) {
       schedulePreview(0);
+      schedulePdf(0);
       return;
     }
     const url = captureWorkingDiagram();
@@ -65,6 +68,7 @@ export function createReportScreen(ctx) {
       return;
     }
     schedulePreview(0);
+    schedulePdf(0);
   });
   const diagramRow = el(
     "label",
@@ -80,6 +84,78 @@ export function createReportScreen(ctx) {
 
   const frame = el("iframe", { title: "Report preview" });
   const frameWrap = el("div", { class: "report-frame" }, frame);
+
+  // The page view: the report as the PDF that will be saved, so the operator
+  // sees the real page breaks and can zoom into a figure. It is rendered on
+  // demand — opening the view, a section change, or leaving a field — never on
+  // every keystroke, because each render is a full print.
+  let previewMode = "pages";
+  let pdfBusy = false;
+  let lastPdfHtml = "";
+  let pdfStale = false;
+
+  const pdfPageLabel = el("span", { class: "faint pdf-page-label", text: "No pages" });
+  const pdfStatus = el("span", { class: "faint pdf-status" });
+  const viewer = createPdfViewer({
+    onChange: ({ pages, label, zoom, busy }) => {
+      pdfPageLabel.textContent = label;
+      pdfStatus.textContent = busy || pdfBusy ? "Rendering…" : "";
+      zoomLabel.textContent = `${Math.round(zoom * 100)}%`;
+      for (const control of zoomControls) control.disabled = pages === 0;
+    },
+  });
+  const pdfWrap = el("div", { class: "report-pdf" }, viewer.element);
+
+  const zoomLabel = el("span", { class: "zoom-label", text: "100%" });
+  const zoomControls = [];
+  function zoomButton(label, title, onClick) {
+    const button = el("button", { class: "btn small", title, onClick });
+    button.textContent = label;
+    zoomControls.push(button);
+    return button;
+  }
+  const zoomOut = zoomButton("\u2212", "Zoom out", () => viewer.zoomBy(-1));
+  const zoomIn = zoomButton("+", "Zoom in", () => viewer.zoomBy(1));
+  const fitButton = zoomButton("Fit width", "Fit the page to the pane", () => viewer.setFit("width"));
+  const refreshButton = zoomButton("Refresh", "Redraw from the current inputs", () => {
+    if (previewMode === "pages") refreshPdf({ force: true });
+  });
+  // Native pinch and Ctrl+wheel mean zoom, not browser zoom.
+  viewer.element.addEventListener(
+    "wheel",
+    (event) => {
+      if (!event.ctrlKey) return;
+      event.preventDefault();
+      viewer.zoomBy(event.deltaY > 0 ? -1 : 1);
+    },
+    { passive: false },
+  );
+
+  const modeButtons = {};
+  function previewButton(mode, label, title) {
+    const button = el("button", { class: "seg", title, onClick: () => setPreviewMode(mode) });
+    button.textContent = label;
+    modeButtons[mode] = button;
+    return button;
+  }
+  const pagesButton = previewButton("pages", "Pages", "The report as the PDF that will be saved");
+  const liveButton = previewButton("live", "Live", "The report as it is being typed");
+
+  const previewBar = el(
+    "div",
+    { class: "preview-bar" },
+    el("div", { class: "segmented" }, pagesButton, liveButton),
+    el("div", { class: "preview-tools" }, zoomOut, zoomLabel, zoomIn, fitButton),
+    pdfPageLabel,
+    pdfStatus,
+    el("span", { class: "spacer" }),
+    refreshButton,
+  );
+
+  const previewPane = el("div", { class: "preview-pane" }, previewBar, frameWrap, pdfWrap);
+  frameWrap.hidden = true;
+  previewPane.classList.add("is-pages");
+  modeButtons.pages.classList.add("on");
 
   // One scrollable: stacked (the same max-width the layout stacks at), the
   // Summary tab reads as a single document — the frame opens to the report's
@@ -109,6 +185,12 @@ export function createReportScreen(ctx) {
     }
   }
   window.addEventListener("resize", debounce(() => fitFrame(), 150));
+  window.addEventListener(
+    "resize",
+    debounce(() => {
+      if (previewMode === "pages") viewer.refit();
+    }, 150),
+  );
 
   const saveButton = el(
     "button",
@@ -222,19 +304,20 @@ export function createReportScreen(ctx) {
           body: el(
             "div",
             { class: "stack" },
-            ...planFields.map(([key, label]) =>
-              field({
-                label,
-                input: textInput({
-                  value: signoff[key],
-                  placeholder: key === "reference" ? "LP-YYYY-NNN" : "",
-                  onInput: (value) => {
-                    signoff[key] = value;
-                    schedulePreview(0);
-                  },
-                }),
-              }),
-            ),
+            ...planFields.map(([key, label]) => {
+              const input = textInput({
+                value: signoff[key],
+                placeholder: key === "reference" ? "LP-YYYY-NNN" : "",
+                onInput: (value) => {
+                  signoff[key] = value;
+                  schedulePreview(0);
+                },
+              });
+              // The page view is a print, so it redraws when the field is
+              // finished with, not on every keystroke.
+              input.addEventListener("blur", () => schedulePdf(0));
+              return field({ label, input });
+            }),
           ),
           foot: el("span", { class: "faint", text: `Issued ${issuedAt}` }),
         }),
@@ -245,13 +328,17 @@ export function createReportScreen(ctx) {
             { class: "stack" },
             field({
               label: "Centre text",
-              input: textInput({
-                value: footerText,
-                onInput: (value) => {
-                  footerText = value;
-                  schedulePreview(0);
-                },
-              }),
+              input: (() => {
+                const input = textInput({
+                  value: footerText,
+                  onInput: (value) => {
+                    footerText = value;
+                    schedulePreview(0);
+                  },
+                });
+                input.addEventListener("blur", () => schedulePdf(0));
+                return input;
+              })(),
             }),
           ),
           foot: el("span", { class: "faint", text: "Printed at the centre of every page." }),
@@ -273,12 +360,12 @@ export function createReportScreen(ctx) {
           foot: el("span", { class: "faint", text: "Save as PDF writes A4 with 1-inch margins, with the footer on every page. Saved HTML keeps a copy of the KaTeX assets beside it; when printing it, keep Margins on Default (1 inch)." }),
         }),
       ),
-      frameWrap,
+      previewPane,
     ),
   );
 
   const schedulePreview = debounce(() => {
-    buildNow();
+    rebuild();
   }, 250);
 
   async function buildNow() {
@@ -319,10 +406,94 @@ export function createReportScreen(ctx) {
     }
   }
 
+  let building = null;
+
+  // One build at a time: a reader who leaves a field while the report is still
+  // being rebuilt waits for that rebuild rather than redrawing the old one.
+  function rebuild() {
+    if (!building) {
+      building = buildNow().finally(() => {
+        building = null;
+      });
+    }
+    return building;
+  }
+
   async function ensureHtml() {
-    if (!lastHtml) await buildNow();
+    if (building) await building;
+    if (!lastHtml) await rebuild();
     return lastHtml;
   }
+
+  function footerParams() {
+    return { reference: signoff.reference, center: footerText };
+  }
+
+  function setPreviewMode(mode) {
+    if (mode === previewMode) return;
+    previewMode = mode;
+    for (const [key, button] of Object.entries(modeButtons)) {
+      button.classList.toggle("on", key === mode);
+    }
+    frameWrap.hidden = mode !== "live";
+    pdfWrap.hidden = mode !== "pages";
+    previewPane.classList.toggle("is-pages", mode === "pages");
+    if (mode === "pages") refreshPdf();
+    else fitFrame();
+  }
+
+  async function refreshPdf({ force = false } = {}) {
+    if (previewMode !== "pages") return;
+    if (pdfBusy) {
+      pdfStale = true;
+      return;
+    }
+    pdfBusy = true;
+    pdfStatus.textContent = "Rendering…";
+    // A first render opens at fit-width, so the view keeps tracking the pane.
+    // Only a re-render puts the reader back where they were.
+    const hadPages = viewer.pages > 0;
+    const zoomBefore = hadPages ? viewer.zoom : 0;
+    const scrollBefore = hadPages ? viewer.element.scrollTop : 0;
+    try {
+      const html = await ensureHtml();
+      if (!force && html === lastPdfHtml) return;
+      const bytes = await api.previewPdf(html, footerParams());
+      // Tauri returns the raw response as an ArrayBuffer; accept a typed array
+      // as well so the viewer does not depend on that detail.
+      const data = bytes instanceof ArrayBuffer || ArrayBuffer.isView(bytes)
+        ? new Uint8Array(bytes.buffer ?? bytes, bytes.byteOffset ?? 0, bytes.byteLength ?? undefined)
+        : new Uint8Array(bytes);
+      await viewer.show(data);
+      lastPdfHtml = html;
+      // Keep the reader where they were: same zoom, same scroll.
+      if (zoomBefore > 0 && Math.abs(zoomBefore - viewer.zoom) > 0.001) {
+        viewer.setZoom(zoomBefore);
+      }
+      if (scrollBefore > 0) viewer.element.scrollTop = scrollBefore;
+    } catch (error) {
+      const message = errorText(error);
+      // A page view needs the print path. When it is unavailable, say why and
+      // fall back to the live preview rather than showing an empty pane.
+      if (!/superseded/i.test(message)) {
+        toast(`Page view unavailable: ${message}`, "error");
+        setPreviewMode("live");
+      }
+    } finally {
+      pdfBusy = false;
+      pdfStatus.textContent = "";
+      if (pdfStale) {
+        pdfStale = false;
+        schedulePdf();
+      }
+    }
+  }
+
+  // A page view costs a print, so it waits for a pause of a second and a half
+  // and never queues a second render behind a running one.
+  const schedulePdf = debounce(() => {
+    if (previewMode === "pages") refreshPdf();
+  }, 1500);
 
   function setSections(list) {
     for (const key of Object.keys(sections)) sections[key] = list.includes(key);
@@ -336,5 +507,11 @@ export function createReportScreen(ctx) {
     schedulePreview();
   }
 
-  return { root, sync, render: () => {}, setSections };
+  // The page view costs a print: it is drawn when the tab is opened, not at
+  // launch and not on every keystroke.
+  function show() {
+    if (previewMode === "pages") refreshPdf();
+  }
+
+  return { root, sync, show, render: () => {}, setSections };
 }

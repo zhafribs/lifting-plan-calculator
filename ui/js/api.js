@@ -21,6 +21,8 @@ export const api = {
     invoke("build_report", { state, include, issuedAt, signoff, workingDiagram, footerCenter }),
   saveReport: (html, suggestedName) => invoke("save_report", { html, suggestedName }),
   savePdf: (html, suggestedName, footer) => invoke("save_pdf", { html, suggestedName, footer }),
+  // The report as PDF bytes, for the Summary page view (an ArrayBuffer).
+  previewPdf: (html, footer) => invoke("preview_pdf", { html, footer }),
   openReportFile: (path) => invoke("open_report_file", { path }),
   checkUpdate: () => invoke("check_update"),
   installUpdate: (asset) => invoke("install_update", { asset }),

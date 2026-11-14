@@ -35,6 +35,7 @@ pub fn run() {
             commands::build_report,
             commands::save_report,
             commands::save_pdf,
+            commands::preview_pdf,
             commands::open_report_file,
             update::check_update,
             update::install_update,

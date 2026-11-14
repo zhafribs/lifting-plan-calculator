@@ -53,11 +53,27 @@ echo "==> Building inside Ubuntu 22.04 (glibc 2.35)"
 STUB="$(mktemp)"
 printf '#!/bin/sh\nexit 0\n' > "$STUB"
 chmod +x "$STUB"
-trap 'rm -f "$STUB"' EXIT
 
-# Fetched on the host: the build inside the bubblewrap sandbox has no network
-# for this, and the repo is bound read-write at /work anyway.
-"$REPO_ROOT/scripts/fetch-pdf-renderer.sh"
+RENDERER_DIR="$REPO_ROOT/src-tauri/pdf-renderer/chrome-headless-shell-linux64"
+SLIM_BACKUP="$REPO_ROOT/src-tauri/.pdf-renderer-slim-backup"
+if [ "${BUNDLE_PDF_RENDERER:-1}" = "1" ]; then
+  # Fetched on the host: the build inside the bubblewrap sandbox has no network
+  # for this, and the repo is bound read-write at /work anyway.
+  "$REPO_ROOT/scripts/fetch-pdf-renderer.sh"
+else
+  echo "==> PDF renderer: not bundled (slim build); a system Chromium/Chrome is used"
+  if [ -d "$RENDERER_DIR" ]; then
+    mv "$RENDERER_DIR" "$SLIM_BACKUP"
+  fi
+fi
+
+cleanup() {
+  rm -f "$STUB"
+  if [ -d "$SLIM_BACKUP" ]; then
+    mv "$SLIM_BACKUP" "$RENDERER_DIR"
+  fi
+}
+trap cleanup EXIT
 
 bwrap \
   --bind "$ROOTFS" / \

@@ -961,15 +961,17 @@ fn probe_refusals(app: &tauri::AppHandle, target: &Path) -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::fs::OpenOptionsExt;
+        // Read the existing plan before holding the file: while the handle is
+        // open without sharing, nothing else can read it either.
+        let before = std::fs::read(target).unwrap_or_default();
         let held = std::fs::OpenOptions::new()
             .read(true)
             .share_mode(0)
             .open(target)
             .map_err(|error| format!("The probe could not hold its own file: {error}"))?;
-        let before = std::fs::read(target).unwrap_or_default();
         let outcome = probe_one(app, target);
-        let after = std::fs::read(target).unwrap_or_default();
         drop(held);
+        let after = std::fs::read(target).unwrap_or_default();
         if outcome.is_ok() {
             return Err("A PDF held by another program was replaced anyway.".to_string());
         }
@@ -977,7 +979,7 @@ fn probe_refusals(app: &tauri::AppHandle, target: &Path) -> Result<(), String> {
             return Err("A failed save changed the plan that was already there.".to_string());
         }
     }
-    // A folder this account cannot write to.
+    // A folder this account cannot write to, holding a plan that must survive.
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -985,14 +987,31 @@ fn probe_refusals(app: &tauri::AppHandle, target: &Path) -> Result<(), String> {
         std::fs::create_dir_all(&folder)
             .map_err(|error| format!("The probe folder could not be created: {error}"))?;
         let path = folder.join("plan.pdf");
+        std::fs::write(&path, b"previous plan")
+            .map_err(|error| format!("The probe plan could not be written: {error}"))?;
         std::fs::set_permissions(&folder, std::fs::Permissions::from_mode(0o500))
             .map_err(|error| format!("The probe folder could not be made read-only: {error}"))?;
-        let outcome = probe_one(app, &path);
+
+        // A privileged account can write anywhere, so the case proves nothing
+        // there: it is skipped rather than failed.
+        let verdict = if std::fs::write(folder.join("probe-writable"), b"x").is_ok() {
+            let _ = std::fs::remove_file(folder.join("probe-writable"));
+            Ok(())
+        } else {
+            let outcome = probe_one(app, &path);
+            let after = std::fs::read(&path).unwrap_or_default();
+            match outcome {
+                Ok(()) => Err("A read-only folder accepted a PDF.".to_string()),
+                Err(_) if after != b"previous plan" => {
+                    Err("A refused save changed the plan that was already there.".to_string())
+                }
+                Err(_) => Ok(()),
+            }
+        };
+
         let _ = std::fs::set_permissions(&folder, std::fs::Permissions::from_mode(0o700));
         let _ = std::fs::remove_dir_all(&folder);
-        if outcome.is_ok() {
-            return Err("A read-only folder accepted a PDF.".to_string());
-        }
+        verdict?;
     }
     let _ = app;
     Ok(())

@@ -54,6 +54,25 @@ pub struct Footer {
 pub fn stamp(path: &Path, footer: &Footer) -> Result<(), String> {
     let mut doc = Document::load(path)
         .map_err(|error| format!("The saved PDF could not be reopened for its footer: {error}"))?;
+    finish(&mut doc, footer)?;
+    doc.save(path)
+        .map_err(|error| format!("The PDF footer could not be written: {error}"))?;
+    Ok(())
+}
+
+/// Draw the footer into a new file, leaving the printed original untouched.
+/// The Windows engine can still hold its output when the print reports
+/// finished, so writing beside it is safer than writing over it.
+pub fn stamp_to(source: &Path, target: &Path, footer: &Footer) -> Result<(), String> {
+    let mut doc = Document::load(source)
+        .map_err(|error| format!("The printed PDF could not be reopened for its footer: {error}"))?;
+    finish(&mut doc, footer)?;
+    doc.save(target)
+        .map_err(|error| format!("The PDF footer could not be written: {error}"))?;
+    Ok(())
+}
+
+fn finish(doc: &mut Document, footer: &Footer) -> Result<(), String> {
     let pages: Vec<ObjectId> = doc.get_pages().into_values().collect();
     if pages.is_empty() {
         return Err("The saved PDF has no pages, so the footer could not be written.".to_string());
@@ -64,8 +83,8 @@ pub fn stamp(path: &Path, footer: &Footer) -> Result<(), String> {
     let mut lines: Vec<(String, String, String)> = Vec::with_capacity(total);
     let mut bounds: Vec<(f32, f32, f32)> = Vec::with_capacity(total);
     for (index, page) in pages.iter().enumerate() {
-        let (left, right) = page_bounds(&doc, *page)?;
-        bounds.push((left, right, baseline(&doc, *page)?));
+        let (left, right) = page_bounds(doc, *page)?;
+        bounds.push((left, right, baseline(doc, *page)?));
         lines.push((
             footer.reference.clone(),
             footer.center.clone(),
@@ -73,22 +92,20 @@ pub fn stamp(path: &Path, footer: &Footer) -> Result<(), String> {
         ));
     }
 
-    let font = embed_font(&mut doc, lines.iter().flat_map(|(reference, center, counter)| {
+    let font = embed_font(doc, lines.iter().flat_map(|(reference, center, counter)| {
         [reference.as_str(), center.as_str(), counter.as_str()]
     }))?;
 
     for ((page, (left, right, baseline)), (reference, center, counter)) in
         pages.iter().zip(bounds).zip(lines)
     {
-        attach_font(&mut doc, *page, font)?;
+        attach_font(doc, *page, font)?;
         prepend_content(
-            &mut doc,
+            doc,
             *page,
             footer_content(left, right, baseline, &reference, &center, &counter),
         )?;
     }
-    doc.save(path)
-        .map_err(|error| format!("The PDF footer could not be written: {error}"))?;
     Ok(())
 }
 

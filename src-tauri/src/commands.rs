@@ -573,47 +573,83 @@ fn render_pdf_into(
     write_katex_assets(app, &temp)?;
 
     // Linux prints with the app's own web view, so no browser has to be
-    // installed and none is carried in the AppImage. Windows keeps Edge.
+    // installed and none is carried in the AppImage.
     #[cfg(not(target_os = "windows"))]
-    let printed = crate::pdf_print::print_to_pdf(
-        app,
-        file_url(&html_path),
-        target.to_path_buf(),
-    );
+    {
+        let printed = crate::pdf_print::print_to_pdf(
+            app,
+            file_url(&html_path),
+            target.to_path_buf(),
+        );
+        let _ = std::fs::remove_dir_all(&temp);
+        printed?;
+        check_pdf(target)?;
+        crate::pdf::stamp(target, footer)?;
+        return Ok(());
+    }
+
     // Windows prints with the WebView2 the app already runs on, so the export
-    // works when Edge has been removed; Edge is the fallback. Each attempt
-    // prints to its own file, so a print that is still finishing when the
-    // fallback starts cannot overwrite the winner.
+    // works when Edge has been removed; Edge is the fallback.
     #[cfg(target_os = "windows")]
-    let printed = {
-        // Beside the target, not in the temp workspace: Windows cannot rename
-        // across volumes, and the operator's folder is often on another drive.
-        let in_app = attempt_path(target, "webview2");
-        let via_edge = attempt_path(target, "edge");
-        let in_app_result = crate::pdf_windows::print_to_pdf(app, &html_path, &in_app);
-        match in_app_result {
-            Ok(()) => {
-                let _ = std::fs::remove_file(&via_edge);
-                move_into_place(&in_app, target)
-            }
-            Err(first) => {
-                let _ = std::fs::remove_file(&in_app);
-                match render_with_browser(&html_path, &temp, &via_edge) {
-                    Ok(()) => move_into_place(&via_edge, target),
-                    Err(second) => Err(format!(
-                        "The app's own printer failed ({first}); Edge then failed too ({second})."
-                    )),
-                }
+    {
+        let printed = print_on_windows(app, &html_path, &temp, target);
+        let _ = std::fs::remove_dir_all(&temp);
+        let printed = printed?;
+
+        // The footer is written into a new file rather than over the print:
+        // WebView2 can still hold what it just wrote when it reports finished,
+        // and a document the engine has closed is cheaper to leave alone.
+        let stamped = attempt_path(target, "stamped");
+        let _ = std::fs::remove_file(&stamped);
+        let result = crate::pdf::stamp_to(&printed, &stamped, footer)
+            .and_then(|()| move_into_place(&stamped, target));
+        let _ = std::fs::remove_file(&printed);
+        if result.is_err() {
+            let _ = std::fs::remove_file(&stamped);
+        }
+        return result;
+    }
+
+    #[allow(unreachable_code)]
+    {
+        let _ = std::fs::remove_dir_all(&temp);
+        let _ = footer;
+        Ok(())
+    }
+}
+
+/// Windows: print with the app's own WebView2, falling back to Edge. Returns the
+/// verified PDF that one of them wrote.
+#[cfg(target_os = "windows")]
+fn print_on_windows(
+    app: &tauri::AppHandle,
+    html_path: &Path,
+    temp: &Path,
+    target: &Path,
+) -> Result<std::path::PathBuf, String> {
+    // Beside the target, not in the temp workspace: Windows cannot rename across
+    // volumes, and the operator's folder is often on another drive.
+    let in_app = attempt_path(target, "webview2");
+    let via_edge = attempt_path(target, "edge");
+    let _ = std::fs::remove_file(&in_app);
+    let _ = std::fs::remove_file(&via_edge);
+
+    let in_app_result = crate::pdf_windows::print_to_pdf(app, html_path, &in_app)
+        .and_then(|()| check_pdf(&in_app));
+    match in_app_result {
+        Ok(()) => Ok(in_app),
+        Err(first) => {
+            let _ = std::fs::remove_file(&in_app);
+            match render_with_browser(html_path, temp, &via_edge)
+                .and_then(|()| check_pdf(&via_edge))
+            {
+                Ok(()) => Ok(via_edge),
+                Err(second) => Err(format!(
+                    "The app's own printer failed ({first}); Edge then failed too ({second})."
+                )),
             }
         }
-    };
-
-    let _ = std::fs::remove_dir_all(&temp);
-    printed?;
-
-    check_pdf(target)?;
-    crate::pdf::stamp(target, footer)?;
-    Ok(())
+    }
 }
 
 /// A fresh workspace nobody else can read or guess: the report's HTML and KaTeX
@@ -671,28 +707,45 @@ fn write_bytes(bytes: &[u8], target: &Path) -> Result<(), String> {
     move_into_place(&staging, target)
 }
 
-/// Move the finished PDF to the path the operator chose.
+/// Retry a file operation a few times: on Windows a just-written PDF can be
+/// held for a moment by the engine, an indexer or a virus scanner, and the next
+/// attempt usually succeeds.
+fn retry_io<T>(mut operation: impl FnMut() -> std::io::Result<T>) -> std::io::Result<T> {
+    #[cfg(not(target_os = "windows"))]
+    {
+        operation()
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let mut last = std::io::Error::other("The file could not be written.");
+        for attempt in 0..5u64 {
+            match operation() {
+                Ok(value) => return Ok(value),
+                Err(error) => {
+                    last = error;
+                    std::thread::sleep(Duration::from_millis(50 * (attempt + 1)));
+                }
+            }
+        }
+        Err(last)
+    }
+}
+
+/// Move the finished PDF to the path the operator chose. On both platforms a
+/// rename replaces an existing file in one step, so the previous plan is never
+/// deleted before the new one is ready.
 fn move_into_place(staging: &Path, target: &Path) -> Result<(), String> {
     if !staging.is_file() {
         return Err("The PDF was not written, so the chosen file was left as it was.".to_string());
     }
-    // On Unix this replaces the target in one step. Windows refuses to rename
-    // over an existing file, so it is removed first — and only then, never
-    // before the finished PDF is known to exist.
-    match std::fs::rename(staging, target) {
+    match retry_io(|| std::fs::rename(staging, target)) {
         Ok(()) => Ok(()),
-        Err(_first) if target.exists() => {
-            std::fs::remove_file(target).map_err(|error| {
-                format!("The existing PDF could not be replaced: {error}")
-            })?;
-            std::fs::rename(staging, target).map_err(|error| {
-                let _ = std::fs::remove_file(staging);
-                format!("The PDF could not be written to that folder: {error}")
-            })
-        }
         Err(error) => {
             let _ = std::fs::remove_file(staging);
-            Err(format!("The PDF could not be written to that folder: {error}"))
+            Err(format!(
+                "The PDF could not be saved there: {error}. If a file with that name is \
+                 open in another program, close it and try again."
+            ))
         }
     }
 }
@@ -821,6 +874,39 @@ pub async fn save_pdf(
 /// result. This is the hook the Windows CI job runs: it proves that the PDF
 /// export works on the platform, which a compile check cannot.
 pub fn export_probe(app: &tauri::AppHandle, target: &Path) -> Result<(), String> {
+    let dir = target
+        .parent()
+        .ok_or_else(|| "The probe needs a folder to write into.".to_string())?;
+    let name = target
+        .file_name()
+        .map(|name| name.to_string_lossy().to_string())
+        .unwrap_or_else(|| "probe.pdf".to_string());
+
+    // The shapes a real save has to survive: a new file, replacing one that is
+    // already there, a folder with spaces and non-ASCII in its name, and nested
+    // folders the dialog can hand back.
+    let spaced = dir.join("probe folder").join(format!("Ünicode {name}"));
+    let nested = dir.join("probe").join("nested").join("deeper").join(&name);
+    for (index, path) in [
+        target.to_path_buf(),
+        target.to_path_buf(),
+        spaced,
+        nested,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent)
+                .map_err(|error| format!("The probe folder could not be created: {error}"))?;
+        }
+        probe_one(app, &path)
+            .map_err(|error| format!("Save location {} failed: {error}", index + 1))?;
+    }
+    Ok(())
+}
+
+fn probe_one(app: &tauri::AppHandle, target: &Path) -> Result<(), String> {
     let footer = crate::pdf::Footer {
         reference: "PROBE-0001".to_string(),
         center: crate::report::DEFAULT_FOOTER.to_string(),

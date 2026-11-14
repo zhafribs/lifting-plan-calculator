@@ -2,6 +2,17 @@
 
 Nothing yet.
 
+## [2.8.2] - 2026-11-14
+
+### Changed
+
+- Dependency refresh: tauri 2.12.5, lopdf 0.47, calamine 0.38, rfd 0.18,
+  serde_json 1.0.154, zip 9.5.1, tauri-build 2.7.4, and
+  `actions/download-artifact` 8.0.2 in the release workflow.
+- No behaviour, calculation or report change. The PDF writer, the workbook
+  reader and the save dialog were all exercised by the release's test suite and
+  the export probe before this went out.
+
 ## [2.8.1] - 2026-11-14
 
 ### Fixed

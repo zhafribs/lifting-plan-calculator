@@ -97,6 +97,9 @@ export function createPdfViewer({ onChange } = {}) {
   let lib = null;
   let doc = null;
   let token = 0;
+  // Which document the canvases belong to. A render that was already running
+  // when the document was replaced must not record itself against the new one.
+  let documentToken = 0;
   let zoom = 1;
   let fit = "width";
   let current = 0;
@@ -147,8 +150,10 @@ export function createPdfViewer({ onChange } = {}) {
     if (!doc || rendered.get(index) === zoom) return;
     const entry = entries[index];
     if (!entry) return;
+    const mine = documentToken;
     cancel(index);
     const page = await doc.getPage(index + 1);
+    if (mine !== documentToken) return;
     if (rendered.get(index) === zoom) return;
     const scale = backingScale(zoom, window.devicePixelRatio);
     const viewport = page.getViewport({ scale });
@@ -164,7 +169,9 @@ export function createPdfViewer({ onChange } = {}) {
       await task.promise;
       // The page may have been evicted while it was drawing; a zeroed canvas is
       // not a rendered page, so it is not remembered as one.
-      if (canvas.width > 0 && canvas.height > 0) rendered.set(index, zoom);
+      if (canvas.width > 0 && canvas.height > 0 && mine === documentToken) {
+        rendered.set(index, zoom);
+      }
     } catch (error) {
       if (error?.name !== "RenderingCancelledException") throw error;
     } finally {
@@ -229,6 +236,7 @@ export function createPdfViewer({ onChange } = {}) {
       }
     }
     doc = next;
+    documentToken += 1;
 
     pages.replaceChildren();
     rendered = new Map();

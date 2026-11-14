@@ -582,7 +582,15 @@ fn render_pdf_into(
     #[cfg(target_os = "windows")]
     let printed = match crate::pdf_windows::print_to_pdf(app, &html_path, target) {
         Ok(()) => Ok(()),
-        Err(_first) => render_with_browser(&html_path, &temp, target),
+        Err(first) => {
+            // A failed in-app print can leave a partial file at the chosen
+            // path; the fallback writes the same path, and both reasons are
+            // reported if it fails too.
+            let _ = std::fs::remove_file(target);
+            render_with_browser(&html_path, &temp, target).map_err(|second| {
+                format!("The app's own printer failed ({first}); Edge then failed too ({second}).")
+            })
+        }
     };
 
     let _ = std::fs::remove_dir_all(&temp);

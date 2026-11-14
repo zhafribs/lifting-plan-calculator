@@ -30,9 +30,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/release.yml": {
-    "mtime": 1794640967.9855018,
-    "seen": 1794641609.4891558,
-    "ast_hash": "4429f914450bc0f672b02d7fab0c83b3",
+    "mtime": 1794653539.5988033,
+    "seen": 1794654322.5455122,
+    "ast_hash": "e5699ebeef8539adf5fed22abf3416c5",
     "semantic_hash": ""
   },
   "build-appimage-portable.sh": {
@@ -66,9 +66,9 @@
     "semantic_hash": "b20dea1f31d5244bada45a9490f1f4ab"
   },
   "src-tauri/Cargo.toml": {
-    "mtime": 1794646729.7422874,
-    "seen": 1794647297.3567445,
-    "ast_hash": "e9dd831cdc8593e8dd4fd90bf35086d3",
+    "mtime": 1794653623.457533,
+    "seen": 1794654322.5455196,
+    "ast_hash": "377ba50d2352961a1c21314a66ecd685",
     "semantic_hash": ""
   },
   "src-tauri/build.rs": {
@@ -186,9 +186,9 @@
     "semantic_hash": "32dc790fd774aa19332b15debdc2ae1f"
   },
   "src-tauri/tauri.conf.json": {
-    "mtime": 1794646729.7422874,
-    "seen": 1794647297.35677,
-    "ast_hash": "177487d76f08b5936da883beea113bb3",
+    "mtime": 1794653623.470706,
+    "seen": 1794654322.5455434,
+    "ast_hash": "a597ba7f781111f53a15fc81c99f28e6",
     "semantic_hash": ""
   },
   "ui/js/api.js": {
@@ -300,9 +300,9 @@
     "semantic_hash": "3a57d99448f802024d640c81af3341a8"
   },
   "CHANGELOG.md": {
-    "mtime": 1794646729.7412875,
-    "seen": 1794647297.3567934,
-    "ast_hash": "9d2434a815ef5b8be2e8dd7e21fa8528",
+    "mtime": 1794653623.4791808,
+    "seen": 1794654322.5455663,
+    "ast_hash": "4fcd6ca0775f496099399745a4c58261",
     "semantic_hash": ""
   },
   "CODE_OF_CONDUCT.md": {
@@ -969,6 +969,18 @@
     "mtime": 1794646729.7422874,
     "seen": 1794647297.3568347,
     "ast_hash": "543743750154b121425e5001044d596e",
+    "semantic_hash": ""
+  },
+  "docs/council/decisions/0009-dependency-refresh.md": {
+    "mtime": 1794653667.8774478,
+    "seen": 1794654322.545586,
+    "ast_hash": "7fbeb33684c8ddb861a11e96da025c70",
+    "semantic_hash": ""
+  },
+  "docs/releases/v2.8.2.md": {
+    "mtime": 1794653650.4689548,
+    "seen": 1794654322.5456095,
+    "ast_hash": "1ac57edd741288c1109da9e1cbea3253",
     "semantic_hash": ""
   }
 }

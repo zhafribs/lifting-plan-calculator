@@ -24,9 +24,9 @@
     "semantic_hash": "9a8b7858c432b26d484faff4a51d58a9"
   },
   ".github/workflows/ci.yml": {
-    "mtime": 1794641572.8959458,
-    "seen": 1794641609.4891543,
-    "ast_hash": "1e92cef694944bff7f0899950391f23b",
+    "mtime": 1794644607.118136,
+    "seen": 1794645114.809332,
+    "ast_hash": "d1167153755509f857169a368d8e099c",
     "semantic_hash": ""
   },
   ".github/workflows/release.yml": {
@@ -66,9 +66,9 @@
     "semantic_hash": "b20dea1f31d5244bada45a9490f1f4ab"
   },
   "src-tauri/Cargo.toml": {
-    "mtime": 1794640583.2889292,
-    "seen": 1794641609.4891648,
-    "ast_hash": "959bf2d4486b486cf7286ab6719c9fd6",
+    "mtime": 1794644607.118136,
+    "seen": 1794645114.8093429,
+    "ast_hash": "4a3364eca1ca7a46a2f731711c46e01b",
     "semantic_hash": ""
   },
   "src-tauri/build.rs": {
@@ -96,9 +96,9 @@
     "semantic_hash": "fa8171b3903ab98be11840c6b87b58a4"
   },
   "src-tauri/src/commands.rs": {
-    "mtime": 1794640997.5624673,
-    "seen": 1794641609.4891713,
-    "ast_hash": "be9591faeac09b8175b2bd8ff2676d0d",
+    "mtime": 1794644607.118136,
+    "seen": 1794645114.8093498,
+    "ast_hash": "e2114dd007060faeac75027328d8ce1a",
     "semantic_hash": ""
   },
   "src-tauri/src/crane.rs": {
@@ -126,9 +126,9 @@
     "semantic_hash": "cd53a61360d1c626fa26491dd2eab53f"
   },
   "src-tauri/src/lib.rs": {
-    "mtime": 1794639911.1141155,
-    "seen": 1794641609.4891765,
-    "ast_hash": "95127db43acf56b7af0cbf1e9c27e5fc",
+    "mtime": 1794644607.118136,
+    "seen": 1794645114.809355,
+    "ast_hash": "04ea06ee648de7177d6d24eba7ba561b",
     "semantic_hash": ""
   },
   "src-tauri/src/main.rs": {
@@ -150,9 +150,9 @@
     "semantic_hash": "39fd8bdd7b986a2529af5a708f565abd"
   },
   "src-tauri/src/report.rs": {
-    "mtime": 1794637342.843347,
-    "seen": 1794638838.5678146,
-    "ast_hash": "86aed64170681d453116227e2d7a901e",
+    "mtime": 1794644607.118136,
+    "seen": 1794645114.8093631,
+    "ast_hash": "c9b86513cc39c5454bb5f763bb08b507",
     "semantic_hash": ""
   },
   "src-tauri/src/report_capacity.rs": {
@@ -186,9 +186,9 @@
     "semantic_hash": "32dc790fd774aa19332b15debdc2ae1f"
   },
   "src-tauri/tauri.conf.json": {
-    "mtime": 1794640583.296242,
-    "seen": 1794641609.4891891,
-    "ast_hash": "d684840ac07c486986628e7615d5e281",
+    "mtime": 1794644607.1191359,
+    "seen": 1794645114.809369,
+    "ast_hash": "4b2ef2b4d02f940e5e9f92b9c5b53f50",
     "semantic_hash": ""
   },
   "ui/js/api.js": {
@@ -258,9 +258,9 @@
     "semantic_hash": "cc97ec2eccf73c44dc7be7865749b467"
   },
   "ui/js/screens/report.js": {
-    "mtime": 1794640997.5627499,
-    "seen": 1794641609.4892046,
-    "ast_hash": "a89761a712d8a99ff00a20db77ffd1f3",
+    "mtime": 1794644607.1191359,
+    "seen": 1794645114.809385,
+    "ast_hash": "1ad06cf9e850d61f8b2bf7122261d05f",
     "semantic_hash": ""
   },
   "ui/js/screens/tandem.js": {
@@ -300,9 +300,9 @@
     "semantic_hash": "3a57d99448f802024d640c81af3341a8"
   },
   "CHANGELOG.md": {
-    "mtime": 1794640569.8424234,
-    "seen": 1794641609.489214,
-    "ast_hash": "e97d1c45bb713460d2ba38c1139bb72f",
+    "mtime": 1794644607.118136,
+    "seen": 1794645114.8093967,
+    "ast_hash": "4e229fdc5b287dc897455dc189dc5895",
     "semantic_hash": ""
   },
   "CODE_OF_CONDUCT.md": {
@@ -318,15 +318,15 @@
     "semantic_hash": "2691ee38eaa721aa667575bc287ad225"
   },
   "README.md": {
-    "mtime": 1794640569.842266,
-    "seen": 1794641609.4892168,
-    "ast_hash": "670d23a8ebd90995ce5cdd5c010ab633",
+    "mtime": 1794644607.118136,
+    "seen": 1794645114.8094008,
+    "ast_hash": "5048160c54d9b78e1a4058b1248025e2",
     "semantic_hash": ""
   },
   "SECURITY.md": {
-    "mtime": 1794637383.000333,
-    "seen": 1794638838.5678442,
-    "ast_hash": "008d2ac754805ba302fe45c5f9dae15e",
+    "mtime": 1794644607.118136,
+    "seen": 1794645114.8094015,
+    "ast_hash": "43a7c21480ee154b702a9ff04cb97e3d",
     "semantic_hash": ""
   },
   "THIRD_PARTY_NOTICES.md": {
@@ -939,6 +939,24 @@
     "mtime": 1794640444.2964392,
     "seen": 1794641609.4892519,
     "ast_hash": "2ee41112a44fe7014dce33e26468ba93",
+    "semantic_hash": ""
+  },
+  "src-tauri/src/pdf_windows.rs": {
+    "mtime": 1794644607.118136,
+    "seen": 1794645114.809362,
+    "ast_hash": "ca259980c6b84fd482012b062920552b",
+    "semantic_hash": ""
+  },
+  "docs/council/decisions/0007-windows-prints-with-webview2.md": {
+    "mtime": 1794644607.118136,
+    "seen": 1794645114.8094163,
+    "ast_hash": "27872726acc7bd5663303b1a64912445",
+    "semantic_hash": ""
+  },
+  "docs/releases/v2.8.0.md": {
+    "mtime": 1794644607.118136,
+    "seen": 1794645114.8094378,
+    "ast_hash": "040c3540562090b72d0d92ff174d7e3a",
     "semantic_hash": ""
   }
 }

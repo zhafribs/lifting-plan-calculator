@@ -2,6 +2,18 @@
 
 Nothing yet.
 
+## [2.8.0] - 2026-11-14
+
+### Changed
+
+- On Windows, *Save as PDF* prints with the WebView2 runtime the app already
+  needs in order to start, so the export works when Microsoft Edge has been
+  removed or disabled. Edge remains the fallback if the runtime is too old to
+  print or the print fails.
+- The Summary page view redraws itself about a second after typing stops, so it
+  keeps up while the plan is edited instead of waiting for a field to be left.
+  The Live view is unchanged and still instant.
+
 ## [2.7.0] - 2026-11-14
 
 ### Added

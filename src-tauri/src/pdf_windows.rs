@@ -12,12 +12,13 @@ use std::path::Path;
 use std::sync::mpsc::{self, Sender};
 use std::time::Duration;
 
-use tauri::{Manager, PageLoadEvent, WebviewUrl, WebviewWindowBuilder};
+use tauri::webview::PageLoadEvent;
+use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
 use webview2_com::Microsoft::Web::WebView2::Win32::{
     ICoreWebView2_7, ICoreWebView2Environment6,
 };
 use webview2_com::PrintToPdfCompletedHandler;
-use windows_core::PCWSTR;
+use windows_core::{Interface, PCWSTR};
 
 /// How long the report may take to load before the window is given up on.
 const LOAD_TIMEOUT: Duration = Duration::from_secs(20);
@@ -137,6 +138,7 @@ fn print(
             } else {
                 Err(format!("The PDF was not written: {result:?}"))
             });
+            Ok(())
         }));
         core.PrintToPdf(path, &settings, &handler)
             .map_err(|error| format!("The PDF could not be printed: {error}"))?;

@@ -27,6 +27,9 @@ if ! cargo tauri --version >/dev/null 2>&1; then
   cargo install tauri-cli --locked
 fi
 
+# The PDF export renders with the bundle's own headless Chromium.
+"$REPO_ROOT/scripts/fetch-pdf-renderer.sh"
+
 echo "==> Building the AppImage (release)"
 cargo tauri build --bundles appimage
 

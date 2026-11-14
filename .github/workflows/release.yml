@@ -81,6 +81,17 @@ jobs:
       - name: Show the Tauri CLI version
         run: cargo tauri --version
 
+      # The bundle carries its own PDF renderer; the download is cached because
+      # it is ~128 MB and never changes between builds of the same pin.
+      - name: Cache the PDF renderer
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: src-tauri/pdf-renderer
+          key: pdf-renderer-${{ runner.os }}-157.0.8103.78
+
+      - name: Fetch the PDF renderer
+        run: ./scripts/fetch-pdf-renderer.sh
+
       # linuxdeploy and appimagetool, fetched by the bundler on first use.
       - name: Cache the bundler tools
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6

@@ -55,6 +55,10 @@ printf '#!/bin/sh\nexit 0\n' > "$STUB"
 chmod +x "$STUB"
 trap 'rm -f "$STUB"' EXIT
 
+# Fetched on the host: the build inside the bubblewrap sandbox has no network
+# for this, and the repo is bound read-write at /work anyway.
+"$REPO_ROOT/scripts/fetch-pdf-renderer.sh"
+
 bwrap \
   --bind "$ROOTFS" / \
   --dev /dev \

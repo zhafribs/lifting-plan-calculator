@@ -336,6 +336,37 @@ pub async fn save_report(
     Ok(Some(target.to_string_lossy().to_string()))
 }
 
+/// The environment an AppImage injects for its own bundled GTK and glibc.
+///
+/// A system program started with these loads the AppImage's libraries and dies
+/// on a symbol mismatch — system Chromium reported "undefined symbol:
+/// BrotliDecoderAttachDictionary", which looked exactly like "not installed".
+/// Every external program this module starts is handed a clean environment.
+const APPIMAGE_ENV: [&str; 13] = [
+    "APPDIR",
+    "ARGV0",
+    "LD_LIBRARY_PATH",
+    "LD_PRELOAD",
+    "GTK_DATA_PREFIX",
+    "GTK_THEME",
+    "GTK_EXE_PREFIX",
+    "GTK_PATH",
+    "GTK_IM_MODULE_FILE",
+    "GDK_PIXBUF_MODULE_FILE",
+    "GI_TYPELIB_PATH",
+    "GIO_MODULE_DIR",
+    "GSETTINGS_SCHEMA_DIR",
+];
+
+/// Strip the AppImage's own paths so a system program runs as the system built it.
+fn outside_the_appimage(command: &mut std::process::Command) -> &mut std::process::Command {
+    for key in APPIMAGE_ENV {
+        command.env_remove(key);
+    }
+    command.env_remove("XDG_DATA_DIRS");
+    command
+}
+
 /// A PDF renderer: Chromium on Linux, Edge or Chrome on Windows. Both are
 /// headless Chromium builds, so the same flags and the report's own
 /// `@page { margin: 25.4mm }` produce the 1-inch margin.
@@ -354,25 +385,67 @@ fn pdf_browser_candidates() -> Vec<std::path::PathBuf> {
     }
     #[cfg(not(target_os = "windows"))]
     {
-        ["chromium", "chromium-browser", "google-chrome", "google-chrome-stable", "brave-browser"]
-            .iter()
-            .map(std::path::PathBuf::from)
-            .collect()
+        // Absolute paths first: an AppImage launched from a desktop does not
+        // always carry the shell's PATH, and a bare name is resolved through it.
+        let mut candidates = Vec::new();
+        for name in [
+            "chromium",
+            "chromium-browser",
+            "google-chrome",
+            "google-chrome-stable",
+            "brave-browser",
+        ] {
+            candidates.push(std::path::PathBuf::from("/usr/bin").join(name));
+            candidates.push(std::path::PathBuf::from("/usr/local/bin").join(name));
+        }
+        candidates.push(std::path::PathBuf::from("/snap/bin/chromium"));
+        for name in [
+            "chromium",
+            "chromium-browser",
+            "google-chrome",
+            "google-chrome-stable",
+            "brave-browser",
+        ] {
+            candidates.push(std::path::PathBuf::from(name));
+        }
+        candidates
     }
 }
 
-fn find_pdf_browser() -> Option<std::path::PathBuf> {
+fn find_pdf_browser(app: &tauri::AppHandle) -> Option<std::path::PathBuf> {
+    // The renderer the bundle carries comes first: an AppImage has to work on a
+    // machine with no browser installed.
+    if let Some(bundled) = bundled_pdf_browser(app) {
+        return Some(bundled);
+    }
     pdf_browser_candidates().into_iter().find(|candidate| {
         if candidate.components().count() > 1 {
             candidate.is_file()
         } else {
-            std::process::Command::new(candidate)
+            outside_the_appimage(&mut std::process::Command::new(candidate))
                 .arg("--version")
                 .output()
                 .map(|output| output.status.success())
                 .unwrap_or(false)
         }
     })
+}
+
+/// The headless Chromium shipped inside the bundle, when this build carries one.
+fn bundled_pdf_browser(app: &tauri::AppHandle) -> Option<std::path::PathBuf> {
+    use tauri::Manager;
+    let relative = "pdf-renderer/chrome-headless-shell-linux64/chrome-headless-shell";
+    app.path()
+        .resolve(relative, tauri::path::BaseDirectory::Resource)
+        .ok()
+        .filter(|path| path.is_file())
+        .filter(|path| {
+            outside_the_appimage(&mut std::process::Command::new(path))
+                .arg("--version")
+                .output()
+                .map(|output| output.status.success())
+                .unwrap_or(false)
+        })
 }
 
 /// `file:///…` with spaces escaped, for Windows paths as well as Unix ones.
@@ -399,9 +472,9 @@ fn write_katex_assets(app: &tauri::AppHandle, root: &Path) -> Result<(), String>
 }
 
 fn render_pdf(app: &tauri::AppHandle, html: &str, target: &Path) -> Result<(), String> {
-    let browser = find_pdf_browser().ok_or_else(|| {
-        "No PDF renderer was found. Install Chromium on Linux; Windows ships Edge. \
-         Alternatively, save the HTML and print it with the margins set to Default."
+    let browser = find_pdf_browser(app).ok_or_else(|| {
+        "No PDF renderer was found. This build carries none and the system has no \
+         Chromium; save the HTML and print it with the margins set to Default."
             .to_string()
     })?;
 
@@ -423,7 +496,7 @@ fn render_pdf(app: &tauri::AppHandle, html: &str, target: &Path) -> Result<(), S
     std::fs::create_dir_all(&profile)
         .map_err(|error| format!("The PDF workspace could not be created: {error}"))?;
 
-    let mut child = std::process::Command::new(&browser)
+    let mut child = outside_the_appimage(&mut std::process::Command::new(&browser))
         .arg("--headless")
         .arg("--disable-gpu")
         .arg("--no-sandbox")
@@ -524,7 +597,7 @@ pub fn open_with_desktop(target: &str) -> Result<(), String> {
         command.arg(target);
         command
     };
-    command
+    outside_the_appimage(&mut command)
         .spawn()
         .map(|_| ())
         .map_err(|error| format!("No application could open that: {error}"))
@@ -558,6 +631,22 @@ mod pdf_export_tests {
             file_url(Path::new("C:\\Users\\A B\\report.html")),
             "file:///C:/Users/A%20B/report.html"
         );
+    }
+
+    #[test]
+    fn an_external_program_is_started_outside_the_appimage() {
+        let mut command = std::process::Command::new("true");
+        command.env("LD_LIBRARY_PATH", "/tmp/appimage/usr/lib");
+        command.env_remove("APPDIR");
+        outside_the_appimage(&mut command);
+        let removed: Vec<String> = command
+            .get_envs()
+            .filter(|(_, value)| value.is_none())
+            .map(|(key, _)| key.to_string_lossy().to_string())
+            .collect();
+        for key in ["LD_LIBRARY_PATH", "APPDIR", "GTK_PATH", "XDG_DATA_DIRS"] {
+            assert!(removed.contains(&key.to_string()), "kept {key}");
+        }
     }
 
     #[test]

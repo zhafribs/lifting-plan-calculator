@@ -13,6 +13,9 @@
 # Scratch (frontend fixture dumps, local test exports)
 /ff16/
 
+# The headless Chromium fetched for the PDF export (~128 MB, scripts/fetch-pdf-renderer.sh)
+/src-tauri/pdf-renderer/chrome-headless-shell-linux64/
+
 # Tauri generated schemas
 /src-tauri/gen/schemas/
 

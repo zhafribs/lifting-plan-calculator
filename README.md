@@ -180,8 +180,10 @@ package; it is skipped with a notice if `zsyncmake` is missing).
 
 Requirements: Rust (cargo), `python3` (both scripts read the version from
 `tauri.conf.json`), and a system with `webkit2gtk-4.1`, `gtk3` and `librsvg`
-development packages. The scripts install the Tauri CLI if missing.
-`build-appimage-portable.sh` needs `bwrap` and an internet connection on its
+development packages. The scripts install the Tauri CLI if missing, and fetch
+the PDF renderer (`scripts/fetch-pdf-renderer.sh`, ~128 MB, pinned; unpacked to
+`src-tauri/pdf-renderer/`, which is not in git). `build-appimage-portable.sh`
+needs `bwrap` and an internet connection on its
 first run (it caches a ~30 MB Ubuntu base rootfs under
 `~/.cache/lifting-plan-calculator-build`). A Dockerfile with the same effect
 lives in `packaging/Dockerfile` for environments where Docker is preferred.
@@ -276,12 +278,14 @@ to the GitHub release — and the installers are unsigned, so Windows shows its
   workbook of your own; the TL-200M also ships as its manufacturer's
   specification PDF, which the workbook transcribes.
 - **Printing and PDF**: the report preview is a web view; *Save as PDF* writes
-  the report directly to A4 with a one-inch margin on every side, using a
-  headless Chromium build — Microsoft Edge on Windows, Chromium on Linux
-  (install it if the app says no renderer was found). *Print* opens the system
-  print dialog, and *Save as HTML* writes a portable copy. The page declares the
-  same A4 one-inch margin, so a browser's print dialog must leave its margin
-  selector on **Default**; *Minimum* and *None* override it. Every page carries
+  the report directly to A4 with a one-inch margin on every side. The AppImage
+  carries its own headless Chromium (pinned, fetched at build time), so the
+  export needs no browser on the target machine; Windows uses the Edge that
+  ships with the system, and a system Chromium is the fallback if the payload is
+  missing. *Print* opens the system print dialog, and *Save as HTML* writes a
+  portable copy. The page declares the same A4 one-inch margin, so a browser's
+  print dialog must leave its margin selector on **Default**; *Minimum* and
+  *None* override it. Every page carries
   the plan reference on the left, the credit line in the centre (editable in
   Summary, between Plan details and Export), and `n / total` on the right, in
   the bottom margin. If the desktop

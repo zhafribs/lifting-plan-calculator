@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Nothing yet.
 
+## [2.5.4] - 2026-11-14
+
+### Added
+
+- The AppImage carries its own headless Chromium (Chrome for Testing, pinned and
+  checksum-verified at build time), so *Save as PDF* works on a machine with no
+  browser installed. A system browser remains the fallback.
+
+### Fixed
+
+- External programs are started without the AppImage's own library paths. A
+  system Chromium used to die on `undefined symbol:
+  BrotliDecoderAttachDictionary` and be reported as "no PDF renderer found".
+- The renderer search also covers `/usr/bin`, `/usr/local/bin` and `/snap/bin`,
+  so a browser off the shell's PATH is still found.
+
 ## [2.5.3] - 2026-11-14
 
 ### Added

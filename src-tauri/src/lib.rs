@@ -11,6 +11,9 @@ pub mod excel;
 pub mod figures;
 pub mod model;
 pub mod nonuniform;
+pub mod pdf;
+#[cfg(target_os = "linux")]
+pub mod pdf_print;
 pub mod report;
 pub mod report_capacity;
 pub mod report_nonuniform;

@@ -29,13 +29,16 @@ If you redistribute the AppImage, keep this file and `LICENSE` with it, and
 comply with the LGPL for the bundled GTK/WebKitGTK libraries (in particular,
 your recipients' ability to relink those libraries).
 
-## Bundled with the AppImage, fetched at build time
+## Runtime components
+
+The AppImage carries no browser: the PDF export prints the report with the
+WebKitGTK view the application already runs on, and the footer is drawn onto
+the finished pages with [lopdf](https://crates.io/crates/lopdf) (MIT licence,
+statically linked). Windows uses the Microsoft Edge that ships with the
+operating system.
+
+The footer's typeface is embedded in the PDF export and in this application:
 
 | Component | Version | License | Purpose | Full text |
 | --- | --- | --- | --- | --- |
-| [Chrome for Testing](https://googlechromelabs.github.io/chrome-for-testing/) (headless shell) | 157.0.8103.78 | BSD-3-Clause (Chromium) and the third-party licenses it lists | Rendering the PDF export without a browser installed on the target machine | `pdf-renderer/chrome-headless-shell-linux64/LICENSE.headless_shell` inside the payload |
-
-The renderer is downloaded by `scripts/fetch-pdf-renderer.sh` from the Chrome
-for Testing archive, with the version and the archive checksum pinned. It is
-not stored in this repository. Its license text ships inside the bundle beside
-the binary; keep it there when redistributing the AppImage.
+| [Liberation Serif](https://github.com/liberationfonts/liberation-fonts) | 2.x | SIL Open Font License 1.1 | The footer text on every exported page | `src-tauri/assets/fonts/LICENSE-LiberationSerif.txt` |

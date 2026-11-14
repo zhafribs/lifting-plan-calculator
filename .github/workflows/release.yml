@@ -35,9 +35,56 @@ jobs:
         if: ${{ github.event_name == 'push' }}
         run: ./packaging/check-release-notes.sh --tag "$GITHUB_REF_NAME"
 
+  # The export is the feature this release is about, so the tag is checked by
+  # printing the worked-example plan before either platform build starts.
+  pdf-export:
+    name: PDF export
+    needs: [verify-notes]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libssl-dev \
+            zlib1g-dev libsoup-3.0-dev pkg-config \
+            xvfb dbus-x11 poppler-utils fonts-liberation fonts-dejavu-core
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
+        with:
+          workspaces: src-tauri
+
+      - name: Print the worked-example plan
+        env:
+          WEBKIT_DISABLE_COMPOSITING_MODE: "1"
+          WEBKIT_DISABLE_DMABUF_RENDERER: "1"
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: |
+          set -euo pipefail
+          cargo run --quiet --manifest-path src-tauri/Cargo.toml --example dump_fixtures
+          xvfb-run -a dbus-run-session -- \
+            cargo run --quiet --manifest-path src-tauri/Cargo.toml --example export_pdf -- \
+              /tmp/opencode/fixtures/report.html /tmp/plan.pdf "Release check — LP/2026 (A)"
+
+      - name: Check the printed plan
+        run: |
+          set -euo pipefail
+          pdfinfo /tmp/plan.pdf | tee /tmp/pdfinfo.txt
+          pages="$(awk '/^Pages:/{print $2}' /tmp/pdfinfo.txt)"
+          [ "$pages" -ge 5 ]
+          pdftotext -f 1 -l 1 -layout /tmp/plan.pdf - | grep -q 'Release check — LP/2026 (A)'
+          pdftotext -f "$pages" -l "$pages" -layout /tmp/plan.pdf - | grep -q "$pages/$pages"
+
   linux-appimage:
     name: Linux AppImage
-    needs: [verify-notes]
+    needs: [verify-notes, pdf-export]
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -81,16 +128,8 @@ jobs:
       - name: Show the Tauri CLI version
         run: cargo tauri --version
 
-      # The bundle carries its own PDF renderer; the download is cached because
-      # it is ~128 MB and never changes between builds of the same pin.
-      - name: Cache the PDF renderer
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: src-tauri/pdf-renderer
-          key: pdf-renderer-${{ runner.os }}-157.0.8103.78
-
-      - name: Fetch the PDF renderer
-        run: ./scripts/fetch-pdf-renderer.sh
+      # The bundle carries no PDF renderer: the app prints the plan with its own
+      # WebKitGTK view, so nothing is downloaded and nothing is bundled.
 
       # linuxdeploy and appimagetool, fetched by the bundler on first use.
       - name: Cache the bundler tools
@@ -104,6 +143,33 @@ jobs:
           APPIMAGE_EXTRACT_AND_RUN: "1"
         run: ./build-appimage.sh
 
+      # The PDF export prints with the app's own WebKitGTK view, so the bundle
+      # must carry GTK's "Print to File" backend, and must not carry a browser.
+      # Neither is visible from a build log, so the payload is inspected here.
+      - name: Check the AppImage payload
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+        run: |
+          set -euo pipefail
+          image="$(find dist -maxdepth 1 -name '*.AppImage' | head -1)"
+          work="$(mktemp -d)"
+          cd "$work"
+          "$GITHUB_WORKSPACE/$image" --appimage-extract >/dev/null
+          if ! find squashfs-root -name 'libprintbackend-file.so' | grep -q .; then
+            echo "ERROR: the AppImage has no GTK file print backend; Save as PDF cannot work." >&2
+            exit 1
+          fi
+          if find squashfs-root -name 'chrome-headless-shell*' | grep -q .; then
+            echo "ERROR: a browser payload is inside the AppImage; 2.6.0 carries none." >&2
+            exit 1
+          fi
+          size="$(stat -c %s "$GITHUB_WORKSPACE/$image")"
+          echo "AppImage: $((size / 1024 / 1024)) MB"
+          if [ "$size" -gt $((95 * 1024 * 1024)) ]; then
+            echo "ERROR: the AppImage is larger than 95 MB; a browser payload came back." >&2
+            exit 1
+          fi
+
       - name: Upload the Linux artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
@@ -115,7 +181,7 @@ jobs:
 
   windows-installers:
     name: Windows installers
-    needs: [verify-notes]
+    needs: [verify-notes, pdf-export]
     runs-on: windows-latest
     steps:
       - name: Checkout

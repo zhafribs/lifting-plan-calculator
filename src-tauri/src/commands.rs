@@ -2,6 +2,7 @@
 
 use std::path::Path;
 use std::sync::Mutex;
+#[cfg(target_os = "windows")]
 use std::time::{Duration, Instant};
 
 use serde::Deserialize;
@@ -367,85 +368,30 @@ fn outside_the_appimage(command: &mut std::process::Command) -> &mut std::proces
     command
 }
 
-/// A PDF renderer: Chromium on Linux, Edge or Chrome on Windows. Both are
-/// headless Chromium builds, so the same flags and the report's own
-/// `@page { margin: 25.4mm }` produce the 1-inch margin.
+/// Windows' PDF renderer: the Edge that ships with the system, or Chrome.
+///
+/// Linux does not come through here: the app prints the plan with its own web
+/// view, so no browser has to be installed and none is carried in the AppImage.
+#[cfg(target_os = "windows")]
 fn pdf_browser_candidates() -> Vec<std::path::PathBuf> {
-    #[cfg(target_os = "windows")]
-    {
-        let mut candidates = Vec::new();
-        for variable in ["PROGRAMFILES(X86)", "PROGRAMFILES", "LOCALAPPDATA"] {
-            if let Ok(base) = std::env::var(variable) {
-                let base = std::path::Path::new(&base);
-                candidates.push(base.join("Microsoft/Edge/Application/msedge.exe"));
-                candidates.push(base.join("Google/Chrome/Application/chrome.exe"));
-            }
+    let mut candidates = Vec::new();
+    // Program Files first: a per-user install is the least privileged place to
+    // find an executable, so it is the last resort.
+    for variable in ["PROGRAMFILES", "PROGRAMFILES(X86)", "LOCALAPPDATA"] {
+        if let Ok(base) = std::env::var(variable) {
+            let base = std::path::Path::new(&base);
+            candidates.push(base.join("Microsoft/Edge/Application/msedge.exe"));
+            candidates.push(base.join("Google/Chrome/Application/chrome.exe"));
         }
-        candidates
     }
-    #[cfg(not(target_os = "windows"))]
-    {
-        // Absolute paths first: an AppImage launched from a desktop does not
-        // always carry the shell's PATH, and a bare name is resolved through it.
-        let mut candidates = Vec::new();
-        for name in [
-            "chromium",
-            "chromium-browser",
-            "google-chrome",
-            "google-chrome-stable",
-            "brave-browser",
-        ] {
-            candidates.push(std::path::PathBuf::from("/usr/bin").join(name));
-            candidates.push(std::path::PathBuf::from("/usr/local/bin").join(name));
-        }
-        candidates.push(std::path::PathBuf::from("/snap/bin/chromium"));
-        for name in [
-            "chromium",
-            "chromium-browser",
-            "google-chrome",
-            "google-chrome-stable",
-            "brave-browser",
-        ] {
-            candidates.push(std::path::PathBuf::from(name));
-        }
-        candidates
-    }
+    candidates
 }
 
-fn find_pdf_browser(app: &tauri::AppHandle) -> Option<std::path::PathBuf> {
-    // The renderer the bundle carries comes first: an AppImage has to work on a
-    // machine with no browser installed.
-    if let Some(bundled) = bundled_pdf_browser(app) {
-        return Some(bundled);
-    }
-    pdf_browser_candidates().into_iter().find(|candidate| {
-        if candidate.components().count() > 1 {
-            candidate.is_file()
-        } else {
-            outside_the_appimage(&mut std::process::Command::new(candidate))
-                .arg("--version")
-                .output()
-                .map(|output| output.status.success())
-                .unwrap_or(false)
-        }
-    })
-}
-
-/// The headless Chromium shipped inside the bundle, when this build carries one.
-fn bundled_pdf_browser(app: &tauri::AppHandle) -> Option<std::path::PathBuf> {
-    use tauri::Manager;
-    let relative = "pdf-renderer/chrome-headless-shell-linux64/chrome-headless-shell";
-    app.path()
-        .resolve(relative, tauri::path::BaseDirectory::Resource)
-        .ok()
-        .filter(|path| path.is_file())
-        .filter(|path| {
-            outside_the_appimage(&mut std::process::Command::new(path))
-                .arg("--version")
-                .output()
-                .map(|output| output.status.success())
-                .unwrap_or(false)
-        })
+#[cfg(target_os = "windows")]
+fn find_pdf_browser() -> Option<std::path::PathBuf> {
+    pdf_browser_candidates()
+        .into_iter()
+        .find(|candidate| candidate.is_file())
 }
 
 /// `file:///…` with spaces escaped, for Windows paths as well as Unix ones.
@@ -471,27 +417,143 @@ fn write_katex_assets(app: &tauri::AppHandle, root: &Path) -> Result<(), String>
     Ok(())
 }
 
-fn render_pdf(app: &tauri::AppHandle, html: &str, target: &Path) -> Result<(), String> {
-    let browser = find_pdf_browser(app).ok_or_else(|| {
-        "No PDF renderer was found. This build carries none and the system has no \
-         Chromium; save the HTML and print it with the margins set to Default."
-            .to_string()
-    })?;
+/// What the report screen sends so the PDF's footer can be written on Linux,
+/// where the app's own web view prints the pages and does not draw `@page`
+/// margin boxes. Absent values fall back to the report's own defaults.
+#[derive(Debug, Clone, Deserialize)]
+pub struct PdfFooter {
+    pub reference: Option<String>,
+    pub center: Option<String>,
+}
 
+fn render_pdf(app: &tauri::AppHandle, html: &str, target: &Path, footer: &crate::pdf::Footer) -> Result<(), String> {
+    // The pages are printed, and then footered, into a staging file beside the
+    // target. Only a finished PDF ever reaches the path the operator chose, so a
+    // failed footer cannot leave a plan without its reference and page numbers.
+    let staging = staged_path(target);
+    let _ = std::fs::remove_file(&staging);
+    let rendered = render_pdf_into(app, html, &staging, footer);
+    match rendered {
+        Ok(()) => move_into_place(&staging, target),
+        Err(error) => {
+            let _ = std::fs::remove_file(&staging);
+            Err(error)
+        }
+    }
+}
+
+fn render_pdf_into(
+    app: &tauri::AppHandle,
+    html: &str,
+    target: &Path,
+    footer: &crate::pdf::Footer,
+) -> Result<(), String> {
+    let temp = private_workspace()?;
+    let html_path = temp.join("report.html");
+    std::fs::write(&html_path, html)
+        .map_err(|error| format!("The PDF report could not be prepared: {error}"))?;
+    write_katex_assets(app, &temp)?;
+
+    // Linux prints with the app's own web view, so no browser has to be
+    // installed and none is carried in the AppImage. Windows keeps Edge.
+    #[cfg(not(target_os = "windows"))]
+    let printed = crate::pdf_print::print_to_pdf(
+        app,
+        file_url(&html_path),
+        target.to_path_buf(),
+    );
+    #[cfg(target_os = "windows")]
+    let printed = render_with_browser(&html_path, &temp, target);
+
+    let _ = std::fs::remove_dir_all(&temp);
+    printed?;
+
+    let size = std::fs::metadata(target)
+        .map_err(|error| format!("The PDF was not written: {error}"))?
+        .len();
+    if size == 0 {
+        let _ = std::fs::remove_file(target);
+        return Err("The PDF renderer wrote an empty file.".to_string());
+    }
+    // WebKitGTK does not draw the report's `@page` margin boxes, so the footer
+    // is written onto the pages here. Chromium draws it itself.
+    #[cfg(not(target_os = "windows"))]
+    crate::pdf::stamp(target, footer)?;
+    #[cfg(target_os = "windows")]
+    let _ = footer;
+    Ok(())
+}
+
+/// A fresh workspace nobody else can read or guess: the report's HTML and KaTeX
+/// assets are written there before printing, and they carry the plan's data.
+fn private_workspace() -> Result<std::path::PathBuf, String> {
     let stamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
-        .map(|duration| duration.as_millis())
+        .map(|duration| duration.as_nanos())
         .unwrap_or(0);
     let temp = std::env::temp_dir().join(format!(
         "lifting-plan-pdf-{}-{stamp}",
         std::process::id()
     ));
-    std::fs::create_dir_all(&temp)
+    let mut builder = std::fs::DirBuilder::new();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::DirBuilderExt;
+        builder.mode(0o700);
+    }
+    builder
+        .create(&temp)
         .map_err(|error| format!("The PDF workspace could not be created: {error}"))?;
-    let html_path = temp.join("report.html");
-    std::fs::write(&html_path, html)
-        .map_err(|error| format!("The PDF report could not be prepared: {error}"))?;
-    write_katex_assets(app, &temp)?;
+    Ok(temp)
+}
+
+/// Where the PDF is written before it is known to be complete.
+fn staged_path(target: &Path) -> std::path::PathBuf {
+    let name = target
+        .file_name()
+        .map(|name| name.to_string_lossy().to_string())
+        .unwrap_or_else(|| "lifting-plan.pdf".to_string());
+    target.with_file_name(format!(".{name}.part-{}", std::process::id()))
+}
+
+/// Move the finished PDF to the path the operator chose.
+fn move_into_place(staging: &Path, target: &Path) -> Result<(), String> {
+    if !staging.is_file() {
+        return Err("The PDF was not written, so the chosen file was left as it was.".to_string());
+    }
+    // On Unix this replaces the target in one step. Windows refuses to rename
+    // over an existing file, so it is removed first — and only then, never
+    // before the finished PDF is known to exist.
+    match std::fs::rename(staging, target) {
+        Ok(()) => Ok(()),
+        Err(_first) if target.exists() => {
+            std::fs::remove_file(target).map_err(|error| {
+                format!("The existing PDF could not be replaced: {error}")
+            })?;
+            std::fs::rename(staging, target).map_err(|error| {
+                let _ = std::fs::remove_file(staging);
+                format!("The PDF could not be written to that folder: {error}")
+            })
+        }
+        Err(error) => {
+            let _ = std::fs::remove_file(staging);
+            Err(format!("The PDF could not be written to that folder: {error}"))
+        }
+    }
+}
+
+/// Windows: print with the Edge the system already carries.
+#[cfg(target_os = "windows")]
+fn render_with_browser(
+    html_path: &Path,
+    temp: &Path,
+    target: &Path,
+) -> Result<(), String> {
+    let browser = find_pdf_browser().ok_or_else(|| {
+        "No PDF renderer was found. Microsoft Edge is part of Windows 10 and 11; \
+         if it has been removed, reinstall it to save plans as PDF."
+            .to_string()
+    })?;
     let profile = temp.join("profile");
     std::fs::create_dir_all(&profile)
         .map_err(|error| format!("The PDF workspace could not be created: {error}"))?;
@@ -499,11 +561,10 @@ fn render_pdf(app: &tauri::AppHandle, html: &str, target: &Path) -> Result<(), S
     let mut child = outside_the_appimage(&mut std::process::Command::new(&browser))
         .arg("--headless")
         .arg("--disable-gpu")
-        .arg("--no-sandbox")
         .arg("--no-pdf-header-footer")
         .arg(format!("--user-data-dir={}", profile.display()))
         .arg(format!("--print-to-pdf={}", target.display()))
-        .arg(file_url(&html_path))
+        .arg(file_url(html_path))
         .spawn()
         .map_err(|error| format!("The PDF renderer could not start: {error}"))?;
 
@@ -517,18 +578,15 @@ fn render_pdf(app: &tauri::AppHandle, html: &str, target: &Path) -> Result<(), S
             Ok(None) => {
                 let _ = child.kill();
                 let _ = child.wait();
-                let _ = std::fs::remove_dir_all(&temp);
                 let _ = std::fs::remove_file(target);
                 return Err("The PDF renderer did not finish within 90 seconds.".to_string());
             }
             Err(error) => {
-                let _ = std::fs::remove_dir_all(&temp);
                 let _ = std::fs::remove_file(target);
                 return Err(format!("The PDF renderer could not be followed: {error}"));
             }
         }
     };
-    let _ = std::fs::remove_dir_all(&temp);
 
     if !status.success() {
         let _ = std::fs::remove_file(target);
@@ -536,23 +594,16 @@ fn render_pdf(app: &tauri::AppHandle, html: &str, target: &Path) -> Result<(), S
             "The PDF renderer exited with {status}. The report was not saved."
         ));
     }
-    let size = std::fs::metadata(target)
-        .map_err(|error| format!("The PDF was not written: {error}"))?
-        .len();
-    if size == 0 {
-        let _ = std::fs::remove_file(target);
-        return Err("The PDF renderer wrote an empty file.".to_string());
-    }
     Ok(())
 }
 
-/// Write the report as a PDF with the report's own 1-inch page margin, using a
-/// headless Chromium build rather than the system print dialog.
+/// Write the report as a PDF with the report's own 1-inch page margin.
 #[tauri::command]
 pub async fn save_pdf(
     app: tauri::AppHandle,
     html: String,
     suggested_name: String,
+    footer: Option<PdfFooter>,
 ) -> Result<Option<String>, String> {
     let handle = rfd::AsyncFileDialog::new()
         .set_title("Save lifting plan as PDF")
@@ -573,10 +624,23 @@ pub async fn save_pdf(
         target.set_extension("pdf");
     }
 
+    // The footer the report itself prints: the plan reference, and the credit
+    // line or its default.
+    let (reference, center) = crate::report::footer_texts(
+        footer
+            .as_ref()
+            .and_then(|footer| footer.reference.as_deref())
+            .unwrap_or(""),
+        footer.as_ref().and_then(|footer| footer.center.as_deref()),
+    );
+    let footer = crate::pdf::Footer { reference, center };
+
     let target_for_render = target.clone();
-    tauri::async_runtime::spawn_blocking(move || render_pdf(&app, &html, &target_for_render))
-        .await
-        .map_err(|error| format!("The PDF export failed: {error}"))??;
+    tauri::async_runtime::spawn_blocking(move || {
+        render_pdf(&app, &html, &target_for_render, &footer)
+    })
+    .await
+    .map_err(|error| format!("The PDF export failed: {error}"))??;
     Ok(Some(target.to_string_lossy().to_string()))
 }
 
@@ -650,7 +714,56 @@ mod pdf_export_tests {
     }
 
     #[test]
-    fn a_pdf_browser_candidate_list_is_always_present() {
-        assert!(!pdf_browser_candidates().is_empty());
+    fn a_finished_pdf_replaces_the_chosen_file() {
+        let dir = std::env::temp_dir().join(format!("lpc-staging-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let target = dir.join("plan.pdf");
+        let staging = staged_path(&target);
+        // The staging file is a sibling, so the move is a rename, not a copy
+        // across filesystems — and it is hidden and unique to the process.
+        assert_eq!(staging.parent(), target.parent());
+        assert!(staging
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .starts_with(&format!(".plan.pdf.part-{}", std::process::id())));
+
+        std::fs::write(&target, b"previous plan").unwrap();
+        std::fs::write(&staging, b"new plan").unwrap();
+        move_into_place(&staging, &target).unwrap();
+
+        assert_eq!(std::fs::read(&target).unwrap(), b"new plan");
+        assert!(!staging.exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_failed_export_leaves_the_chosen_file_alone() {
+        // The footer is written after printing; if that step fails the operator
+        // keeps the plan they had, rather than an unfootered replacement.
+        let dir = std::env::temp_dir().join(format!("lpc-staging-fail-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let target = dir.join("plan.pdf");
+        std::fs::write(&target, b"previous plan").unwrap();
+
+        let error = move_into_place(&staged_path(&target), &target)
+            .expect_err("a missing staging file must not replace the target");
+        assert!(error.contains("left as it was"), "{error}");
+        assert_eq!(std::fs::read(&target).unwrap(), b"previous plan");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn the_pdf_footer_matches_the_report_defaults() {
+        // The PDF export writes the footer onto the pages on Linux, so it has
+        // to resolve exactly as the report's own margin boxes do.
+        let (reference, center) = crate::report::footer_texts("", None);
+        assert_eq!(reference, "No reference");
+        assert_eq!(center, crate::report::DEFAULT_FOOTER);
+
+        let (reference, center) =
+            crate::report::footer_texts("  LP-2026-014  ", Some("Checked by A. Rigger"));
+        assert_eq!(reference, "LP-2026-014");
+        assert_eq!(center, "Checked by A. Rigger");
     }
 }

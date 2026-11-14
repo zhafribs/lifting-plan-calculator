@@ -27,20 +27,8 @@ if ! cargo tauri --version >/dev/null 2>&1; then
   cargo install tauri-cli --locked
 fi
 
-# The PDF export renders with the bundle's own headless Chromium. A slim build
-# (BUNDLE_PDF_RENDERER=0) leaves it out and uses a system Chromium/Chrome
-# instead; that is roughly 100 MB smaller.
-if [ "${BUNDLE_PDF_RENDERER:-1}" = "1" ]; then
-  "$REPO_ROOT/scripts/fetch-pdf-renderer.sh"
-else
-  echo "==> PDF renderer: not bundled (slim build); a system Chromium/Chrome is used"
-  RENDERER_DIR="$REPO_ROOT/src-tauri/pdf-renderer/chrome-headless-shell-linux64"
-  SLIM_BACKUP="$REPO_ROOT/src-tauri/.pdf-renderer-slim-backup"
-  if [ -d "$RENDERER_DIR" ]; then
-    mv "$RENDERER_DIR" "$SLIM_BACKUP"
-    trap 'mv "$SLIM_BACKUP" "$RENDERER_DIR"' EXIT
-  fi
-fi
+# The PDF export prints with the app's own WebKitGTK view, so the bundle carries
+# no browser and needs none installed on the target machine.
 
 echo "==> Building the AppImage (release)"
 cargo tauri build --bundles appimage

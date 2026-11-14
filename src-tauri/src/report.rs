@@ -19,14 +19,14 @@ use crate::sling::{hitch_spec, SlingResult};
 /// The centre text of every printed page's footer, unless the report screen
 /// supplies its own.
 pub const DEFAULT_FOOTER: &str =
-    "Prepared with Lifting Plan Calculator by Zhafri Syazwi ✉ zhafribs@gmail.com";
+    "Prepared with Lifting Plan Calculator by Zhafri Syazwi — zhafribs@gmail.com";
 
 pub const REPORT_CSS: &str = r#"
 <style>
 @page {
     @bottom-left { content: var(--plan-reference, "No reference"); font-size: 6pt;
         color: #555; font-family: "Liberation Serif", "DejaVu Serif", serif; }
-    @bottom-center { content: var(--footer-center, "Prepared with Lifting Plan Calculator by Zhafri Syazwi ✉ zhafribs@gmail.com"); font-size: 6pt;
+    @bottom-center { content: var(--footer-center, "Prepared with Lifting Plan Calculator by Zhafri Syazwi — zhafribs@gmail.com"); font-size: 6pt;
         color: #555; font-family: "Liberation Serif", "DejaVu Serif", serif; }
     @bottom-right { content: counter(page) " / " counter(pages); font-size: 6pt;
         color: #555; font-family: "Liberation Serif", "DejaVu Serif", serif; }
@@ -322,9 +322,14 @@ pub fn escape(text: &str) -> String {
 
 /// A value safe inside a double-quoted CSS string.
 fn css_string(value: &str) -> String {
+    // `<` is escaped as a CSS code point so a reference or credit line cannot
+    // close the `<style>` element it is written into. The preview is an
+    // unsandboxed `srcdoc` frame read by the main window, so a closing tag here
+    // would be script execution, not a formatting glitch.
     value
         .replace('\\', "\\\\")
         .replace('"', "\\\"")
+        .replace('<', "\\3c ")
         .replace(['\n', '\r'], " ")
 }
 
@@ -607,6 +612,20 @@ fn plan_head(
     out
 }
 
+/// The reference and credit line every printed page carries, with the defaults
+/// the report applies. The PDF export uses the same function, so the footer on
+/// the finished PDF is the footer the preview showed.
+pub fn footer_texts(reference: &str, center: Option<&str>) -> (String, String) {
+    let reference = reference.trim();
+    let reference = if reference.is_empty() {
+        "No reference".to_string()
+    } else {
+        reference.to_string()
+    };
+    let center = center.unwrap_or(DEFAULT_FOOTER);
+    (reference, center.to_string())
+}
+
 /// The selected report sections as HTML.
 ///
 /// Missing or incomplete state is rendered as an explicit setup message rather
@@ -628,13 +647,14 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
         .working_diagram
         .as_deref()
         .filter(|source| source.starts_with("data:image/png;base64,"));
-    let footer_center = inputs.footer_center.as_deref().unwrap_or(DEFAULT_FOOTER);
+    let (reference, footer_center) =
+        footer_texts(&reference, inputs.footer_center.as_deref());
     let mut parts: Vec<String> = vec![
         REPORT_CSS.to_string(),
         format!(
             "<style>:root {{ --plan-reference: \"{}\"; --footer-center: \"{}\"; }}</style>",
             css_string(&reference),
-            css_string(footer_center)
+            css_string(&footer_center)
         ),
         "<div class=\"report\">".to_string(),
         plan_head(
@@ -1171,5 +1191,19 @@ mod tests {
             ]),
             2
         );
+    }
+
+    #[test]
+    fn a_reference_cannot_close_the_style_element() {
+        // The reference and the credit line are written into a `<style>` block
+        // as CSS strings, and the preview is an unsandboxed `srcdoc` frame, so a
+        // closing tag there would run script in the main window.
+        let hostile = "</style><img src=x onerror=alert(1)>";
+        let escaped = css_string(hostile);
+        assert!(!escaped.contains('<'), "{escaped}");
+        assert!(escaped.contains("\\3c "), "{escaped}");
+        assert!(escaped.contains("alert(1)"), "the text is escaped, not dropped");
+        // Quotes and backslashes still cannot end the string early.
+        assert_eq!(css_string("a\"b\\c"), "a\\\"b\\\\c");
     }
 }

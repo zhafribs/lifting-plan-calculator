@@ -6,15 +6,14 @@
 # Operator data: load-chart workbooks are not source
 *.xlsx
 *.pdf
-# ...except the one example workbook the tests parse, and its source chart
+# ...except the one example workbook the tests parse, its source chart, and the
+# print the stamping test runs against (real WebKitGTK output)
 !/docs/examples/*.xlsx
 !/docs/examples/*.pdf
+!/src-tauri/tests/fixtures/*.pdf
 
 # Scratch (frontend fixture dumps, local test exports)
 /ff16/
-
-# The headless Chromium fetched for the PDF export (~128 MB, scripts/fetch-pdf-renderer.sh)
-/src-tauri/pdf-renderer/chrome-headless-shell-linux64/
 
 # Tauri generated schemas
 /src-tauri/gen/schemas/

@@ -12,7 +12,7 @@ export function createReportScreen(ctx) {
   let lastHtml = "";
   let lastSavedPath = null;
   const DEFAULT_FOOTER =
-    "Prepared with Lifting Plan Calculator by Zhafri Syazwi ✉ zhafribs@gmail.com";
+    "Prepared with Lifting Plan Calculator by Zhafri Syazwi — zhafribs@gmail.com";
   let footerText = DEFAULT_FOOTER;
   // The issue stamp belongs to the session, not to each keystroke.
   const now = new Date();
@@ -156,7 +156,12 @@ export function createReportScreen(ctx) {
       onClick: async () => {
         try {
           const html = await ensureHtml();
-          const path = await api.savePdf(html, "lifting-plan.pdf");
+          // The footer is drawn onto the PDF's pages after printing, so the
+          // export needs the same reference and credit the preview showed.
+          const path = await api.savePdf(html, "lifting-plan.pdf", {
+            reference: signoff.reference,
+            center: footerText,
+          });
           if (path) {
             toast(`PDF saved to ${path}`, "ok");
           }
@@ -265,7 +270,7 @@ export function createReportScreen(ctx) {
             printButton,
             openButton,
           ),
-          foot: el("span", { class: "faint", text: "Save as PDF writes A4 with 1-inch margins (Chromium on Linux, Edge on Windows). Saved HTML keeps a copy of the KaTeX assets beside it; when printing it, keep Margins on Default (1 inch)." }),
+          foot: el("span", { class: "faint", text: "Save as PDF writes A4 with 1-inch margins, with the footer on every page. Saved HTML keeps a copy of the KaTeX assets beside it; when printing it, keep Margins on Default (1 inch)." }),
         }),
       ),
       frameWrap,

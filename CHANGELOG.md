@@ -1,299 +1,35 @@
-# Changelog
-
-All notable changes to this project are documented here.
-
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
 ## [Unreleased]
 
 Nothing yet.
 
+## [2.6.0] - 2026-11-14
+
+### Changed
+
+- *Save as PDF* prints the report with the app's own WebKitGTK view instead of
+  a bundled browser. The AppImage no longer carries a headless Chromium: it drops
+  from about 182 MB to roughly the 2.5.3 size, and the export still needs nothing
+  installed on the machine, downloads nothing, and works offline.
+- The printed footer is written onto the finished pages by the app on Linux, so
+  it no longer depends on the renderer's version. Chromium builds older than 131
+  drop CSS `@page` margin boxes silently, which used to take the plan reference
+  and the page counter off a printed plan. Windows keeps printing with Edge and
+  keeps its own margin boxes.
+- The PDF is printed into a hidden file beside the chosen one and only replaces
+  it once the footer is on every page, so a failed export no longer leaves a
+  plan without its reference and page numbers.
+- The default credit line's envelope is now an em dash, so the field in Summary
+  and the printed footer read the same.
+- The footer's typeface is embedded in the export (Liberation Serif, the face
+  the Chromium build used), so a plan reference or credit line in Latin with
+  diacritics, Greek, Cyrillic or Vietnamese prints as it was typed instead of
+  falling back to a placeholder.
+
+### Removed
+
+- The bundled Chrome for Testing payload (`src-tauri/pdf-renderer/**`), the
+  build-time fetch (`scripts/fetch-pdf-renderer.sh`), the `BUNDLE_PDF_RENDERER`
+  build switch and the release workflow's renderer cache step. There is one
+  AppImage variant, and it carries no browser.
+
 ## [2.5.4] - 2026-11-14
-
-### Added
-
-- The AppImage carries its own headless Chromium (Chrome for Testing, pinned and
-  checksum-verified at build time), so *Save as PDF* works on a machine with no
-  browser installed. A system browser remains the fallback.
-
-### Fixed
-
-- External programs are started without the AppImage's own library paths. A
-  system Chromium used to die on `undefined symbol:
-  BrotliDecoderAttachDictionary` and be reported as "no PDF renderer found".
-- The renderer search also covers `/usr/bin`, `/usr/local/bin` and `/snap/bin`,
-  so a browser off the shell's PATH is still found.
-
-## [2.5.3] - 2026-11-14
-
-### Added
-
-- *Save as PDF* writes the report directly to A4 with one-inch margins, using a
-  headless Chromium build (Microsoft Edge on Windows, Chromium on Linux). It
-  reports the saved path and fails with an actionable message if no renderer is
-  installed.
-- Every printed page carries a footer: the plan reference on the left, the
-  credit line in the centre, and `n / total` on the right. The centre text is
-  editable in Summary, between Plan details and Export.
-- Summary's *Working range diagram* check box (between Crane and Uniform Load)
-  includes the current diagram at the bottom of Plan details; it refreshes on
-  every rebuild, and clearing it removes the diagram. The report inverts it to a
-  light background for printing.
-
-### Changed
-
-- The plan head drops the repeated crane configuration, the capacity pill, the
-  chart-source line and the booked-rating note. The crane's plate capacity is
-  labelled "Crane rating", boom, radius and angle share one card, the issued line
-  is a DD-MM-YYYY date, and the two working formulas sit under centred labels.
-- "Plan details" is section 1 of the printed plan, so the lift inputs are
-  section 2. The Lifting Plan title (with the crane name inline) sits above the
-  head card, which runs from Plan details through the usage formula; the inputs
-  are figure cards inside their own card, and every following section uses the
-  same card.
-- The lift inputs no longer repeat the load weight; the gross load at hook is in
-  the plan head.
-- The printed plan's foot carries the credit line only; the scope statement
-  stays in the README.
-
-## [2.5.2] - 2026-11-13
-
-### Changed
-
-- The printed plan's head is a summary card rather than a dense bordered grid:
-  a left-aligned "Lifting Plan" title with the crane and its configuration, the
-  capacity verdict beside the crane under a "Capacity check" label, the plan
-  details as a quiet strip, the six deciding figures as cards, and the chart
-  source as a caption. The sign-off labels are shorter ("Reference", "Issued",
-  …), and the booked rating is explained where it is shown.
-- The capacity verdict now says "of chart capacity at working radius", so it
-  cannot be read as the crane's booked capacity.
-- The printed plan's footer states its scope: a calculation aid only, not a
-  certification of the lift, the crane or its operation, with every figure to be
-  checked against the load chart and the site's lift plan. The credit line stays.
-- The About screen no longer says the figures are the developer's
-  responsibility; it points the reader at the inputs and the load chart, which
-  is where the plan's accuracy actually comes from.
-- Release notes are written one file per tag in `docs/releases/`, and the
-  release workflow publishes exactly that file — a release page can no longer
-  repeat the notes before it.
-
-## [2.5.1] - 2026-11-13
-
-### Changed
-
-- The report's first page packs its head into the top third of the sheet: the
-  plan details and the crane figures are laid out two pairs wide, and the
-  capacity verdict sits in its own band straight after the figures it judges,
-  before the working that produced them.
-
-### Fixed
-
-- The example TL-200M workbook charts its jib at the manufacturer's 8.0 m
-  rather than 7.2 m; the specification sheet now ships beside it in
-  `docs/examples/`.
-
-## [2.5.0] - 2026-11-13
-
-### Added
-
-- The crane's booked rating is now checked against the capacity the lift needs
-  at 75%, and governs when it fails: a crane too small for the lift can no
-  longer pass on a chart that reads high. See `docs/adr/0002-booked-rating-check.md`.
-- A plan carries its own details: reference, issue date, and Prepared /
-  Checked / Approved lines, printed even when blank so a paper copy can be
-  signed.
-- The TR-350M-1 and TL-200M example load charts (`docs/examples/`) and tests
-  that parse them end to end, covering the main boom matrix, the crane position
-  and the jib tables.
-
-### Changed
-
-- A working radius (or a jib boom angle) outside the load chart's rated range is
-  refused, naming the range the chart rates, instead of carrying the nearest
-  charted capacity into a figure. The plan states the refusal in its crane
-  section. See `docs/adr/0001-rated-capacity-envelope.md`.
-- The Load example charts the radius it reads (8.00 m), so its fired figures are
-  a rated lift rather than a clamped one.
-
-### Fixed
-
-- A workbook that names its own unit ("Unit: ton") is read from that text; the
-  magnitude guess is kept only for a chart that declares nothing. A small chart
-  written in kg was previously read as tonnes, understating usage a thousand
-  times.
-- A boom switch to a column with no charted capacities leaves the manual entry
-  blank instead of publishing the previous boom's capacity under the new boom's
-  label; the Crane tab then says this boom has no charted capacity rather than
-  asking for a chart that is already loaded.
-- The chart table lists only the radii the selected boom column charts, instead
-  of repeating the last charted capacity down every remaining workbook radius.
-- A chart imported for a lift no charted radius carries starts at the shortest
-  charted radius and reports the overload, instead of leaving the tab blank.
-
-## [2.4.0] - 2026-10-11
-
-### Added
-
-- Update reminders: the app asks GitHub for the newest release at launch and
-  from the About tab, showing the release page and the repository a click
-  away.
-- On Windows, downloading and starting the release's installer from this
-  repository, then quitting so it can replace the running files.
-
-### Fixed
-
-- The reminder strip folds without shifting the page.
-
-## [2.3.0] - 2026-10-11
-
-### Added
-
-- The new workbook format in the Crane and Graph tabs: the crane's position,
-  the longest main boom, a jib configuration card (the configuration picks
-  its jib; only the offset angles it allows are offered), the jib capacity
-  checked at the boom angle, the boom angle auto-chosen to pass the 75% rule
-  at the farthest reach, the manual entry mirroring the jib check, and the
-  Graph tab following the workbook with a "Reset to Crane Tab" button after
-  manual edits.
-
-### Fixed
-
-- Jib offset angles rotate clockwise (below the boom axis).
-- Working radii are measured from the x = 0 axis, not from the crane.
-- Choosing a dropdown no longer scrolls the page back to its top.
-- The workbook table folds behind a toggle.
-
-## [2.2.1] - 2026-10-10
-
-### Fixed
-
-- Opening the Graph tab no longer shows "ResizeObserver loop completed with
-  undelivered notifications." as an error banner: the diagram's ResizeObserver
-  defers its redraw to the next animation frame, and the global error handler
-  treats that specific recoverable message as the warning it is.
-
-## [2.2.0] - 2026-10-09
-
-### Added
-
-- **Windows installers.** The release workflow now builds a Windows MSI and an
-  NSIS `setup.exe` from the same Tauri source and attaches them to each release.
-  The saved-report opener now uses `start` on Windows instead of `xdg-open`.
-- **AppImage delta updates.** Every AppImage release ships a matching
-  `.AppImage.zsync` sidecar (built with `zsyncmake`), so `appimageupdatetool`
-  can download only the blocks that changed between versions.
-
-### Changed
-
-- **Standardised release asset names.** Linux is now
-  `Lifting-Plan-Calculator-<version>-linux-x86_64.AppImage` (plus `.zsync`) and
-  Windows is `Lifting-Plan-Calculator-<version>-windows-x86_64.msi` (plus
-  `-setup.exe`). Assets from earlier releases keep their old names.
-
-## [2.1.5] - 2026-10-09
-
-### Fixed
-
-- **Double scroll now engages the moment a tab can show two columns**, at the
-  same 981px cut the layouts use (previously 1001px). Between 981 and 1000px
-  the Overall Weight, Crane, Graph, Uniform Load, Nonuniform Load and Tandem
-  tabs showed their cards side by side with a single page scroll; now every
-  tab splits into independent scroll panes whenever its cards are side by
-  side (981px+), and falls back to one stacked scroll below that. Summary
-  gets the same treatment.
-
-## [2.1.4] - 2026-10-09
-
-### Changed
-
-- **One consistent layout on every tab**: all wide windows now use the same
-  60/40 two-column split (Overall Weight, Crane, Graph, Uniform Load,
-  Nonuniform Load, Tandem and Summary), and every tab's content fills the same
-  width instead of each tab shrinking to fit its own content. On the Summary
-  tab the split is mirrored (40/60) so the report preview gets the wider
-  column. Stacked (narrow) windows are unchanged.
-
-## [2.1.3] - 2026-10-09
-
-### Added
-
-- **Independent scroll panes on the Crane and Summary tabs**: on wide windows
-  the Crane form column and its capacity-check column scroll on their own, and
-  on the Summary tab the sections/export column scrolls on its own while the
-  report preview keeps its own scroll. Stacked (narrow) windows keep the single
-  scroll they had before.
-
-## [2.1.2] - 2026-10-09
-
-### Added
-
-- **Independent scroll panes on the Overall Weight tab**: on wide windows the
-  Load weight and Lifting tackle cards and the Weight summary and Next step
-  cards each scroll on their own, so the summary keeps its place while the form
-  moves. Stacked (narrow) windows keep the single scroll they had before.
-
-## [2.1.1] - 2026-10-09
-
-### Fixed
-
-- **Rail footer in short, wide windows**: the sidebar footer (app name,
-  version, contact) is no longer pushed below the window when the labelled
-  navigation is taller than the window. The navigation list scrolls on its own
-  and the footer stays pinned, at every window size.
-
-## [2.1.0] - 2026-10-09
-
-A usability release that keeps the important things in view at any window
-size, with no change to the calculations.
-
-### Added
-
-- **Independent scroll panes on wide windows**: Uniform Load, Nonuniform Load
-  and Tandem each split into a form column and a results column that scroll on
-  their own, so one side keeps its place while the other moves. Stacked
-  (narrow) windows keep the single scroll they had before.
-- **Always-visible working range diagram**: on the Graph tab the diagram fills
-  its column and rescales, so it stays in view while the boom configuration,
-  boom angle and envelope, and readout scroll beside it.
-
-### Fixed
-
-- **Rail footer**: the app name, version and contact are no longer hidden when
-  the window is at its smallest size. The footer stays pinned beneath the icon
-  rail and the navigation list scrolls on its own, so the product identity is
-  visible at every window size.
-
-## [2.0.0] - 2026-10-09
-
-The first public release: a Linux desktop build of the Lifting Plan Calculator,
-written in Rust with a Tauri 2 shell and delivered as a portable AppImage.
-
-### Added
-
-- **Overall Weight** form: load lines and tackle, summed to the gross load at
-  the hook.
-- **Crane** form: capacity check against a load chart imported from Excel, or a
-  single point typed by hand under the 75% rule.
-- **Uniform Load** form: the nineteen 1-leg / 2-leg / nested / bridle
-  arrangements, each checked against the gross load.
-- **Nonuniform Load** form: the 2-leg asymmetric bridle with a shortening grab
-  hook.
-- **Tandem** form: two cranes sharing one load, in both declared lug
-  configurations.
-- **Summary** tab: an HTML report with KaTeX-typeset formulas that can be saved
-  as a portable file or printed.
-- Rust calculation engine ported from the Android Kotlin source, with 134 tests
-  ported from the Kotlin unit suite.
-- Two AppImage build paths: a fast host build and a portable Ubuntu 22.04
-  userspace build (glibc 2.35 floor) that runs on Ubuntu 22.04+, Fedora 36+ and
-  Arch.
-
-### Fixed
-
-- **Summary tab scrolling**: on narrow (stacked) windows the cards pinned over
-  the report and the page had two scrollbars. The cards now leave the sticky
-  layer below the breakpoint and the report is sized to its content, so the
-  page owns a single scrollbar and the whole plan scrolls as one. The wide
-  side-by-side layout keeps its independent report scroll.

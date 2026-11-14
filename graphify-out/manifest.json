@@ -24,15 +24,15 @@
     "semantic_hash": "9a8b7858c432b26d484faff4a51d58a9"
   },
   ".github/workflows/ci.yml": {
-    "mtime": 1794638764.7722566,
-    "seen": 1794638838.567789,
-    "ast_hash": "2660d902331215587ee7ffa83933264a",
+    "mtime": 1794641572.8959458,
+    "seen": 1794641609.4891543,
+    "ast_hash": "1e92cef694944bff7f0899950391f23b",
     "semantic_hash": ""
   },
   ".github/workflows/release.yml": {
-    "mtime": 1794637927.8120944,
-    "seen": 1794638838.5677907,
-    "ast_hash": "3fbdf61d718de48ecafb5b045169ef5b",
+    "mtime": 1794640967.9855018,
+    "seen": 1794641609.4891558,
+    "ast_hash": "4429f914450bc0f672b02d7fab0c83b3",
     "semantic_hash": ""
   },
   "build-appimage-portable.sh": {
@@ -66,9 +66,9 @@
     "semantic_hash": "b20dea1f31d5244bada45a9490f1f4ab"
   },
   "src-tauri/Cargo.toml": {
-    "mtime": 1794638719.3452268,
-    "seen": 1794638838.5677967,
-    "ast_hash": "de906455d4a1cef2e384594d3a14f21b",
+    "mtime": 1794640583.2889292,
+    "seen": 1794641609.4891648,
+    "ast_hash": "959bf2d4486b486cf7286ab6719c9fd6",
     "semantic_hash": ""
   },
   "src-tauri/build.rs": {
@@ -96,9 +96,9 @@
     "semantic_hash": "fa8171b3903ab98be11840c6b87b58a4"
   },
   "src-tauri/src/commands.rs": {
-    "mtime": 1794637479.9100003,
-    "seen": 1794638838.5678034,
-    "ast_hash": "2a57eec24f937191b7f84bd51023fbe9",
+    "mtime": 1794640997.5624673,
+    "seen": 1794641609.4891713,
+    "ast_hash": "be9591faeac09b8175b2bd8ff2676d0d",
     "semantic_hash": ""
   },
   "src-tauri/src/crane.rs": {
@@ -126,9 +126,9 @@
     "semantic_hash": "cd53a61360d1c626fa26491dd2eab53f"
   },
   "src-tauri/src/lib.rs": {
-    "mtime": 1794637480.3717413,
-    "seen": 1794638838.5678086,
-    "ast_hash": "35ca6053ef7c575dfcbcf172eb8d9a1d",
+    "mtime": 1794639911.1141155,
+    "seen": 1794641609.4891765,
+    "ast_hash": "95127db43acf56b7af0cbf1e9c27e5fc",
     "semantic_hash": ""
   },
   "src-tauri/src/main.rs": {
@@ -186,22 +186,22 @@
     "semantic_hash": "32dc790fd774aa19332b15debdc2ae1f"
   },
   "src-tauri/tauri.conf.json": {
-    "mtime": 1794636505.5556936,
-    "seen": 1794638838.5678205,
-    "ast_hash": "778f13db597d57abe4e7bf7ae18041c3",
+    "mtime": 1794640583.296242,
+    "seen": 1794641609.4891891,
+    "ast_hash": "d684840ac07c486986628e7615d5e281",
     "semantic_hash": ""
   },
   "ui/js/api.js": {
-    "mtime": 1794636280.999094,
-    "seen": 1794638838.5678215,
-    "ast_hash": "df173ae25c946fc344787bda73b7bc48",
+    "mtime": 1794639911.1141875,
+    "seen": 1794641609.48919,
+    "ast_hash": "78f7fa4effdfcefe556a7e9bf1153389",
     "semantic_hash": ""
   },
   "ui/js/app.js": {
-    "mtime": 1794570843.1593084,
-    "seen": 1794578094.7970026,
-    "ast_hash": "9fe62e9183404521cb1de0fae69c1580",
-    "semantic_hash": "9fe62e9183404521cb1de0fae69c1580"
+    "mtime": 1794640656.958822,
+    "seen": 1794641609.4891908,
+    "ast_hash": "5fe0fa2a4ab32a36bc9ab4f427277ead",
+    "semantic_hash": ""
   },
   "ui/js/components.js": {
     "mtime": 1794570843.1593084,
@@ -258,9 +258,9 @@
     "semantic_hash": "cc97ec2eccf73c44dc7be7865749b467"
   },
   "ui/js/screens/report.js": {
-    "mtime": 1794636590.0886233,
-    "seen": 1794638838.5678334,
-    "ast_hash": "f140b1366ad21d553be78956ad9db668",
+    "mtime": 1794640997.5627499,
+    "seen": 1794641609.4892046,
+    "ast_hash": "a89761a712d8a99ff00a20db77ffd1f3",
     "semantic_hash": ""
   },
   "ui/js/screens/tandem.js": {
@@ -300,9 +300,9 @@
     "semantic_hash": "3a57d99448f802024d640c81af3341a8"
   },
   "CHANGELOG.md": {
-    "mtime": 1794638795.9228628,
-    "seen": 1794638838.5678399,
-    "ast_hash": "5724b270afc63fc38c1db994a59c7e31",
+    "mtime": 1794640569.8424234,
+    "seen": 1794641609.489214,
+    "ast_hash": "e97d1c45bb713460d2ba38c1139bb72f",
     "semantic_hash": ""
   },
   "CODE_OF_CONDUCT.md": {
@@ -318,9 +318,9 @@
     "semantic_hash": "2691ee38eaa721aa667575bc287ad225"
   },
   "README.md": {
-    "mtime": 1794636440.6196032,
-    "seen": 1794638838.5678434,
-    "ast_hash": "eec38a6fd3528e8fdd5a69355adaa5cc",
+    "mtime": 1794640569.842266,
+    "seen": 1794641609.4892168,
+    "ast_hash": "670d23a8ebd90995ce5cdd5c010ab633",
     "semantic_hash": ""
   },
   "SECURITY.md": {
@@ -330,9 +330,9 @@
     "semantic_hash": ""
   },
   "THIRD_PARTY_NOTICES.md": {
-    "mtime": 1794637462.5095859,
-    "seen": 1794638838.567845,
-    "ast_hash": "012ed32fd66bc48ded9534d20d11bf8a",
+    "mtime": 1794640569.8421383,
+    "seen": 1794641609.4892187,
+    "ast_hash": "28311908a1e7da80f45d8e5d57e14f4b",
     "semantic_hash": ""
   },
   "docs/adr/0001-rated-capacity-envelope.md": {
@@ -897,6 +897,48 @@
     "mtime": 1794637646.2233279,
     "seen": 1794638838.567879,
     "ast_hash": "6e7bfdaa6b2e2cca064bd65207944e0e",
+    "semantic_hash": ""
+  },
+  "packaging/check-vendored.sh": {
+    "mtime": 1794640444.2981634,
+    "seen": 1794641609.4891608,
+    "ast_hash": "83abe53b3b770ee95adf967a234ffe2d",
+    "semantic_hash": ""
+  },
+  "ui/js/pdf-math.js": {
+    "mtime": 1794639873.751301,
+    "seen": 1794641609.4891968,
+    "ast_hash": "fa4c7149693f586095e0de8db86e4d4e",
+    "semantic_hash": ""
+  },
+  "ui/js/pdf-math.test.mjs": {
+    "mtime": 1794640483.3064542,
+    "seen": 1794641609.4891977,
+    "ast_hash": "797ba31753092b9753938a489243cd24",
+    "semantic_hash": ""
+  },
+  "ui/js/pdf-viewer.js": {
+    "mtime": 1794641083.36274,
+    "seen": 1794641609.489199,
+    "ast_hash": "12358c284ea94d43d0e3b871ee84ed92",
+    "semantic_hash": ""
+  },
+  "docs/council/decisions/0006-report-preview-is-the-pdf.md": {
+    "mtime": 1794641013.737791,
+    "seen": 1794641609.4892302,
+    "ast_hash": "24b3f305374fbeeb80777816ffb54eae",
+    "semantic_hash": ""
+  },
+  "docs/releases/v2.7.0.md": {
+    "mtime": 1794640940.238466,
+    "seen": 1794641609.4892488,
+    "ast_hash": "6bf6dc354aeb8ea4c1695e5a4fb6a47b",
+    "semantic_hash": ""
+  },
+  "licenses/pdfjs-Apache-2.0.txt": {
+    "mtime": 1794640444.2964392,
+    "seen": 1794641609.4892519,
+    "ast_hash": "2ee41112a44fe7014dce33e26468ba93",
     "semantic_hash": ""
   }
 }

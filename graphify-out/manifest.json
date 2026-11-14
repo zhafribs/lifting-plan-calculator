@@ -18,15 +18,15 @@
     "semantic_hash": "a587924fc246f8698341e43cf7f04161"
   },
   ".github/dependabot.yml": {
-    "mtime": 1794570843.1443005,
-    "seen": 1794578094.7969775,
-    "ast_hash": "9a8b7858c432b26d484faff4a51d58a9",
-    "semantic_hash": "9a8b7858c432b26d484faff4a51d58a9"
+    "mtime": 1794646729.7412875,
+    "seen": 1794647297.3567328,
+    "ast_hash": "58d2c152210a112cab68549d000be930",
+    "semantic_hash": ""
   },
   ".github/workflows/ci.yml": {
-    "mtime": 1794644607.118136,
-    "seen": 1794645114.809332,
-    "ast_hash": "d1167153755509f857169a368d8e099c",
+    "mtime": 1794646729.7412875,
+    "seen": 1794647297.3567352,
+    "ast_hash": "9784e5db063f3f7e3ce9807ab0e102b4",
     "semantic_hash": ""
   },
   ".github/workflows/release.yml": {
@@ -66,9 +66,9 @@
     "semantic_hash": "b20dea1f31d5244bada45a9490f1f4ab"
   },
   "src-tauri/Cargo.toml": {
-    "mtime": 1794644607.118136,
-    "seen": 1794645114.8093429,
-    "ast_hash": "4a3364eca1ca7a46a2f731711c46e01b",
+    "mtime": 1794646729.7422874,
+    "seen": 1794647297.3567445,
+    "ast_hash": "e9dd831cdc8593e8dd4fd90bf35086d3",
     "semantic_hash": ""
   },
   "src-tauri/build.rs": {
@@ -96,9 +96,9 @@
     "semantic_hash": "fa8171b3903ab98be11840c6b87b58a4"
   },
   "src-tauri/src/commands.rs": {
-    "mtime": 1794644607.118136,
-    "seen": 1794645114.8093498,
-    "ast_hash": "e2114dd007060faeac75027328d8ce1a",
+    "mtime": 1794646729.7422874,
+    "seen": 1794647297.3567512,
+    "ast_hash": "7d16f97f48e254185bcf438e2ffabafe",
     "semantic_hash": ""
   },
   "src-tauri/src/crane.rs": {
@@ -186,9 +186,9 @@
     "semantic_hash": "32dc790fd774aa19332b15debdc2ae1f"
   },
   "src-tauri/tauri.conf.json": {
-    "mtime": 1794644607.1191359,
-    "seen": 1794645114.809369,
-    "ast_hash": "4b2ef2b4d02f940e5e9f92b9c5b53f50",
+    "mtime": 1794646729.7422874,
+    "seen": 1794647297.35677,
+    "ast_hash": "177487d76f08b5936da883beea113bb3",
     "semantic_hash": ""
   },
   "ui/js/api.js": {
@@ -300,9 +300,9 @@
     "semantic_hash": "3a57d99448f802024d640c81af3341a8"
   },
   "CHANGELOG.md": {
-    "mtime": 1794644607.118136,
-    "seen": 1794645114.8093967,
-    "ast_hash": "4e229fdc5b287dc897455dc189dc5895",
+    "mtime": 1794646729.7412875,
+    "seen": 1794647297.3567934,
+    "ast_hash": "9d2434a815ef5b8be2e8dd7e21fa8528",
     "semantic_hash": ""
   },
   "CODE_OF_CONDUCT.md": {
@@ -864,9 +864,9 @@
     "semantic_hash": ""
   },
   "src-tauri/src/pdf.rs": {
-    "mtime": 1794638710.887038,
-    "seen": 1794638838.5678127,
-    "ast_hash": "6234bee8d39a6f4270371d72421356dd",
+    "mtime": 1794646729.7422874,
+    "seen": 1794647297.356761,
+    "ast_hash": "01964c54e5552978f50d5c73ff673dd5",
     "semantic_hash": ""
   },
   "src-tauri/src/pdf_print.rs": {
@@ -957,6 +957,18 @@
     "mtime": 1794644607.118136,
     "seen": 1794645114.8094378,
     "ast_hash": "040c3540562090b72d0d92ff174d7e3a",
+    "semantic_hash": ""
+  },
+  "docs/council/decisions/0008-saving-cannot-lose-the-plan.md": {
+    "mtime": 1794646729.7412875,
+    "seen": 1794647297.3568122,
+    "ast_hash": "a19605dfa3ff467f514b1724b61613e6",
+    "semantic_hash": ""
+  },
+  "docs/releases/v2.8.1.md": {
+    "mtime": 1794646729.7422874,
+    "seen": 1794647297.3568347,
+    "ast_hash": "543743750154b121425e5001044d596e",
     "semantic_hash": ""
   }
 }

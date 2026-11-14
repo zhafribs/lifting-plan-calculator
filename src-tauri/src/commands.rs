@@ -545,6 +545,7 @@ fn render_pdf(app: &tauri::AppHandle, html: &str, target: &Path, footer: &crate:
     // The pages are printed, and then footered, into a staging file beside the
     // target. Only a finished PDF ever reaches the path the operator chose, so a
     // failed footer cannot leave a plan without its reference and page numbers.
+    sweep_stale_attempts(target);
     let staging = staged_path(target);
     let _ = std::fs::remove_file(&staging);
     let rendered = render_pdf_into(app, html, &staging, footer);
@@ -572,50 +573,41 @@ fn render_pdf_into(
         .map_err(|error| format!("The PDF report could not be prepared: {error}"))?;
     write_katex_assets(app, &temp)?;
 
-    // Linux prints with the app's own web view, so no browser has to be
-    // installed and none is carried in the AppImage.
+    // Linux prints with the app's own web view; Windows with the WebView2 the
+    // app already runs on, falling back to Edge.
     #[cfg(not(target_os = "windows"))]
-    {
-        let printed = crate::pdf_print::print_to_pdf(
-            app,
-            file_url(&html_path),
-            target.to_path_buf(),
-        );
-        let _ = std::fs::remove_dir_all(&temp);
-        printed?;
-        check_pdf(target)?;
-        crate::pdf::stamp(target, footer)?;
-        return Ok(());
-    }
-
-    // Windows prints with the WebView2 the app already runs on, so the export
-    // works when Edge has been removed; Edge is the fallback.
+    let printed = crate::pdf_print::print_to_pdf(
+        app,
+        file_url(&html_path),
+        target.to_path_buf(),
+    )
+    .map(|()| target.to_path_buf());
     #[cfg(target_os = "windows")]
-    {
-        let printed = print_on_windows(app, &html_path, &temp, target);
-        let _ = std::fs::remove_dir_all(&temp);
-        let printed = printed?;
+    let printed = print_on_windows(app, &html_path, &temp, target);
 
-        // The footer is written into a new file rather than over the print:
-        // WebView2 can still hold what it just wrote when it reports finished,
-        // and a document the engine has closed is cheaper to leave alone.
-        let stamped = attempt_path(target, "stamped");
+    let _ = std::fs::remove_dir_all(&temp);
+    let printed = printed?;
+
+    // The footer is written into a file beside the print, never over it: an
+    // engine can still hold what it has just written, and a stamp that fails
+    // must not take the printed pages with it.
+    let result = (|| -> Result<(), String> {
+        check_pdf(&printed)?;
+        let stamped = sibling_path(&printed, "stamped");
         let _ = std::fs::remove_file(&stamped);
-        let result = crate::pdf::stamp_to(&printed, &stamped, footer)
+        let outcome = crate::pdf::stamp_to(&printed, &stamped, footer)
+            .and_then(|()| check_pdf(&stamped))
             .and_then(|()| move_into_place(&stamped, target));
-        let _ = std::fs::remove_file(&printed);
-        if result.is_err() {
+        if outcome.is_err() {
             let _ = std::fs::remove_file(&stamped);
         }
-        return result;
-    }
+        outcome
+    })();
 
-    #[allow(unreachable_code)]
-    {
-        let _ = std::fs::remove_dir_all(&temp);
-        let _ = footer;
-        Ok(())
+    if printed != target {
+        let _ = retry_io(|| std::fs::remove_file(&printed));
     }
+    result
 }
 
 /// Windows: print with the app's own WebView2, falling back to Edge. Returns the
@@ -629,8 +621,8 @@ fn print_on_windows(
 ) -> Result<std::path::PathBuf, String> {
     // Beside the target, not in the temp workspace: Windows cannot rename across
     // volumes, and the operator's folder is often on another drive.
-    let in_app = attempt_path(target, "webview2");
-    let via_edge = attempt_path(target, "edge");
+    let in_app = sibling_path(target, "webview2");
+    let via_edge = sibling_path(target, "edge");
     let _ = std::fs::remove_file(&in_app);
     let _ = std::fs::remove_file(&via_edge);
 
@@ -644,9 +636,12 @@ fn print_on_windows(
                 .and_then(|()| check_pdf(&via_edge))
             {
                 Ok(()) => Ok(via_edge),
-                Err(second) => Err(format!(
-                    "The app's own printer failed ({first}); Edge then failed too ({second})."
-                )),
+                Err(second) => {
+                    let _ = std::fs::remove_file(&via_edge);
+                    Err(format!(
+                        "The app's own printer failed ({first}); Edge then failed too ({second})."
+                    ))
+                }
             }
         }
     }
@@ -677,8 +672,7 @@ fn private_workspace() -> Result<std::path::PathBuf, String> {
 
 /// One print attempt's file, beside the target so the move into place is a
 /// rename on the same volume.
-#[cfg(target_os = "windows")]
-fn attempt_path(target: &Path, attempt: &str) -> std::path::PathBuf {
+fn sibling_path(target: &Path, attempt: &str) -> std::path::PathBuf {
     let name = target
         .file_name()
         .map(|name| name.to_string_lossy().to_string())
@@ -698,6 +692,7 @@ fn staged_path(target: &Path) -> std::path::PathBuf {
 /// Write finished PDF bytes to the path the operator chose, through the same
 /// staging file as a render, so a failure never leaves a partial plan.
 fn write_bytes(bytes: &[u8], target: &Path) -> Result<(), String> {
+    sweep_stale_attempts(target);
     let staging = staged_path(target);
     std::fs::write(&staging, bytes)
         .map_err(|error| {
@@ -717,17 +712,59 @@ fn retry_io<T>(mut operation: impl FnMut() -> std::io::Result<T>) -> std::io::Re
     }
     #[cfg(target_os = "windows")]
     {
-        let mut last = std::io::Error::other("The file could not be written.");
-        for attempt in 0..5u64 {
+        // Only a file that another process is momentarily holding can succeed on
+        // a retry. A read-only target, a full disk or a refused account cannot,
+        // and must say so at once instead of after a second of sleeping.
+        const SHARING_VIOLATION: i32 = 32;
+        const LOCK_VIOLATION: i32 = 33;
+        let mut attempt = 0u32;
+        loop {
             match operation() {
                 Ok(value) => return Ok(value),
                 Err(error) => {
-                    last = error;
-                    std::thread::sleep(Duration::from_millis(50 * (attempt + 1)));
+                    let transient = matches!(
+                        error.raw_os_error(),
+                        Some(SHARING_VIOLATION) | Some(LOCK_VIOLATION)
+                    );
+                    if !transient || attempt == 4 {
+                        return Err(error);
+                    }
+                    std::thread::sleep(Duration::from_millis(50u64 << attempt));
+                    attempt += 1;
                 }
             }
         }
-        Err(last)
+    }
+}
+
+/// Remove leftovers from an earlier save that was interrupted: they sit beside
+/// the operator's file, and a crash mid-print can leave one behind. Only files
+/// named after this exact target, and only if they are old, so a save happening
+/// right now (in another window or process) is never touched.
+fn sweep_stale_attempts(target: &Path) {
+    let (Some(parent), Some(name)) = (target.parent(), target.file_name()) else {
+        return;
+    };
+    let prefix = format!(".{}.", name.to_string_lossy());
+    let Ok(entries) = std::fs::read_dir(parent) else {
+        return;
+    };
+    let stale = std::time::Duration::from_secs(60 * 60);
+    for entry in entries.flatten() {
+        let file_name = entry.file_name().to_string_lossy().to_string();
+        if !file_name.starts_with(&prefix) {
+            continue;
+        }
+        let old = entry
+            .metadata()
+            .and_then(|meta| meta.modified())
+            .ok()
+            .and_then(|modified| modified.elapsed().ok())
+            .map(|age| age > stale)
+            .unwrap_or(false);
+        if old {
+            let _ = std::fs::remove_file(entry.path());
+        }
     }
 }
 
@@ -742,9 +779,15 @@ fn move_into_place(staging: &Path, target: &Path) -> Result<(), String> {
         Ok(()) => Ok(()),
         Err(error) => {
             let _ = std::fs::remove_file(staging);
+            let reason = match error.kind() {
+                std::io::ErrorKind::PermissionDenied => {
+                    "the file or its folder is read-only, or this account cannot write there"
+                }
+                _ => "another program may still have the file open",
+            };
             Err(format!(
-                "The PDF could not be saved there: {error}. If a file with that name is \
-                 open in another program, close it and try again."
+                "The PDF could not be saved as {}: {reason} ({error}).",
+                target.display()
             ))
         }
     }
@@ -903,6 +946,55 @@ pub fn export_probe(app: &tauri::AppHandle, target: &Path) -> Result<(), String>
         probe_one(app, &path)
             .map_err(|error| format!("Save location {} failed: {error}", index + 1))?;
     }
+    probe_refusals(app, target)?;
+    // The probe leaves nothing behind beside the operator's own file.
+    let _ = std::fs::remove_dir_all(dir.join("probe folder"));
+    let _ = std::fs::remove_dir_all(dir.join("probe"));
+    Ok(())
+}
+
+/// A save that must be refused: the operator's previous plan has to survive it.
+fn probe_refusals(app: &tauri::AppHandle, target: &Path) -> Result<(), String> {
+    // A PDF that is open in another program: Windows will not replace a file
+    // whose handle was opened without sharing. This is the case the retry and
+    // the message exist for.
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        let held = std::fs::OpenOptions::new()
+            .read(true)
+            .share_mode(0)
+            .open(target)
+            .map_err(|error| format!("The probe could not hold its own file: {error}"))?;
+        let before = std::fs::read(target).unwrap_or_default();
+        let outcome = probe_one(app, target);
+        let after = std::fs::read(target).unwrap_or_default();
+        drop(held);
+        if outcome.is_ok() {
+            return Err("A PDF held by another program was replaced anyway.".to_string());
+        }
+        if before != after {
+            return Err("A failed save changed the plan that was already there.".to_string());
+        }
+    }
+    // A folder this account cannot write to.
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let folder = target.parent().unwrap_or(target).join("probe read-only");
+        std::fs::create_dir_all(&folder)
+            .map_err(|error| format!("The probe folder could not be created: {error}"))?;
+        let path = folder.join("plan.pdf");
+        std::fs::set_permissions(&folder, std::fs::Permissions::from_mode(0o500))
+            .map_err(|error| format!("The probe folder could not be made read-only: {error}"))?;
+        let outcome = probe_one(app, &path);
+        let _ = std::fs::set_permissions(&folder, std::fs::Permissions::from_mode(0o700));
+        let _ = std::fs::remove_dir_all(&folder);
+        if outcome.is_ok() {
+            return Err("A read-only folder accepted a PDF.".to_string());
+        }
+    }
+    let _ = app;
     Ok(())
 }
 
@@ -1053,6 +1145,31 @@ mod pdf_export_tests {
         assert!(!superseded(mine));
         PREVIEW_GENERATION.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         assert!(superseded(mine), "a newer request must supersede this one");
+    }
+
+    #[test]
+    fn an_interrupted_save_is_cleared_but_a_fresh_one_is_left_alone() {
+        let dir = std::env::temp_dir().join(format!("lpc-sweep-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let target = dir.join("plan.pdf");
+        let stale = dir.join(".plan.pdf.part-999");
+        let unrelated = dir.join(".other.pdf.part-999");
+        std::fs::write(&stale, b"leftover").unwrap();
+        std::fs::write(&unrelated, b"not ours").unwrap();
+        // Age the leftover beyond the hour the sweep waits for.
+        let old = std::time::SystemTime::now() - std::time::Duration::from_secs(2 * 60 * 60);
+        let file = std::fs::File::options().write(true).open(&stale).unwrap();
+        file.set_modified(old).unwrap();
+
+        sweep_stale_attempts(&target);
+        assert!(!stale.exists(), "an old leftover for this plan is removed");
+        assert!(unrelated.exists(), "another plan's file is never touched");
+
+        let recent = dir.join(".plan.pdf.part-1000");
+        std::fs::write(&recent, b"in flight").unwrap();
+        sweep_stale_attempts(&target);
+        assert!(recent.exists(), "a save happening now is left alone");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

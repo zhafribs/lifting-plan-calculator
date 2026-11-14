@@ -2,6 +2,21 @@
 
 Nothing yet.
 
+## [2.8.1] - 2026-11-14
+
+### Fixed
+
+- Saving a PDF can no longer delete the plan already at the chosen name. The
+  export deleted the target before moving the new file in, on the belief that
+  Windows cannot replace on rename; it can, so a failed save used to leave
+  neither file. The move is one replacing rename, retried while a just-written
+  file is still being closed.
+- The footer is written into a file beside the print rather than over it, so a
+  PDF engine still holding its output cannot block the save.
+- Dependabot no longer moves `webview2-com` or `windows-core` on their own: a
+  version apart makes the WebView2 COM interfaces stop type-checking, which broke
+  the Windows build in the 2.8.0 dependency update.
+
 ## [2.8.0] - 2026-11-14
 
 ### Changed

@@ -1,6 +1,6 @@
 [package]
 name = "lifting-plan-calculator"
-version = "2.8.0"
+version = "2.8.1"
 description = "Lifting plan calculator for rigging and crane lifts"
 authors = ["Zhafri Syazwi"]
 edition = "2021"
@@ -30,6 +30,11 @@ webkit2gtk = "2.0"
 
 # Printing from the WebView2 the app already requires, so *Save as PDF* does not
 # depend on the Edge browser being installed.
+#
+# These two are version-coupled to tauri's own webview2-com: the COM interfaces
+# are passed between crates, so a different windows-core makes `Interface::cast`
+# stop applying. When tauri is bumped, move both to the versions its lockfile
+# resolves, then drop the dependabot ignore for them.
 [target.'cfg(target_os = "windows")'.dependencies]
 webview2-com = "0.39"
 windows-core = "0.62"

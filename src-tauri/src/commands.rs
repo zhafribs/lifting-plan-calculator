@@ -586,17 +586,20 @@ fn render_pdf_into(
     // fallback starts cannot overwrite the winner.
     #[cfg(target_os = "windows")]
     let printed = {
-        let in_app = temp.join("webview2.pdf");
-        let via_edge = temp.join("edge.pdf");
+        // Beside the target, not in the temp workspace: Windows cannot rename
+        // across volumes, and the operator's folder is often on another drive.
+        let in_app = attempt_path(target, "webview2");
+        let via_edge = attempt_path(target, "edge");
         let in_app_result = crate::pdf_windows::print_to_pdf(app, &html_path, &in_app);
         match in_app_result {
-            Ok(()) => std::fs::rename(&in_app, target)
-                .map_err(|error| format!("The PDF could not be written: {error}")),
+            Ok(()) => {
+                let _ = std::fs::remove_file(&via_edge);
+                move_into_place(&in_app, target)
+            }
             Err(first) => {
                 let _ = std::fs::remove_file(&in_app);
                 match render_with_browser(&html_path, &temp, &via_edge) {
-                    Ok(()) => std::fs::rename(&via_edge, target)
-                        .map_err(|error| format!("The PDF could not be written: {error}")),
+                    Ok(()) => move_into_place(&via_edge, target),
                     Err(second) => Err(format!(
                         "The app's own printer failed ({first}); Edge then failed too ({second})."
                     )),
@@ -634,6 +637,17 @@ fn private_workspace() -> Result<std::path::PathBuf, String> {
         .create(&temp)
         .map_err(|error| format!("The PDF workspace could not be created: {error}"))?;
     Ok(temp)
+}
+
+/// One print attempt's file, beside the target so the move into place is a
+/// rename on the same volume.
+#[cfg(target_os = "windows")]
+fn attempt_path(target: &Path, attempt: &str) -> std::path::PathBuf {
+    let name = target
+        .file_name()
+        .map(|name| name.to_string_lossy().to_string())
+        .unwrap_or_else(|| "lifting-plan.pdf".to_string());
+    target.with_file_name(format!(".{name}.{attempt}-{}", std::process::id()))
 }
 
 /// Where the PDF is written before it is known to be complete.

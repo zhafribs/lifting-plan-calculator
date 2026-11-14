@@ -14,6 +14,8 @@ pub mod nonuniform;
 pub mod pdf;
 #[cfg(target_os = "linux")]
 pub mod pdf_print;
+#[cfg(target_os = "windows")]
+pub mod pdf_windows;
 pub mod report;
 pub mod report_capacity;
 pub mod report_nonuniform;

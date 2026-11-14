@@ -28,6 +28,12 @@ lopdf = { version = "0.42.0", default-features = false }
 gtk = "0.18"
 webkit2gtk = "2.0"
 
+# Printing from the WebView2 the app already requires, so *Save as PDF* does not
+# depend on the Edge browser being installed.
+[target.'cfg(target_os = "windows")'.dependencies]
+webview2-com = "0.39"
+windows-core = "0.62"
+
 [dev-dependencies]
 zip = "8.6.0"
 

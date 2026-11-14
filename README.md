@@ -279,13 +279,16 @@ to the GitHub release — and the installers are unsigned, so Windows shows its
   specification PDF, which the workbook transcribes.
 - **The report preview is the PDF.** Summary opens on **Pages**: the report drawn
   as the A4 pages that will be saved, with zoom in and out, fit-to-width and a
-  `Page N of M` counter, so page breaks are visible before printing. The **Live**
-  toggle keeps the fast HTML preview for typing. *Save as PDF* writes exactly the
-  bytes the page view is showing when the plan has not changed since.
+  `Page N of M` counter, so page breaks are visible before printing. It redraws
+  about a second after typing stops, and the **Live** toggle keeps the instant
+  HTML preview. *Save as PDF* writes exactly the bytes the page view is showing
+  when the plan has not changed since.
 - **Printing and PDF**: the report preview is a web view; *Save as PDF* writes
   the report directly to A4 with a one-inch margin on every side, using the
   app's own WebKitGTK view — nothing is bundled and no browser has to be
-  installed. Windows prints with the Edge that ships with the system. The footer
+  installed. Windows prints with the WebView2 runtime the app already requires
+  to start, so it also works when Microsoft Edge has been removed; Edge is the
+  fallback. The footer
   is written onto the finished pages, so it does not depend on which renderer
   version produced them. *Print* opens the system print dialog, and *Save as
   HTML* writes a portable copy. The page declares the same A4 one-inch margin,

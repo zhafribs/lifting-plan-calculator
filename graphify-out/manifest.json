@@ -30,22 +30,22 @@
     "semantic_hash": "1ac7e1a91a22a282872ab7a6ba0ffcc1"
   },
   ".github/workflows/release.yml": {
-    "mtime": 1794575751.3388062,
-    "seen": 1794578094.7969794,
-    "ast_hash": "2b682a531ab3f75c89c33b37f3239058",
-    "semantic_hash": "2b682a531ab3f75c89c33b37f3239058"
+    "mtime": 1794633786.1265786,
+    "seen": 1794634004.4794033,
+    "ast_hash": "1bcbbc31734f22b29c87f8a70825e6b7",
+    "semantic_hash": ""
   },
   "build-appimage-portable.sh": {
-    "mtime": 1794570843.144382,
-    "seen": 1794578094.7969801,
-    "ast_hash": "4794ac66bd542ad7cca92c1d457c1ecd",
-    "semantic_hash": "4794ac66bd542ad7cca92c1d457c1ecd"
+    "mtime": 1794633786.1265786,
+    "seen": 1794634004.4794052,
+    "ast_hash": "289c8c91f17494e10a3d5e5fff37b343",
+    "semantic_hash": ""
   },
   "build-appimage.sh": {
-    "mtime": 1794570843.144382,
-    "seen": 1794578094.796981,
-    "ast_hash": "3997474752313ab5befe762839d9a47f",
-    "semantic_hash": "3997474752313ab5befe762839d9a47f"
+    "mtime": 1794633786.1265786,
+    "seen": 1794634004.4794064,
+    "ast_hash": "4a96b6b1efff33dfb5eb204eeaaa9165",
+    "semantic_hash": ""
   },
   "packaging/check-release-notes.sh": {
     "mtime": 1794575710.5228322,
@@ -66,10 +66,10 @@
     "semantic_hash": "b20dea1f31d5244bada45a9490f1f4ab"
   },
   "src-tauri/Cargo.toml": {
-    "mtime": 1794570843.1510189,
-    "seen": 1794578094.7969844,
-    "ast_hash": "dedf3db7e6bddc587d78dbe497b30c6b",
-    "semantic_hash": "dedf3db7e6bddc587d78dbe497b30c6b"
+    "mtime": 1794633786.1265786,
+    "seen": 1794634004.4794135,
+    "ast_hash": "6b8c3fb3e8a8b1395698ea566a2bc32a",
+    "semantic_hash": ""
   },
   "src-tauri/build.rs": {
     "mtime": 1794570843.151036,
@@ -84,10 +84,10 @@
     "semantic_hash": "2d00d0d1fe88d9635cdc69a9cb189977"
   },
   "src-tauri/examples/dump_fixtures.rs": {
-    "mtime": 1794570843.151036,
-    "seen": 1794578094.7969868,
-    "ast_hash": "6ddff66ac7a17ebcd5752ab897b68972",
-    "semantic_hash": "6ddff66ac7a17ebcd5752ab897b68972"
+    "mtime": 1794594784.3632414,
+    "seen": 1794634004.4794168,
+    "ast_hash": "502d86e8bcda5a517293746874f41395",
+    "semantic_hash": ""
   },
   "src-tauri/src/calc.rs": {
     "mtime": 1794570843.1560361,
@@ -96,10 +96,10 @@
     "semantic_hash": "fa8171b3903ab98be11840c6b87b58a4"
   },
   "src-tauri/src/commands.rs": {
-    "mtime": 1794570843.1567972,
-    "seen": 1794578094.7969887,
-    "ast_hash": "46de397fa10bb8001b2b900476ae6500",
-    "semantic_hash": "46de397fa10bb8001b2b900476ae6500"
+    "mtime": 1794633786.1265786,
+    "seen": 1794634004.4794195,
+    "ast_hash": "28767550e4860a2e2c2507e04e5e1b0e",
+    "semantic_hash": ""
   },
   "src-tauri/src/crane.rs": {
     "mtime": 1794579309.2214642,
@@ -126,10 +126,10 @@
     "semantic_hash": "cd53a61360d1c626fa26491dd2eab53f"
   },
   "src-tauri/src/lib.rs": {
-    "mtime": 1794570843.157036,
-    "seen": 1794578094.7969928,
-    "ast_hash": "8dcbab078d7430589914038bd56efd30",
-    "semantic_hash": "8dcbab078d7430589914038bd56efd30"
+    "mtime": 1794589083.4184024,
+    "seen": 1794634004.4794283,
+    "ast_hash": "2bf19d818b99162378dd6f7c6908998f",
+    "semantic_hash": ""
   },
   "src-tauri/src/main.rs": {
     "mtime": 1794570843.157036,
@@ -150,15 +150,15 @@
     "semantic_hash": "39fd8bdd7b986a2529af5a708f565abd"
   },
   "src-tauri/src/report.rs": {
-    "mtime": 1794579908.6229904,
-    "seen": 1794580007.7068381,
-    "ast_hash": "f0eca58d4ca568208f87bce4e8be5be1",
+    "mtime": 1794595381.6891978,
+    "seen": 1794634004.4794354,
+    "ast_hash": "74dfa8a6c9439046c4ab014c9f41a612",
     "semantic_hash": ""
   },
   "src-tauri/src/report_capacity.rs": {
-    "mtime": 1794579010.7396293,
-    "seen": 1794580007.706839,
-    "ast_hash": "adc771d60d972d24c28e973b1d994308",
+    "mtime": 1794586452.4540133,
+    "seen": 1794634004.4794374,
+    "ast_hash": "b490f50d2a3896e9612e610fe5ea9bc1",
     "semantic_hash": ""
   },
   "src-tauri/src/report_nonuniform.rs": {
@@ -168,10 +168,10 @@
     "semantic_hash": "4bab680b4b784678a637fe32fd99fdc0"
   },
   "src-tauri/src/report_uniform.rs": {
-    "mtime": 1794570843.157036,
-    "seen": 1794578094.7969987,
-    "ast_hash": "2e54bb5d8610fb195dd2e6c9f06a2309",
-    "semantic_hash": "2e54bb5d8610fb195dd2e6c9f06a2309"
+    "mtime": 1794587164.6272645,
+    "seen": 1794634004.4794412,
+    "ast_hash": "4cb0b82e35f678bfeded7e4176aa8fdd",
+    "semantic_hash": ""
   },
   "src-tauri/src/sling.rs": {
     "mtime": 1794570843.1580362,
@@ -186,16 +186,16 @@
     "semantic_hash": "32dc790fd774aa19332b15debdc2ae1f"
   },
   "src-tauri/tauri.conf.json": {
-    "mtime": 1794570843.1580362,
-    "seen": 1794578094.797001,
-    "ast_hash": "759e58e66165bb72f377b231d8929ec4",
-    "semantic_hash": "759e58e66165bb72f377b231d8929ec4"
+    "mtime": 1794633786.1265786,
+    "seen": 1794634004.4794445,
+    "ast_hash": "652a3a0912a3466f9d141d9bfe1b693c",
+    "semantic_hash": ""
   },
   "ui/js/api.js": {
-    "mtime": 1794570843.1590362,
-    "seen": 1794578094.7970018,
-    "ast_hash": "38fd8805e883f2ea57a3b3f9a3efec16",
-    "semantic_hash": "38fd8805e883f2ea57a3b3f9a3efec16"
+    "mtime": 1794594793.074459,
+    "seen": 1794634004.4794452,
+    "ast_hash": "49146d6c057219fa1aab644ef88cf187",
+    "semantic_hash": ""
   },
   "ui/js/app.js": {
     "mtime": 1794570843.1593084,
@@ -240,10 +240,10 @@
     "semantic_hash": "d4b5812cf0e90af3cd6bba226b30b9f3"
   },
   "ui/js/screens/graph.js": {
-    "mtime": 1794570843.1595325,
-    "seen": 1794578094.7970083,
-    "ast_hash": "24829922afa1a91e3a388d48727231cb",
-    "semantic_hash": "24829922afa1a91e3a388d48727231cb"
+    "mtime": 1794594086.5329013,
+    "seen": 1794634004.4794548,
+    "ast_hash": "2fcd2487adbc764024db26bd1179bc19",
+    "semantic_hash": ""
   },
   "ui/js/screens/nonuniform.js": {
     "mtime": 1794570843.1595325,
@@ -258,10 +258,10 @@
     "semantic_hash": "cc97ec2eccf73c44dc7be7865749b467"
   },
   "ui/js/screens/report.js": {
-    "mtime": 1794570843.1595325,
-    "seen": 1794578094.7970114,
-    "ast_hash": "d1586fc32f3bbc883cfbb1b83723dd2e",
-    "semantic_hash": "d1586fc32f3bbc883cfbb1b83723dd2e"
+    "mtime": 1794594817.668074,
+    "seen": 1794634004.4794576,
+    "ast_hash": "1bde71e6309df6489a7e3cba9c779975",
+    "semantic_hash": ""
   },
   "ui/js/screens/tandem.js": {
     "mtime": 1794570843.1595325,
@@ -300,9 +300,9 @@
     "semantic_hash": "3a57d99448f802024d640c81af3341a8"
   },
   "CHANGELOG.md": {
-    "mtime": 1794579982.1257615,
-    "seen": 1794580007.7068627,
-    "ast_hash": "79e209d3bd5a1d25b34adb13c2e10a6b",
+    "mtime": 1794633786.1265786,
+    "seen": 1794634004.479465,
+    "ast_hash": "3809165bc070fb028dd53b54a80c5168",
     "semantic_hash": ""
   },
   "CODE_OF_CONDUCT.md": {
@@ -318,9 +318,9 @@
     "semantic_hash": "2691ee38eaa721aa667575bc287ad225"
   },
   "README.md": {
-    "mtime": 1794579153.5279107,
-    "seen": 1794580007.7068655,
-    "ast_hash": "80ac617a42708ccb5b0167ddef40bbe2",
+    "mtime": 1794633786.1265786,
+    "seen": 1794634004.4794679,
+    "ast_hash": "03aafb155b2979cf05951caf5a5acf32",
     "semantic_hash": ""
   },
   "SECURITY.md": {
@@ -330,10 +330,10 @@
     "semantic_hash": "04838e7b15d914f5ca5fb1984fdc952b"
   },
   "THIRD_PARTY_NOTICES.md": {
-    "mtime": 1794570843.144382,
-    "seen": 1794578094.797021,
-    "ast_hash": "244032787f0e9a03727d002feb1580b0",
-    "semantic_hash": "244032787f0e9a03727d002feb1580b0"
+    "mtime": 1794633786.1265786,
+    "seen": 1794634004.4794698,
+    "ast_hash": "135e98e07a8b09e6ef83d8408218afc1",
+    "semantic_hash": ""
   },
   "docs/adr/0001-rated-capacity-envelope.md": {
     "mtime": 1794570843.1449616,
@@ -819,6 +819,54 @@
     "mtime": 1794570843.158165,
     "seen": 1794580007.7069478,
     "ast_hash": "3f8ccfe02575e55723feee9c7ab514e1",
+    "semantic_hash": ""
+  },
+  "scripts/fetch-pdf-renderer.sh": {
+    "mtime": 1794633786.1265786,
+    "seen": 1794634004.479412,
+    "ast_hash": "71fac15ad24a2a7da4c2be37eb5b7f60",
+    "semantic_hash": ""
+  },
+  "ui/js/graph/snapshot.js": {
+    "mtime": 1794594109.856476,
+    "seen": 1794634004.4794517,
+    "ast_hash": "d44a123236d1d59673076f7f82a7b296",
+    "semantic_hash": ""
+  },
+  "docs/council/decisions/0003-printed-plan-and-pdf-export.md": {
+    "mtime": 1794595454.0460122,
+    "seen": 1794634004.4794846,
+    "ast_hash": "0a1e157a8db4405484f82d4407c0b4c7",
+    "semantic_hash": ""
+  },
+  "docs/council/decisions/0004-bundled-pdf-renderer.md": {
+    "mtime": 1794633786.1265786,
+    "seen": 1794634004.4794867,
+    "ast_hash": "cb94196a43477487398ce09b79fd68ad",
+    "semantic_hash": ""
+  },
+  "docs/releases/v2.5.2.md": {
+    "mtime": 1794580300.2932215,
+    "seen": 1794634004.4795058,
+    "ast_hash": "a738a8ade4965aee518d1596252ba3fe",
+    "semantic_hash": ""
+  },
+  "docs/releases/v2.5.3.md": {
+    "mtime": 1794595439.047636,
+    "seen": 1794634004.479507,
+    "ast_hash": "ee895d503eff8652ae6f7908aab70cc1",
+    "semantic_hash": ""
+  },
+  "docs/releases/v2.5.4.md": {
+    "mtime": 1794633786.1265786,
+    "seen": 1794634004.479508,
+    "ast_hash": "b922ea0fb2bafbc5b9c6eba94f383597",
+    "semantic_hash": ""
+  },
+  "src-tauri/pdf-renderer/README.md": {
+    "mtime": 1794633786.1265786,
+    "seen": 1794634004.479511,
+    "ast_hash": "2de533aee6d8352b970594e9937e04e8",
     "semantic_hash": ""
   }
 }

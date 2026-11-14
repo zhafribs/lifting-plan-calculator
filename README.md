@@ -285,12 +285,11 @@ to the GitHub release — and the installers are unsigned, so Windows shows its
   when the plan has not changed since.
 - **Printing and PDF**: the report preview is a web view; *Save as PDF* writes
   the report directly to A4 with a one-inch margin on every side, using the
-  app's own WebKitGTK view — nothing is bundled and no browser has to be
-  installed. Windows prints with the WebView2 runtime the app already requires
-  to start, so it also works when Microsoft Edge has been removed; Edge is the
-  fallback. The footer
-  is written onto the finished pages, so it does not depend on which renderer
-  version produced them. *Print* opens the system print dialog, and *Save as
+  app's own WebKitGTK view; Windows prints with the WebView2 runtime the app
+  already requires to start, so it also works when Microsoft Edge has been
+  removed, with Edge as the fallback. Nothing is bundled and no browser has to
+  be installed. The footer is written onto the finished pages by the app on both
+  platforms, so it does not depend on which renderer version produced them. *Print* opens the system print dialog, and *Save as
   HTML* writes a portable copy. The page declares the same A4 one-inch margin,
   so a browser's print dialog must leave its margin selector on **Default**;
   *Minimum* and *None* override it. Every page carries

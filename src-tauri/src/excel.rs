@@ -20,9 +20,10 @@
 
 use std::collections::BTreeMap;
 use std::fmt;
-use std::io::Cursor;
+use std::io::{Cursor, Read};
+use std::path::Path;
 
-use calamine::{open_workbook_from_rs, Data, Reader, Xlsx};
+use calamine::{open_workbook_from_rs, DataRef, Reader, Xlsx};
 use serde::{Deserialize, Serialize};
 
 use crate::calc::{self, CalcException};
@@ -56,6 +57,12 @@ pub const MAX_CHART_BYTES: usize = 24 * 1024 * 1024;
 /// The most rows any one sheet is read for, matching the source's `max_row`.
 pub const DEFAULT_MAX_ROWS: usize = 2000;
 
+/// A ceiling on the columns of any sheet, and on the cells held across the whole
+/// workbook. A load chart is a small table; a workbook that declares more is not
+/// one, and the parser must not be asked to materialise it.
+pub const MAX_CHART_COLUMNS: u32 = 256;
+pub const MAX_CHART_CELLS: usize = 400_000;
+
 // ---------------------------------------------------------------------------
 // The in-memory sheet shape (a Python-shaped cell: text, number, or empty)
 // ---------------------------------------------------------------------------
@@ -76,18 +83,24 @@ pub struct XlsxSheet {
     pub rows: Vec<Vec<Option<CellValue>>>,
 }
 
-fn map_data(value: &Data) -> Option<CellValue> {
+fn map_data_ref(value: &DataRef) -> Option<CellValue> {
     match value {
-        Data::Int(number) => Some(CellValue::Number(*number as f64)),
-        Data::Float(number) => Some(CellValue::Number(*number)),
-        Data::Bool(flag) => Some(CellValue::Number(if *flag { 1.0 } else { 0.0 })),
-        Data::String(text) => Some(CellValue::Text(text.clone())),
-        Data::Error(_) | Data::Empty => None,
+        DataRef::Int(number) => Some(CellValue::Number(*number as f64)),
+        DataRef::Float(number) => Some(CellValue::Number(*number)),
+        DataRef::Bool(flag) => Some(CellValue::Number(if *flag { 1.0 } else { 0.0 })),
+        DataRef::String(text) => Some(CellValue::Text(text.clone())),
+        DataRef::SharedString(text) => Some(CellValue::Text((*text).to_string())),
         _ => None,
     }
 }
 
 /// Read every sheet in the workbook, in the workbook's own order.
+///
+/// Cells are streamed rather than taken as one dense `worksheet_range`: a sheet
+/// whose used area spans `A1` to `XFD1048576` would otherwise make the parser
+/// allocate the whole rectangle before this crate could apply any limit. The
+/// budget is per sheet (rows and columns) and across the workbook (cells), and a
+/// workbook over it is refused rather than half-read.
 pub fn read_xlsx(bytes: &[u8], max_rows: usize) -> Result<Vec<XlsxSheet>, String> {
     let cursor = Cursor::new(bytes);
     let mut workbook: Xlsx<_> = open_workbook_from_rs::<Xlsx<_>, _>(cursor)
@@ -100,23 +113,73 @@ pub fn read_xlsx(bytes: &[u8], max_rows: usize) -> Result<Vec<XlsxSheet>, String
         .collect();
 
     let mut sheets = Vec::new();
+    let mut budget = MAX_CHART_CELLS;
     for name in names {
-        let Ok(range) = workbook.worksheet_range(&name) else {
+        let Ok(mut reader) = workbook.worksheet_cells_reader(&name) else {
             continue;
         };
-        let start_column = range.start().map(|(_, column)| column as usize).unwrap_or(0);
-        let mut rows: Vec<Vec<Option<CellValue>>> = Vec::new();
-        for row in range.rows() {
-            if rows.len() >= max_rows {
-                break;
+        let mut cells: Vec<(u32, u32, CellValue)> = Vec::new();
+        loop {
+            match reader.next_cell() {
+                Ok(Some(cell)) => {
+                    let (row, column) = cell.get_position();
+                    // Beyond the row ceiling the sheet is simply cut, as before.
+                    if row as usize >= max_rows {
+                        break;
+                    }
+                    if column >= MAX_CHART_COLUMNS || budget == 0 {
+                        return Err(err(
+                            "That workbook's sheets are larger than a load chart. \
+                             Check that it is the chart, not a whole data export.",
+                        )
+                        .to_string());
+                    }
+                    budget -= 1;
+                    if let Some(value) = map_data_ref(cell.get_value()) {
+                        cells.push((row, column, value));
+                    }
+                }
+                Ok(None) => break,
+                Err(_) => break,
             }
-            let mut cells: Vec<Option<CellValue>> = vec![None; start_column];
-            cells.extend(row.iter().map(map_data));
-            rows.push(cells);
+        }
+        if cells.is_empty() {
+            continue;
+        }
+        let first_row = cells.iter().map(|cell| cell.0).min().unwrap_or(0);
+        let last_row = cells.iter().map(|cell| cell.0).max().unwrap_or(0);
+        let width = cells
+            .iter()
+            .map(|cell| cell.1 as usize + 1)
+            .max()
+            .unwrap_or(0);
+        let mut rows = vec![vec![None; width]; (last_row - first_row + 1) as usize];
+        for (row, column, value) in cells {
+            rows[(row - first_row) as usize][column as usize] = Some(value);
         }
         sheets.push(XlsxSheet { title: name, rows });
     }
     Ok(sheets)
+}
+
+/// Read a workbook file without ever holding more than the size ceiling, so a
+/// large or growing file is refused instead of being read into memory first.
+pub fn read_chart_file(path: &Path) -> Result<LoadChartData, ExcelImportException> {
+    let too_large = || err("That workbook is larger than 24 MB; check that it is the chart.");
+    let metadata = std::fs::metadata(path).map_err(|_| err("That file could not be opened."))?;
+    if metadata.len() > MAX_CHART_BYTES as u64 {
+        return Err(too_large());
+    }
+    let mut bytes = Vec::with_capacity(metadata.len() as usize + 1);
+    std::fs::File::open(path)
+        .map_err(|_| err("That file could not be opened."))?
+        .take(MAX_CHART_BYTES as u64 + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|_| err("That file could not be read."))?;
+    if bytes.len() > MAX_CHART_BYTES {
+        return Err(too_large());
+    }
+    read_chart(&bytes)
 }
 
 // ---------------------------------------------------------------------------
@@ -2180,5 +2243,82 @@ xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">
         let selected =
             jib_changed(&CraneInputs::default(), &chart, "boom_jib", Some(7.2), Some(25.0), 500.0);
         assert_eq!(selected.boom_angle_deg, Some(83.0));
+    }
+
+    fn workbook_with_sheet(cells: &str) -> Vec<u8> {
+        use std::io::Write;
+        let mut buffer = std::io::Cursor::new(Vec::new());
+        {
+            let mut zip = zip::ZipWriter::new(&mut buffer);
+            let options = zip::write::SimpleFileOptions::default();
+            let mut add = |name: &str, body: &str| {
+                zip.start_file(name, options).unwrap();
+                zip.write_all(body.as_bytes()).unwrap();
+            };
+            add(
+                "[Content_Types].xml",
+                r#"<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>"#,
+            );
+            add(
+                "_rels/.rels",
+                r#"<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>"#,
+            );
+            add(
+                "xl/workbook.xml",
+                r#"<?xml version="1.0"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets></workbook>"#,
+            );
+            add(
+                "xl/_rels/workbook.xml.rels",
+                r#"<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>"#,
+            );
+            add("xl/worksheets/sheet1.xml", cells);
+            zip.finish().unwrap();
+        }
+        buffer.into_inner()
+    }
+
+    #[test]
+    fn a_sheet_that_claims_the_whole_grid_is_refused_instead_of_allocated() {
+        // Two cells at opposite corners declare 16384 x 1048576 cells. The
+        // parser must refuse before it materialises the rectangle.
+        let bytes = workbook_with_sheet(
+            r#"<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:XFD1048576"/><sheetData><row r="1"><c r="A1"><v>1</v></c><c r="XFD1"><v>2</v></c></row></sheetData></worksheet>"#,
+        );
+        let error = read_xlsx(&bytes, DEFAULT_MAX_ROWS).expect_err("a huge used area must be refused");
+        assert!(error.contains("larger than a load chart"), "{error}");
+
+        // A declared dimension on its own allocates nothing: the reader streams
+        // and the row ceiling cuts the sheet at max_rows.
+        let tall = workbook_with_sheet(
+            r#"<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:XFD1048576"/><sheetData><row r="1"><c r="A1"><v>1</v></c></row><row r="1048576"><c r="A1"><v>2</v></c></row></sheetData></worksheet>"#,
+        );
+        let sheets = read_xlsx(&tall, DEFAULT_MAX_ROWS).expect("a tall sheet is cut, not allocated");
+        assert_eq!(sheets[0].rows.len(), 1, "rows beyond the ceiling are dropped");
+    }
+
+    #[test]
+    fn a_small_sheet_is_read_with_its_cells_in_place() {
+        let bytes = workbook_with_sheet(
+            r#"<?xml version="1.0"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData><row r="1"><c r="A1"><v>1</v></c><c r="B1"><v>2</v></c></row><row r="2"><c r="B2"><v>3</v></c></row></sheetData></worksheet>"#,
+        );
+        let sheets = read_xlsx(&bytes, DEFAULT_MAX_ROWS).expect("a normal sheet parses");
+        assert_eq!(sheets.len(), 1);
+        assert_eq!(sheets[0].rows[0][0], Some(CellValue::Number(1.0)));
+        assert_eq!(sheets[0].rows[1][1], Some(CellValue::Number(3.0)));
+        assert_eq!(sheets[0].rows[0][1], Some(CellValue::Number(2.0)));
+    }
+
+    #[test]
+    fn a_workbook_over_the_size_ceiling_is_refused_before_it_is_read() {
+        let dir = std::env::temp_dir().join(format!("lpc-big-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("big.xlsx");
+        std::fs::File::create(&path)
+            .unwrap()
+            .set_len(MAX_CHART_BYTES as u64 + 1)
+            .unwrap();
+        let error = read_chart_file(&path).expect_err("an oversized workbook must be refused");
+        assert!(error.0.contains("larger than 24 MB"), "{}", error.0);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

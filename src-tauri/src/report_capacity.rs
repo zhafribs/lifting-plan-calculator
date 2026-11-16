@@ -546,12 +546,6 @@ pub fn notes_section(result: &SlingResult, spec: &HitchSpec) -> String {
     } else {
         let reduction = result.choke_reduction_factor;
         let external = result.external_angle;
-        choke.push_str(&p(
-            "(1) Percent of sling rated capacity in a choker hitch. The rating \
-             reduction is applied to the tag WLL, not to the resolved \
-             main-leg tension.",
-            "",
-        ));
         choke.push_str(
             "<table><thead><tr><th>External choke angle</th>\
              <th>Capacity multiplier</th></tr></thead><tbody>",
@@ -590,10 +584,7 @@ pub fn notes_section(result: &SlingResult, spec: &HitchSpec) -> String {
     } else {
         out.push(notes_pair(
             &work_block("Choke Notes", &choke),
-            &work_block(
-                "To Calculate Sling Leg Capacity Each (Tag Rating)",
-                &rating,
-            ),
+            &work_block("Sling Legs per Tag Rating", &rating),
         ));
     }
     out.join("")
@@ -698,7 +689,7 @@ pub fn nonuniform_rating_legs_note(pairs: &[(String, Option<i64>, Option<i64>)])
     let mut out = String::new();
     if rule_used {
         out.push_str(&subheading(
-            "To Calculate Sling Leg Capacity Each (Tag Rating)",
+            "Sling Legs per Tag Rating",
         ));
         for note in RATING_LEG_NOTE {
             out.push_str(&p(note, ""));
@@ -824,7 +815,6 @@ mod tests {
         for expected in [
             "<h2>6. NOTE</h2>",
             "Choke Notes",
-            "(1) Percent of sling rated capacity in a choker hitch. The rating reduction is applied to the tag WLL, not to the resolved main-leg tension.",
             "Selected external angle: 120 \u{00b0} \u{2014} reduction factor 1.00.",
             "<tr><td>120\u{00b0} and over</td><td>1.00</td></tr>",
             "<tr><td>90\u{00b0} to under 120\u{00b0}</td><td>0.87</td></tr>",
@@ -903,7 +893,7 @@ mod tests {
         let notes = sections(&two_leg_direct()).2;
         for expected in [
             "No choke reduction applies to the selected arrangement.",
-            "To Calculate Sling Leg Capacity Each (Tag Rating)",
+            "Sling Legs per Tag Rating",
             "If 4-Leg Sling, use Sling Legs = 3",
             "If 3-Leg Sling, use Sling Legs = 2",
             "If 2-Leg Sling, use Sling Legs = 2",

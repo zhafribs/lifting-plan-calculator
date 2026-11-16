@@ -24,6 +24,9 @@ Nothing yet.
 - The release job records each artifact's SHA-256 where it was built and the
   publish job refuses a download that does not match, so `SHA256SUMS.txt` is no
   longer a restatement of whatever the artifact store held.
+- The portable build pins the Ubuntu base rootfs by SHA-256 and fetches it over
+  https only (redirects included), so the compiler and the bundled libraries it
+  produces a release with are the ones that were reviewed.
 
 ## [2.10.0] - 2026-11-16
 

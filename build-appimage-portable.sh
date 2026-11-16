@@ -27,6 +27,9 @@ ROOTFS="$CACHE_DIR/ubuntu-22.04-rootfs"
 ROOTFS_TARBALL="$CACHE_DIR/ubuntu-base-22.04-base-amd64.tar.gz"
 BUILD_DIR="$CACHE_DIR/build"
 ROOTFS_URL="https://cdimage.ubuntu.com/ubuntu-base/releases/22.04/release/ubuntu-base-22.04-base-amd64.tar.gz"
+# The rootfs decides the compiler and the bundled libraries, so it is pinned:
+# a different archive is a failure, not an update.
+ROOTFS_SHA256="df6fe77cee11bd216ac532f0ee082bdc4da3c0cc1f1d9cb20f3f743196bc4b07"
 
 if ! command -v bwrap >/dev/null 2>&1; then
   echo "==> ERROR: bwrap (bubblewrap) is not installed." >&2
@@ -38,7 +41,14 @@ mkdir -p "$CACHE_DIR" "$BUILD_DIR"
 
 if [ ! -d "$ROOTFS/usr" ]; then
   echo "==> Fetching the Ubuntu 22.04 base rootfs (one time, ~30 MB)"
-  curl -L --fail -o "$ROOTFS_TARBALL" "$ROOTFS_URL"
+  # https only, redirects included, and the pinned digest must match before it
+  # is unpacked as the build root.
+  curl -L --fail --proto '=https' --proto-redir '=https' -o "$ROOTFS_TARBALL" "$ROOTFS_URL"
+  if ! echo "${ROOTFS_SHA256}  ${ROOTFS_TARBALL}" | sha256sum --check --status -; then
+    echo "==> ERROR: the Ubuntu base archive does not match its pinned digest." >&2
+    rm -f "$ROOTFS_TARBALL"
+    exit 1
+  fi
   mkdir -p "$ROOTFS"
   tar -xzf "$ROOTFS_TARBALL" -C "$ROOTFS"
 fi

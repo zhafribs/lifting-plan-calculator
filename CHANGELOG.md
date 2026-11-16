@@ -2,6 +2,27 @@
 
 Nothing yet.
 
+## [2.11.0] - 2026-11-16
+
+### Security
+
+- An update must be newer than the running build. The release tag is read from
+  the asset URL and compared with the app's version, so a replay of an older
+  signed release is refused as a downgrade.
+- Release URLs are parsed, not prefix-matched: scheme, host and repository path
+  are checked, so a URL that merely starts with the release prefix no longer
+  passes.
+- The installer's file name must be a plain name, not a path; one that resolves
+  outside the update folder is refused instead of written.
+- A workbook can only be imported from the path the file picker (or the
+  `--chart=` hook) just returned, and only once. The webview can no longer name
+  an arbitrary file.
+- The report save dialog is pre-filled with a leaf name only, and the file is
+  written with an `.html` extension.
+- The release job records each artifact's SHA-256 where it was built and the
+  publish job refuses a download that does not match, so `SHA256SUMS.txt` is no
+  longer a restatement of whatever the artifact store held.
+
 ## [2.10.0] - 2026-11-16
 
 ### Added

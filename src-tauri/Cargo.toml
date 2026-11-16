@@ -1,6 +1,6 @@
 [package]
 name = "lifting-plan-calculator"
-version = "2.10.0"
+version = "2.11.0"
 description = "Lifting plan calculator for rigging and crane lifts"
 authors = ["Zhafri Syazwi"]
 edition = "2021"
@@ -20,6 +20,7 @@ serde_json = "1"
 calamine = "0.38.0"
 rfd = "0.18.0"
 ureq = { version = "2", default-features = false, features = ["tls", "gzip"] }
+url = "2"
 sha2 = "0.10"
 lopdf = { version = "0.47.0", default-features = false }
 ed25519-compact = "2.6.1"

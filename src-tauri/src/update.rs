@@ -236,6 +236,29 @@ fn verified_manifest(
     Ok(text)
 }
 
+/// Whether a URL is one of this repository's release assets.
+#[cfg(any(target_os = "windows", test))]
+fn is_release_asset_url(url: &str) -> bool {
+    url::Url::parse(url)
+        .map(|parsed| {
+            parsed.scheme() == "https"
+                && parsed.host_str() == Some("github.com")
+                && parsed
+                    .path()
+                    .starts_with("/zhafribs/lifting-plan-calculator/releases/download/")
+        })
+        .unwrap_or(false)
+}
+
+/// The tag an asset URL belongs to, e.g. `v2.10.0`.
+#[cfg(any(target_os = "windows", test))]
+fn tag_of_asset(url: &str) -> Option<String> {
+    let parsed = url::Url::parse(url).ok()?;
+    let rest = parsed.path().split("/releases/download/").nth(1)?;
+    let tag = rest.split('/').next()?;
+    (!tag.is_empty()).then(|| tag.to_string())
+}
+
 /// The release's checksum manifest, next to the asset itself.
 #[cfg(any(target_os = "windows", test))]
 fn manifest_url(asset_url: &str) -> Option<String> {
@@ -247,11 +270,28 @@ fn manifest_url(asset_url: &str) -> Option<String> {
 /// caller then quits so the installer can replace the running files.
 #[cfg(target_os = "windows")]
 pub fn install(asset: &InstallerAsset) -> Result<String, String> {
-    if !asset.url.starts_with(DOWNLOAD_PREFIX) {
+    if !is_release_asset_url(&asset.url) {
         return Err("That download is not from this project's releases.".to_string());
     }
-    if !(asset.name.ends_with("-setup.exe") || asset.name.ends_with(".msi")) {
+    // The name is a file name, never a path: `..\..\Startup\x-setup.exe` is
+    // rejected rather than written outside the update folder.
+    let name = std::path::Path::new(&asset.name)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .filter(|name| *name == asset.name)
+        .ok_or_else(|| "That update names a file outside its release.".to_string())?
+        .to_string();
+    if !(name.ends_with("-setup.exe") || name.ends_with(".msi")) {
         return Err("That file is not a Windows installer.".to_string());
+    }
+    // A replay of an older signed release is still a downgrade.
+    let tag = tag_of_asset(&asset.url)
+        .ok_or_else(|| "That download has no release tag.".to_string())?;
+    if !is_newer(env!("CARGO_PKG_VERSION"), tag.trim_start_matches(['v', 'V'])) {
+        return Err(format!(
+            "That release ({tag}) is not newer than this build ({}).",
+            env!("CARGO_PKG_VERSION")
+        ));
     }
     // The release publishes SHA256SUMS.txt beside its assets; an installer that
     // is not in it, or does not match it, is not executed. This catches a
@@ -271,14 +311,14 @@ pub fn install(asset: &InstallerAsset) -> Result<String, String> {
         Ok(bytes)
     };
     let manifest = verified_manifest(&asset.url, &asset.name, fetch)?;
-    let expected = expected_digest(&manifest, &asset.name).ok_or_else(|| {
+    let expected = expected_digest(&manifest, &name).ok_or_else(|| {
         "That installer is not listed in its release's checksums.".to_string()
     })?;
 
     let directory = std::env::temp_dir().join("lifting-plan-calculator-update");
     std::fs::create_dir_all(&directory)
         .map_err(|error| format!("The installer could not be saved: {error}"))?;
-    let target = directory.join(&asset.name);
+    let target = directory.join(&name);
     let mut reader = ureq::get(&asset.url)
         .set("User-Agent", USER_AGENT)
         .timeout(DOWNLOAD_TIMEOUT)
@@ -363,6 +403,29 @@ pub fn quit_app(app: tauri::AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_this_projects_release_urls_are_accepted() {
+        let good = "https://github.com/zhafribs/lifting-plan-calculator/releases/download/v2.10.0/x-setup.exe";
+        assert!(is_release_asset_url(good));
+        // Another host, another repository, plain http, and path tricks.
+        for bad in [
+            "https://evil.example/zhafribs/lifting-plan-calculator/releases/download/v1/x-setup.exe",
+            "http://github.com/zhafribs/lifting-plan-calculator/releases/download/v1/x-setup.exe",
+            "https://github.com/other/repo/releases/download/v1/x-setup.exe",
+            "https://github.com/zhafribs/lifting-plan-calculator/releases/download/../../x",
+            "not a url",
+        ] {
+            assert!(!is_release_asset_url(bad), "{bad}");
+        }
+    }
+
+    #[test]
+    fn the_tag_comes_from_the_asset_url() {
+        let url = "https://github.com/zhafribs/lifting-plan-calculator/releases/download/v2.10.0/x-setup.exe";
+        assert_eq!(tag_of_asset(url).as_deref(), Some("v2.10.0"));
+        assert_eq!(tag_of_asset("https://github.com/x"), None);
+    }
 
     #[test]
     fn a_malformed_signature_is_refused_not_panicked_on() {

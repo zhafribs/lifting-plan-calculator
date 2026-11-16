@@ -25,7 +25,7 @@ pub mod update;
 
 pub fn run() {
     tauri::Builder::default()
-        .manage(commands::ChartHolder(std::sync::Mutex::new(None)))
+        .manage(commands::ChartHolder::new())
         .invoke_handler(tauri::generate_handler![
             commands::app_info,
             commands::catalog,

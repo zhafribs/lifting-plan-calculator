@@ -2092,7 +2092,7 @@ dependencies = [
 
 [[package]]
 name = "lifting-plan-calculator"
-version = "2.10.0"
+version = "2.11.0"
 dependencies = [
  "calamine",
  "ed25519-compact",
@@ -2105,6 +2105,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "ureq",
+ "url",
  "webkit2gtk",
  "webview2-com",
  "windows",

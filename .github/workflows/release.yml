@@ -211,6 +211,22 @@ jobs:
             exit 1
           fi
 
+      # The digests of what this job built. The publish job compares them with
+      # what it downloads, so the checksum manifest is not merely a restatement
+      # of the artifact store.
+      - name: Record the build-time digests
+        run: |
+          set -euo pipefail
+          (cd dist && sha256sum ./*) > "$RUNNER_TEMP/digests-linux.txt"
+          cat "$RUNNER_TEMP/digests-linux.txt"
+
+      - name: Upload the Linux digests
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: digests-linux
+          path: ${{ runner.temp }}/digests-linux.txt
+          if-no-files-found: error
+
       - name: Upload the Linux artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
@@ -295,6 +311,22 @@ jobs:
           fi
           ls -l dist
 
+      - name: Record the build-time digests
+        shell: pwsh
+        run: |
+          $lines = Get-ChildItem dist -File | ForEach-Object {
+            "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  ./$($_.Name)"
+          }
+          $lines | Set-Content -Encoding ascii (Join-Path $env:RUNNER_TEMP "digests-windows.txt")
+          Get-Content (Join-Path $env:RUNNER_TEMP "digests-windows.txt")
+
+      - name: Upload the Windows digests
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: digests-windows
+          path: ${{ runner.temp }}/digests-windows.txt
+          if-no-files-found: error
+
       - name: Upload the Windows artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
@@ -352,6 +384,41 @@ jobs:
             fi
           done
           ls -l dist
+
+      - name: Download the build-time digests
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p digests
+          for artifact in digests-linux digests-windows; do
+            gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+              --name "$artifact" --dir digests
+          done
+
+      # A tag cannot vouch for bytes. The jobs that produced them recorded their
+      # digests; a mismatch means the artifact store handed us something else.
+      - name: Check the artifacts against their build-time digests
+        run: |
+          set -euo pipefail
+          checked=0
+          for record in digests/*.txt; do
+            while read -r hash name; do
+              [ -n "${hash:-}" ] || continue
+              [ -f "dist/${name#./}" ] || { echo "::error::${name#./} is missing"; exit 1; }
+              actual="$(sha256sum "dist/${name#./}" | cut -d' ' -f1)"
+              if [ "$actual" != "$hash" ]; then
+                echo "::error::${name#./} does not match the digest its build job recorded" >&2
+                exit 1
+              fi
+              checked=$((checked + 1))
+            done < "$record"
+          done
+          if [ "$checked" -eq 0 ]; then
+            echo "::error::no build-time digests were found" >&2
+            exit 1
+          fi
+          echo "all $checked artifacts match their build-time digests"
 
       - name: Generate checksums
         run: |

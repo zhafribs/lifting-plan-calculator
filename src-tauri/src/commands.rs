@@ -16,8 +16,28 @@ use crate::report::{build_report_html, wrap_katex_with, ReportInputs};
 use crate::sling::solve_one_leg;
 
 /// The parsed workbook behind the current import, held for the boom and radius
-/// updates that re-read it.
-pub struct ChartHolder(pub Mutex<Option<LoadChartData>>);
+/// updates that re-read it, plus the one path the app has agreed to read next.
+pub struct ChartHolder {
+    pub chart: Mutex<Option<LoadChartData>>,
+    /// The path the file picker (or the `--chart=` hook) returned. `import_chart`
+    /// accepts only this path, once, so the webview cannot name any file it likes.
+    pub grant: Mutex<Option<String>>,
+}
+
+impl ChartHolder {
+    pub fn new() -> Self {
+        Self {
+            chart: Mutex::new(None),
+            grant: Mutex::new(None),
+        }
+    }
+}
+
+impl Default for ChartHolder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 // A tiny envelope so the UI can read the app's identity without a second
 // round trip. `start_screen` lets a launcher open a named screen directly
@@ -41,13 +61,18 @@ pub struct AppInfo {
 }
 
 #[tauri::command]
-pub fn app_info() -> AppInfo {
+pub fn app_info(holder: tauri::State<'_, ChartHolder>) -> AppInfo {
     let start_screen = std::env::args()
         .find_map(|argument| argument.strip_prefix("--screen=").map(str::to_string));
     let start_hitch = std::env::args()
         .find_map(|argument| argument.strip_prefix("--sling-hitch=").map(str::to_string));
     let start_chart = std::env::args()
         .find_map(|argument| argument.strip_prefix("--chart=").map(str::to_string));
+    // The command-line hook is a legitimate source of one path, exactly like
+    // the picker.
+    if let Some(path) = &start_chart {
+        *holder.grant.lock().expect("chart holder poisoned") = Some(path.clone());
+    }
     let chart_radius = std::env::args()
         .find_map(|argument| argument.strip_prefix("--chart-radius=").map(str::to_string));
     AppInfo {
@@ -140,14 +165,20 @@ pub fn solve_all(state: AppState) -> SolveAll {
 
 /// Open the workbook picker. Returns the chosen path, or None when cancelled.
 #[tauri::command]
-pub async fn pick_chart_file() -> Result<Option<String>, String> {
+pub async fn pick_chart_file(
+    holder: tauri::State<'_, ChartHolder>,
+) -> Result<Option<String>, String> {
     let handle = rfd::AsyncFileDialog::new()
         .set_title("Open Excel load chart")
         .add_filter("Excel workbook", &["xlsx"])
         .add_filter("All files", &["*"])
         .pick_file()
         .await;
-    Ok(handle.map(|file| file.path().to_string_lossy().to_string()))
+    let path = handle.map(|file| file.path().to_string_lossy().to_string());
+    if let Some(path) = &path {
+        *holder.grant.lock().expect("chart holder poisoned") = Some(path.clone());
+    }
+    Ok(path)
 }
 
 /// Read a workbook, apply it to the crane form, and remember it for the boom
@@ -158,6 +189,7 @@ pub fn import_chart(
     state: AppState,
     path: String,
 ) -> Result<ChartImport, String> {
+    claim_grant(&holder, &path)?;
     let chart = excel::read_chart_file(Path::new(&path)).map_err(|error| error.0)?;
     let name = Path::new(&path)
         .file_name()
@@ -166,7 +198,7 @@ pub fn import_chart(
     let gross = state.totals().gross;
     let crane = imported_inputs(&state.crane, &chart, &name, gross);
     let table = table_for(&chart, crane.chart_boom);
-    *holder.0.lock().expect("chart holder poisoned") = Some(chart);
+    *holder.chart.lock().expect("chart holder poisoned") = Some(chart);
     Ok(ChartImport { crane, table })
 }
 
@@ -216,7 +248,7 @@ pub fn chart_update(
             offset,
             gross,
         } => {
-            let guard = holder.0.lock().expect("chart holder poisoned");
+            let guard = holder.chart.lock().expect("chart holder poisoned");
             let chart = guard.as_ref().ok_or("No workbook is loaded.")?;
             Ok(ChartUpdate {
                 crane: excel::jib_changed(&crane, chart, &config, length, offset, gross),
@@ -224,7 +256,7 @@ pub fn chart_update(
             })
         }
         ChartAction::Boom { boom, gross } => {
-            let guard = holder.0.lock().expect("chart holder poisoned");
+            let guard = holder.chart.lock().expect("chart holder poisoned");
             let chart = guard.as_ref().ok_or("No workbook is loaded.")?;
             let updated = boom_changed(&crane, chart, boom, gross);
             let table = table_for(chart, updated.chart_boom);
@@ -234,7 +266,7 @@ pub fn chart_update(
             })
         }
         ChartAction::Radius { radius } => {
-            let guard = holder.0.lock().expect("chart holder poisoned");
+            let guard = holder.chart.lock().expect("chart holder poisoned");
             let chart = guard.as_ref().ok_or("No workbook is loaded.")?;
             let updated = radius_changed(&crane, chart, radius);
             let table = table_for(chart, updated.chart_boom);
@@ -291,6 +323,7 @@ pub async fn save_report(
     html: String,
     suggested_name: String,
 ) -> Result<Option<String>, String> {
+    let suggested_name = report_file_name(&suggested_name);
     let handle = rfd::AsyncFileDialog::new()
         .set_title("Save lifting plan report")
         .set_file_name(&suggested_name)
@@ -300,7 +333,15 @@ pub async fn save_report(
     let Some(handle) = handle else {
         return Ok(None);
     };
-    let target = handle.path().to_path_buf();
+    let mut target = handle.path().to_path_buf();
+    if !target
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .map(|extension| extension.eq_ignore_ascii_case("html"))
+        .unwrap_or(false)
+    {
+        target.set_extension("html");
+    }
     let Some(parent) = target.parent() else {
         return Err("That destination cannot be written to.".to_string());
     };
@@ -558,6 +599,30 @@ pub async fn preview_pdf(
     .await
     .map_err(|error| format!("The preview could not be rendered: {error}"))??;
     Ok(tauri::ipc::Response::new(bytes))
+}
+
+/// A leaf file name for the save dialog: a suggested path must not be able to
+/// pre-target a folder.
+fn report_file_name(suggested: &str) -> String {
+    Path::new(suggested)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .filter(|name| !name.is_empty())
+        .unwrap_or("lifting-plan.html")
+        .to_string()
+}
+
+/// Consume the one path the picker (or the `--chart=` hook) handed out.
+fn claim_grant(holder: &ChartHolder, path: &str) -> Result<(), String> {
+    let mut grant = holder.grant.lock().expect("chart holder poisoned");
+    // Only a match spends the grant: a wrong path must not disable the one the
+    // operator was given.
+    if grant.as_deref() == Some(path) {
+        *grant = None;
+        Ok(())
+    } else {
+        Err("Choose the workbook with the Load chart picker before importing it.".to_string())
+    }
 }
 
 fn render_pdf(
@@ -1163,6 +1228,25 @@ mod pdf_export_tests {
         for key in ["LD_LIBRARY_PATH", "APPDIR", "GTK_PATH", "XDG_DATA_DIRS"] {
             assert!(removed.contains(&key.to_string()), "kept {key}");
         }
+    }
+
+    #[test]
+    fn a_suggested_report_name_cannot_choose_a_folder() {
+        assert_eq!(report_file_name("lifting-plan.html"), "lifting-plan.html");
+        assert_eq!(report_file_name("/etc/passwd"), "passwd");
+        assert_eq!(report_file_name("../../autostart/x.desktop"), "x.desktop");
+        assert_eq!(report_file_name(".."), "lifting-plan.html");
+        assert_eq!(report_file_name(""), "lifting-plan.html");
+    }
+
+    #[test]
+    fn a_workbook_can_only_be_imported_from_the_granted_path() {
+        let holder = ChartHolder::new();
+        assert!(claim_grant(&holder, "/etc/passwd").is_err(), "no grant yet");
+        *holder.grant.lock().unwrap() = Some("/tmp/chart.xlsx".to_string());
+        assert!(claim_grant(&holder, "/etc/passwd").is_err(), "another path");
+        assert!(claim_grant(&holder, "/tmp/chart.xlsx").is_ok());
+        assert!(claim_grant(&holder, "/tmp/chart.xlsx").is_err(), "the grant is spent");
     }
 
     #[test]

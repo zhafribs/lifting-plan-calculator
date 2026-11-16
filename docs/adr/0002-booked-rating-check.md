@@ -1,6 +1,6 @@
 # ADR-0002 — A plan states two checks: the chart and the booked crane
 
-- **Status:** accepted, 2026-11-13
+- **Status:** withdrawn on 2026-11-16 — the chart check is the only rating used; see `0005-chart-is-the-only-check.md`
 - **Owners:** Chief Engineer (crane and rigging), Safety & Compliance
 - **Applies to:** the Crane tab, `CraneResult`, the printed plan
 

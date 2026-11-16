@@ -11,6 +11,13 @@
 - The Crane tab labels its machine field **Crane name**, matching the value it
   holds.
 
+### Removed
+
+- The crane's booked rating is no longer checked against the 75% rule. The load
+  chart is the only rating used: it is the one that applies at the boom and
+  radius in use. The rated capacity is still printed for the record, and the
+  Crane tab no longer shows a "Booked rating check" row.
+
 ## [2.8.2] - 2026-11-14
 
 ### Changed

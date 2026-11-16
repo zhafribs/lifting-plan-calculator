@@ -462,10 +462,11 @@ fn metrics_table(crane: &CraneResult, gross: f64) -> String {
         .capacity_usage_percent
         .map(|usage| format!("{:.2}%", usage))
         .unwrap_or_else(|| "\u{2014}".to_string());
-    let required_value = crane
-        .required_capacity_kg
-        .map(|required| fmt(Some(required), 2, "kg"))
-        .unwrap_or_else(|| "\u{2014}".to_string());
+    let required_value = if gross > 0.0 {
+        fmt(Some(design_load_from_gross(gross)), 2, "kg")
+    } else {
+        "\u{2014}".to_string()
+    };
     let booked_value = if crane.crane_capacity_kg != 0.0 {
         fmt(Some(crane.crane_capacity_kg), 2, "kg")
     } else {
@@ -492,13 +493,6 @@ fn metrics_table(crane: &CraneResult, gross: f64) -> String {
             Some(UsageState::Over) => (
                 "<span class=\"metric-band over\">WARNING</span>".to_string(),
                 "over chart capacity".to_string(),
-            ),
-            Some(band) if crane.booked_ok == Some(false) => (
-                format!(
-                    "<span class=\"metric-band neutral\">CHART: {}</span>",
-                    band.wording()
-                ),
-                "crane rating below the 75% rule".to_string(),
             ),
             Some(UsageState::Within) => (
                 "<span class=\"metric-band within\">WITHIN LIMIT</span>".to_string(),
@@ -528,19 +522,6 @@ fn metrics_table(crane: &CraneResult, gross: f64) -> String {
         usage_band,
         escape(&usage_sub)
     );
-    let rating_note = match (crane.booked_ok, crane.required_capacity_kg) {
-        (Some(false), Some(required)) => format!(
-            "<span class=\"metric-band over\">WARNING</span>\
-             <span class=\"metric-sub\">{} is below the {} required at the 75% rule</span>",
-            fmt(Some(crane.crane_capacity_kg), 2, "kg"),
-            fmt(Some(required), 2, "kg")
-        ),
-        (Some(false), None) => "<span class=\"metric-band over\">WARNING</span>\
-            <span class=\"metric-sub\">below the required capacity at 75%</span>"
-            .to_string(),
-        (Some(true), _) => "<span class=\"metric-sub\">checked against 75%</span>".to_string(),
-        (None, _) => "<span class=\"metric-sub\">not checked</span>".to_string(),
-    };
 
     format!(
         "<table class=\"metrics\"><tr>{}{}{}</tr><tr>{}{}{}</tr></table>",
@@ -552,7 +533,7 @@ fn metrics_table(crane: &CraneResult, gross: f64) -> String {
         ),
         usage_cell,
         metric_cell("Required capacity at 75%", &required_value, ""),
-        metric_cell_html("Crane rating", &booked_value, &rating_note),
+        metric_cell("Crane rating", &booked_value, ""),
         metric_cell("Boom / radius / angle", &config_value, ""),
     )
 }
@@ -913,7 +894,9 @@ mod tests {
             "<span class=\"metric-k\">Crane rating</span>\
              <span class=\"metric-v\">90,000.00 kg</span>"
         ));
-        assert!(html.contains("<span class=\"metric-sub\">checked against 75%</span>"));
+        // The card reports the machine; it makes no check of its own.
+        assert!(!html.contains("checked against 75%"));
+        assert!(!html.contains("below the 75% rule"));
     }
 
     #[test]
@@ -999,21 +982,6 @@ mod tests {
             );
             assert!(html.contains(phrase), "missing {phrase}");
         }
-    }
-
-    #[test]
-    fn a_failed_booked_check_is_named_on_the_crane_rating_card() {
-        let mut crane = example_crane();
-        crane.booked_ok = Some(false);
-        crane.required_capacity_kg = Some(3_600.0);
-        crane.crane_capacity_kg = 3_000.0;
-        let html = metrics_table(&crane, 2_000.0);
-        assert!(html.contains(
-            "3,000.00 kg is below the 3,600.00 kg required at the 75% rule"
-        ));
-        // The usage card stays the chart band: the chart is not the failing check.
-        assert!(html.contains("<span class=\"metric-band neutral\">CHART: WITHIN LIMIT</span>"));
-        assert!(html.contains("crane rating below the 75% rule"));
     }
 
     #[test]

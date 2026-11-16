@@ -121,12 +121,12 @@ background so it prints without a black block.
 
 The chart check is a band, not a cap: at or under 75% of the charted capacity
 the plan reads **WITHIN LIMIT**, between 75% and 100% **CAUTION**, and above
-100% **WARNING**. Since 2.5.0 the crane's own booked rating is checked against
-the same 75% test when a rating is entered; with none entered the plan says
-**Not checked** rather than inventing a pass. A working radius outside the chart's rated range
-is refused outright, naming the range the chart rates, instead of carrying the
-nearest charted capacity in. The reasoning behind each is recorded in
-[`docs/adr/`](docs/adr/).
+100% **WARNING**. The chart is the only rating checked: it is the figure that
+applies at the boom and radius in use, so the crane's rated capacity is printed
+for the record and not used as a second test. A working radius outside the
+chart's rated range is refused outright, naming the range the chart rates,
+instead of carrying the nearest charted capacity in. The reasoning behind each
+is recorded in [`docs/adr/`](docs/adr/).
 
 ## Screenshots
 

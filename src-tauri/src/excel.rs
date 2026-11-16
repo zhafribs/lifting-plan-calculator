@@ -1391,10 +1391,12 @@ pub fn suggest_jib_angle(points: &[(f64, f64)], gross: f64) -> Option<f64> {
 
 /// The inputs after the operator changes the jib configuration or selection.
 ///
-/// The boom angle is re-suggested for the new table — the farthest reach that
-/// still meets the 75% rule — the same way the working radius is suggested for
-/// the main boom. With no lift to check against it stays unset and the graph's
-/// geometry supplies it.
+/// With a jib the boom angle is re-suggested for the new table — the farthest
+/// reach that still meets the 75% rule — the same way the working radius is
+/// suggested for the main boom. With no lift to check against it stays unset
+/// and the graph's geometry supplies it. Switching **back** to the main boom
+/// restores that radius basis through [`applied`]: the jib's reach and angle
+/// belonged to the jib's table and are cleared with it.
 pub fn jib_changed(
     inputs: &CraneInputs,
     chart: &LoadChartData,
@@ -1407,17 +1409,15 @@ pub fn jib_changed(
         "boom_jib" | "boom_ext_jib" => config.to_string(),
         _ => "boom".to_string(),
     };
-    let active = config != "boom";
-    let points = if active {
-        jib_points(chart, length, offset)
-    } else {
-        Vec::new()
-    };
-    let suggested = if active {
-        suggest_jib_angle(&points, gross)
-    } else {
-        None
-    };
+    // Back on the main boom there is no jib table to read: the tab returns to
+    // the basis the import sets up, radius and all. Choosing a boom angle is
+    // the jib's input, not the main boom's, so leaving the jib's radius in
+    // place would check the main boom at a reach no chart row supports.
+    if config == "boom" {
+        return applied(inputs, chart, &inputs.chart_name, inputs.chart_boom, gross);
+    }
+    let points = jib_points(chart, length, offset);
+    let suggested = suggest_jib_angle(&points, gross);
     let mut rows = inputs.rows.clone();
     if let Some(row) = rows.first_mut() {
         row.angle = suggested.unwrap_or(0.0);
@@ -1425,8 +1425,8 @@ pub fn jib_changed(
     CraneInputs {
         rows,
         jib_config: config,
-        jib_length: if active { length } else { None },
-        jib_offset: if active { offset } else { None },
+        jib_length: length,
+        jib_offset: offset,
         chart_jib_points: points,
         boom_angle_deg: suggested,
         ..inputs.clone()
@@ -2213,6 +2213,48 @@ xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">
         assert_eq!(back.jib_config, "boom");
         assert!(back.chart_jib_points.is_empty());
         assert_eq!(back.jib_length, None);
+    }
+
+    #[test]
+    fn returning_to_the_main_boom_restores_the_radius_basis() {
+        let chart = read_chart(&build_workbook("Chart", &new_format_rows())).unwrap();
+        let imported = imported_inputs(&CraneInputs::default(), &chart, "Chart.xlsx", 500.0);
+        // The import's own rule: the farthest charted radius within 75%.
+        assert_eq!(imported.working_radius, 16.0);
+        // A jib selection moves the crane tab onto the jib's angle basis: the
+        // working radius follows the assembly, and the row mirrors the jib's
+        // capacity at the suggested angle.
+        let mut selected =
+            jib_changed(&imported, &chart, "boom_jib", Some(7.2), Some(25.0), 500.0);
+        assert_eq!(selected.boom_angle_deg, Some(83.0));
+        selected.working_radius = 24.0;
+        selected.rows[0].radius = 24.0;
+        selected.rows[0].capacity = 1800.0;
+
+        // Switching back to the main boom must not keep the jib's radius or
+        // its angle: the main boom is read by working radius, and the import's
+        // rule applies again.
+        let back = jib_changed(&selected, &chart, "boom", None, None, 500.0);
+        assert_eq!(back.jib_config, "boom");
+        assert_eq!(back.jib_length, None);
+        assert_eq!(back.jib_offset, None);
+        assert!(back.chart_jib_points.is_empty());
+        assert_eq!(back.boom_angle_deg, None);
+        assert_eq!(back.working_radius, 16.0);
+        assert_eq!(back.rows[0].radius, 16.0);
+        assert!((back.rows[0].capacity - 1500.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn returning_to_the_main_boom_without_a_lift_keeps_a_sane_radius() {
+        let chart = read_chart(&build_workbook("Chart", &new_format_rows())).unwrap();
+        let imported = imported_inputs(&CraneInputs::default(), &chart, "Chart.xlsx", 0.0);
+        let selected = jib_changed(&imported, &chart, "boom_jib", Some(7.2), Some(25.0), 0.0);
+        // No lift to meet: the suggestion declines and the previous radius is
+        // kept, exactly as the import's own rule does.
+        let back = jib_changed(&selected, &chart, "boom", None, None, 0.0);
+        assert_eq!(back.boom_angle_deg, None);
+        assert_eq!(back.working_radius, imported.working_radius);
     }
 
     #[test]

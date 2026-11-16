@@ -7,6 +7,7 @@
 
 import { debounce } from "./dom.js";
 import { api } from "./api.js";
+import { jibAvailability, jibLengthFor } from "./jib.js";
 
 let idCounter = Date.now() % 1000000;
 
@@ -240,13 +241,18 @@ export function createStore({ onError } = {}) {
     const crane = state.crane;
     const jibs = crane.chart_jibs || [];
     const gross = solved?.totals?.gross ?? 0;
-    const nextConfig = config ?? crane.jib_config ?? "boom";
+    const availability = jibAvailability(jibs);
+    let nextConfig = config ?? crane.jib_config ?? "boom";
+    // A configuration the workbook has no table for falls back to the plain
+    // jib, or to the main boom when there is no jib at all. The radios are
+    // greyed out for these, but a stale selection must not reach the engine.
+    if (nextConfig !== "boom" && !availability[nextConfig]) {
+      nextConfig = availability.boom_jib ? "boom_jib" : "boom";
+    }
     if (nextConfig === "boom") {
       return chartAction({ action: "jib", config: "boom", length: null, offset: null, gross });
     }
-    const lengths = [...new Set(jibs.map((jib) => jib.length))].sort((a, b) => a - b);
-    const nextLength =
-      nextConfig === "boom_ext_jib" ? lengths[lengths.length - 1] : lengths[0];
+    const nextLength = jibLengthFor(jibs, nextConfig);
     const offsets = jibs
       .filter((jib) => Math.abs(jib.length - nextLength) < 1e-9)
       .map((jib) => jib.offset)

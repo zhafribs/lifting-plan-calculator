@@ -17,6 +17,7 @@ import {
   withUnit,
 } from "../components.js";
 import { fmt } from "../format.js";
+import { JIB_CONFIGS, jibAvailability } from "../jib.js";
 
 export function createCraneScreen(ctx) {
   const { store, catalog } = ctx;
@@ -66,11 +67,6 @@ export function createCraneScreen(ctx) {
   // the longest) and the operator chooses one of the offset angles that jib
   // allows. The selection lives in the shared state and both this card and the
   // Graph tab's configuration radios go through `store.chooseJib`.
-  const JIB_CONFIGS = [
-    ["boom", "Boom length"],
-    ["boom_jib", "Boom length + jib"],
-    ["boom_ext_jib", "Boom length + extended jib"],
-  ];
   const jibConfigBox = el("div", { class: "checks" });
   const jibLengthLine = el("div", { class: "faint small" });
   const jibBoomAngleSelect = selectInput({
@@ -305,14 +301,32 @@ export function createCraneScreen(ctx) {
     if (!jibs.length) return;
 
     const config = state.crane.jib_config || "boom";
-    if (jibConfigBox.dataset.config !== config) {
-      jibConfigBox.dataset.config = config;
+    // A configuration the workbook has no table for is greyed out: a crane
+    // with a single jib length has no extended jib to select, and picking it
+    // would check an assembly the chart does not describe.
+    const availability = jibAvailability(jibs);
+    const signature = `${config}|${JIB_CONFIGS.map(([key]) => (availability[key] ? 1 : 0)).join("")}`;
+    if (jibConfigBox.dataset.signature !== signature) {
+      jibConfigBox.dataset.signature = signature;
       jibConfigBox.replaceChildren(
         ...JIB_CONFIGS.map(([key, label]) => {
-          const radio = el("input", { type: "radio", name: "crane-jib-config" });
-          radio.checked = key === config;
+          const allowed = availability[key];
+          const radio = el("input", {
+            type: "radio",
+            name: "crane-jib-config",
+            disabled: !allowed,
+          });
+          radio.checked = key === config && allowed;
           radio.addEventListener("change", () => store.chooseJib({ config: key }));
-          return el("label", { class: "check" }, radio, el("span", { class: "t", text: label }));
+          return el(
+            "label",
+            {
+              class: `check${allowed ? "" : " is-disabled"}`,
+              title: allowed ? "" : "This workbook carries no such jib table",
+            },
+            radio,
+            el("span", { class: "t", text: label }),
+          );
         }),
       );
     }

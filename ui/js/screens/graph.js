@@ -11,6 +11,7 @@ import { el } from "../dom.js";
 import { card, field, kvRows, numberInput } from "../components.js";
 import * as geo from "../graph/geometry.js";
 import { registerGraphCapture } from "../graph/snapshot.js";
+import { jibAvailability } from "../jib.js";
 
 const DEG = "\u00b0";
 const NOTHING = "\u2014";
@@ -687,8 +688,18 @@ export function createGraphScreen(ctx) {
     setEnabled(fieldNodes.jib_length, jibOn);
     setEnabled(fieldNodes.jib_offset, jibOn);
     setEnabled(fieldNodes.ext_jib_length, extOn);
+    // With a workbook loaded the configuration belongs to the Crane tab, so
+    // the radios offer only the jib tables that workbook carries: a crane with
+    // one jib length has no extended jib. Without a workbook the jib length is
+    // typed here, so every configuration is available.
+    const jibs = workbookMode ? store.state.crane.chart_jibs : null;
+    const availability = jibs ? jibAvailability(jibs) : null;
     for (const [key, radio] of Object.entries(configRadios)) {
+      const allowed = !availability || availability[key];
+      radio.disabled = !allowed;
       radio.checked = key === state.config;
+      const label = radio.closest("label");
+      if (label) label.classList.toggle("is-disabled", !allowed);
     }
   }
 
@@ -741,7 +752,9 @@ export function createGraphScreen(ctx) {
     reflectInputs();
     if (opts.user) {
       renderNote();
-      publishAngle();
+      // An angle edit also moves the hook, so its reach is published with it;
+      // dragging the crane or editing any other field leaves the radius alone.
+      publishAngle(Object.prototype.hasOwnProperty.call(patch, "angle"));
     }
   }
 
@@ -851,6 +864,9 @@ export function createGraphScreen(ctx) {
       workbookKey = null;
       workbookChassis = null;
       deviated = false;
+      // Every configuration is available again: without a workbook the jib
+      // lengths are typed on this screen.
+      syncEnabled();
       renderNote();
       return;
     }
@@ -883,21 +899,22 @@ export function createGraphScreen(ctx) {
     if (publish) publishAngle();
   }
 
-  // The angle the graph draws is the crane tab's "Boom angle" figure. Writing
-  // it back only when it actually differs keeps the solve cycle from looping.
-  // Without a jib a live working radius is required — the angle comes from it;
-  // with one the angle is the input, and the working radius it reaches is
-  // published alongside it.
-  function publishAngle() {
-    if (!workbookMode) return;
+  // The angle the graph draws is the crane tab's "Boom angle" figure, with or
+  // without a workbook. Writing it back only when it actually differs keeps the
+  // solve cycle from looping. With a jib the angle is the input and the radius
+  // it reaches is published alongside it. Without one the crane tab reads by
+  // working radius, so an angle edit publishes the reach that angle produces —
+  // but only with a workbook, where the crane's position is the one drawn
+  // here; a drag of the crane itself leaves the radius alone.
+  function publishAngle(publishReach = false) {
     const crane = store.state.crane;
+    if (!crane) return;
     const jibActive =
       crane.jib_config === geo.CONFIG_BOOM_JIB || crane.jib_config === geo.CONFIG_BOOM_EXT_JIB;
-    if (!jibActive && !((crane.working_radius ?? 0) > 0)) return;
     const angle = state.angle;
     if (!(angle > 0)) return;
-    const derivedRadius =
-      jibActive && !deviated
+    const reach =
+      (jibActive && !deviated) || (publishReach && workbookMode)
         ? Math.round(geo.workingRadius(geo.tipForState(state)) * 100) / 100
         : null;
     const row = (crane.rows && crane.rows[0]) || null;
@@ -907,12 +924,12 @@ export function createGraphScreen(ctx) {
       Math.abs(crane.boom_angle_deg - angle) < 1e-9;
     const rowMirrored = !row || Math.abs((row.angle || 0) - angle) < 1e-9;
     const radiusPublished =
-      derivedRadius === null || Math.abs((crane.working_radius ?? 0) - derivedRadius) < 1e-9;
+      reach === null || Math.abs((crane.working_radius ?? 0) - reach) < 1e-9;
     if (anglePublished && rowMirrored && radiusPublished) return;
     store.update((draft) => {
       draft.crane.boom_angle_deg = angle;
       if (draft.crane.rows[0]) draft.crane.rows[0].angle = angle;
-      if (derivedRadius !== null) draft.crane.working_radius = derivedRadius;
+      if (reach !== null) draft.crane.working_radius = reach;
     });
   }
 

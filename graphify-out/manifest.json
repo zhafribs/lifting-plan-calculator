@@ -30,15 +30,15 @@
     "semantic_hash": ""
   },
   ".github/workflows/release.yml": {
-    "mtime": 1794836140.4244585,
-    "seen": 1794837156.4519217,
-    "ast_hash": "3092dd06d34c37f1ca980cb55762c17b",
+    "mtime": 1794838659.208366,
+    "seen": 1794839195.7474396,
+    "ast_hash": "87361ff7db180532aaf6207cf714df7a",
     "semantic_hash": ""
   },
   "build-appimage-portable.sh": {
-    "mtime": 1794636376.8128982,
-    "seen": 1794638838.567792,
-    "ast_hash": "b739ebd425c05f65e70bcedf33b99323",
+    "mtime": 1794837867.2969193,
+    "seen": 1794839195.747441,
+    "ast_hash": "18979fc696578342643826bcc01f8f3c",
     "semantic_hash": ""
   },
   "build-appimage.sh": {
@@ -66,9 +66,9 @@
     "semantic_hash": "b20dea1f31d5244bada45a9490f1f4ab"
   },
   "src-tauri/Cargo.toml": {
-    "mtime": 1794835815.1558022,
-    "seen": 1794837156.4519312,
-    "ast_hash": "9279e6cb4789e091950167db1e4c0a57",
+    "mtime": 1794837634.4956636,
+    "seen": 1794839195.7474492,
+    "ast_hash": "e0f9a97e5022e79e14387c4df6137404",
     "semantic_hash": ""
   },
   "src-tauri/build.rs": {
@@ -96,9 +96,9 @@
     "semantic_hash": "fa8171b3903ab98be11840c6b87b58a4"
   },
   "src-tauri/src/commands.rs": {
-    "mtime": 1794833125.9740088,
-    "seen": 1794835022.784272,
-    "ast_hash": "c8cf6aad5dc74383ebb7326264468c6d",
+    "mtime": 1794837583.8596797,
+    "seen": 1794839195.7474556,
+    "ast_hash": "d90fb2d671216f068012b50c61f5eb9c",
     "semantic_hash": ""
   },
   "src-tauri/src/crane.rs": {
@@ -126,9 +126,9 @@
     "semantic_hash": "cd53a61360d1c626fa26491dd2eab53f"
   },
   "src-tauri/src/lib.rs": {
-    "mtime": 1794644607.118136,
-    "seen": 1794645114.809355,
-    "ast_hash": "04ea06ee648de7177d6d24eba7ba561b",
+    "mtime": 1794837500.0756767,
+    "seen": 1794839195.7474604,
+    "ast_hash": "6db87666cb47e5e9400c34b2ccf54c8e",
     "semantic_hash": ""
   },
   "src-tauri/src/main.rs": {
@@ -180,15 +180,15 @@
     "semantic_hash": "74ec3b6b053077beb7084dfbaf3b588a"
   },
   "src-tauri/src/update.rs": {
-    "mtime": 1794835963.131903,
-    "seen": 1794837156.4519558,
-    "ast_hash": "3938cd2707f913fd430797ddaae3fd1a",
+    "mtime": 1794837477.2487383,
+    "seen": 1794839195.7474725,
+    "ast_hash": "e608402225c4dbbb79f16a4971e66fb5",
     "semantic_hash": ""
   },
   "src-tauri/tauri.conf.json": {
-    "mtime": 1794835815.163299,
-    "seen": 1794837156.4519567,
-    "ast_hash": "4598e17a182266b7a89f81a3bb55e4d2",
+    "mtime": 1794837634.5051858,
+    "seen": 1794839195.7474737,
+    "ast_hash": "b41588205f81da1127f68f136a62b4a0",
     "semantic_hash": ""
   },
   "ui/js/api.js": {
@@ -210,10 +210,10 @@
     "semantic_hash": "7bf95847282c6960a317dd0efc1cffda"
   },
   "ui/js/dom.js": {
-    "mtime": 1794570843.1593084,
-    "seen": 1794578094.7970042,
-    "ast_hash": "ad6efbcb9c3fa151b700a95d3b599035",
-    "semantic_hash": "ad6efbcb9c3fa151b700a95d3b599035"
+    "mtime": 1794837783.3357172,
+    "seen": 1794839195.7474794,
+    "ast_hash": "e1a22f9066d72ecdddfe8b5ac9a9b9cc",
+    "semantic_hash": ""
   },
   "ui/js/format.js": {
     "mtime": 1794570843.1593084,
@@ -258,9 +258,9 @@
     "semantic_hash": "cc97ec2eccf73c44dc7be7865749b467"
   },
   "ui/js/screens/report.js": {
-    "mtime": 1794829259.7244167,
-    "seen": 1794829426.2777052,
-    "ast_hash": "495cdd825a1cd1adb41f5e97f4ae1aee",
+    "mtime": 1794837783.3359077,
+    "seen": 1794839195.7474914,
+    "ast_hash": "7c0b99f40ea731885e55e09d0b9fd666",
     "semantic_hash": ""
   },
   "ui/js/screens/tandem.js": {
@@ -300,9 +300,9 @@
     "semantic_hash": "3a57d99448f802024d640c81af3341a8"
   },
   "CHANGELOG.md": {
-    "mtime": 1794835815.1720252,
-    "seen": 1794837156.4519823,
-    "ast_hash": "8dd481c75f4da49d5b72d25246dc372e",
+    "mtime": 1794837877.7569072,
+    "seen": 1794839195.7474983,
+    "ast_hash": "c5f1bb7e8f52015b33f6514d38b648ea",
     "semantic_hash": ""
   },
   "CODE_OF_CONDUCT.md": {
@@ -1107,6 +1107,18 @@
     "mtime": 1794835517.8616698,
     "seen": 1794837156.4520428,
     "ast_hash": "901bbb97554f8ed3fc22191d643d2a3b",
+    "semantic_hash": ""
+  },
+  "docs/council/decisions/0013-newer-updates-and-granted-paths.md": {
+    "mtime": 1794837666.6299093,
+    "seen": 1794839195.7475255,
+    "ast_hash": "923cc4cfcf3ef1243098bb3052889e2a",
+    "semantic_hash": ""
+  },
+  "docs/releases/v2.11.0.md": {
+    "mtime": 1794837650.3314447,
+    "seen": 1794839195.747536,
+    "ast_hash": "ba6d3f8b874bb9b617b5ec032d353a04",
     "semantic_hash": ""
   }
 }

@@ -24,15 +24,15 @@
     "semantic_hash": ""
   },
   ".github/workflows/ci.yml": {
-    "mtime": 1794829259.7204168,
-    "seen": 1794829426.2776527,
-    "ast_hash": "70cbc83904948798cbe00e0b8a44da00",
+    "mtime": 1794835982.5380821,
+    "seen": 1794837156.4519196,
+    "ast_hash": "72230eb463caed36d06e446ee12f22d0",
     "semantic_hash": ""
   },
   ".github/workflows/release.yml": {
-    "mtime": 1794834388.2945814,
-    "seen": 1794835022.7842557,
-    "ast_hash": "68d62896f08827f10dc9b057df589e0f",
+    "mtime": 1794836140.4244585,
+    "seen": 1794837156.4519217,
+    "ast_hash": "3092dd06d34c37f1ca980cb55762c17b",
     "semantic_hash": ""
   },
   "build-appimage-portable.sh": {
@@ -66,9 +66,9 @@
     "semantic_hash": "b20dea1f31d5244bada45a9490f1f4ab"
   },
   "src-tauri/Cargo.toml": {
-    "mtime": 1794834388.2945814,
-    "seen": 1794835022.784265,
-    "ast_hash": "ba607dc48ec090b85fc5cfd4bb21fb31",
+    "mtime": 1794835815.1558022,
+    "seen": 1794837156.4519312,
+    "ast_hash": "9279e6cb4789e091950167db1e4c0a57",
     "semantic_hash": ""
   },
   "src-tauri/build.rs": {
@@ -180,15 +180,15 @@
     "semantic_hash": "74ec3b6b053077beb7084dfbaf3b588a"
   },
   "src-tauri/src/update.rs": {
-    "mtime": 1794834388.2945814,
-    "seen": 1794835022.7842915,
-    "ast_hash": "5daee5dc7df0827345bd8b3b07c23186",
+    "mtime": 1794835963.131903,
+    "seen": 1794837156.4519558,
+    "ast_hash": "3938cd2707f913fd430797ddaae3fd1a",
     "semantic_hash": ""
   },
   "src-tauri/tauri.conf.json": {
-    "mtime": 1794834388.2945814,
-    "seen": 1794835022.784293,
-    "ast_hash": "636e5811d521e99719608848715e4218",
+    "mtime": 1794835815.163299,
+    "seen": 1794837156.4519567,
+    "ast_hash": "4598e17a182266b7a89f81a3bb55e4d2",
     "semantic_hash": ""
   },
   "ui/js/api.js": {
@@ -300,9 +300,9 @@
     "semantic_hash": "3a57d99448f802024d640c81af3341a8"
   },
   "CHANGELOG.md": {
-    "mtime": 1794834388.2945814,
-    "seen": 1794835022.784317,
-    "ast_hash": "4fba63a9222be3c3acc9200d072f76be",
+    "mtime": 1794835815.1720252,
+    "seen": 1794837156.4519823,
+    "ast_hash": "8dd481c75f4da49d5b72d25246dc372e",
     "semantic_hash": ""
   },
   "CODE_OF_CONDUCT.md": {
@@ -318,15 +318,15 @@
     "semantic_hash": "2691ee38eaa721aa667575bc287ad225"
   },
   "README.md": {
-    "mtime": 1794829259.7204168,
-    "seen": 1794829426.2777154,
-    "ast_hash": "18f9427080ece902c9870c0cf634356d",
+    "mtime": 1794835806.0955381,
+    "seen": 1794837156.4519851,
+    "ast_hash": "6ffbb3b08de79bdffc73f5b220022114",
     "semantic_hash": ""
   },
   "SECURITY.md": {
-    "mtime": 1794644607.118136,
-    "seen": 1794645114.8094015,
-    "ast_hash": "43a7c21480ee154b702a9ff04cb97e3d",
+    "mtime": 1794835806.095918,
+    "seen": 1794837156.4519858,
+    "ast_hash": "23a2011fbf65a0c497bacd6f16791771",
     "semantic_hash": ""
   },
   "THIRD_PARTY_NOTICES.md": {
@@ -372,10 +372,10 @@
     "semantic_hash": "59d25eefdbd7a3f517bdbf915d05f422"
   },
   "docs/releases/README.md": {
-    "mtime": 1794575958.515125,
-    "seen": 1794578094.7970273,
-    "ast_hash": "fa8dca12b2f112f983afb2ec21dde4b5",
-    "semantic_hash": "fa8dca12b2f112f983afb2ec21dde4b5"
+    "mtime": 1794835806.0957978,
+    "seen": 1794837156.4520094,
+    "ast_hash": "d9c803c832d83ca001c261b3d7d4b0f7",
+    "semantic_hash": ""
   },
   "docs/releases/v2.0.0.md": {
     "mtime": 1794572884.3251567,
@@ -1065,6 +1065,48 @@
     "mtime": 1794834388.2945814,
     "seen": 1794835022.7843783,
     "ast_hash": "981bac6bd1c56c3014d74d5df332d88e",
+    "semantic_hash": ""
+  },
+  "scripts/update-signing-key.sh": {
+    "mtime": 1794835982.5377696,
+    "seen": 1794837156.4519298,
+    "ast_hash": "b87013bd42016ec61dc6b3fdb3abe037",
+    "semantic_hash": ""
+  },
+  "tools/sign-manifest/Cargo.toml": {
+    "mtime": 1794835900.0746543,
+    "seen": 1794837156.4519577,
+    "ast_hash": "b35e5d90f0f20d69b61e2210c57861a2",
+    "semantic_hash": ""
+  },
+  "tools/sign-manifest/src/main.rs": {
+    "mtime": 1794835994.3600943,
+    "seen": 1794837156.451959,
+    "ast_hash": "d2b13b618af7d68ae7212fa219f4e9a3",
+    "semantic_hash": ""
+  },
+  "docs/council/decisions/0012-signed-releases.md": {
+    "mtime": 1794836210.4993944,
+    "seen": 1794837156.4520085,
+    "ast_hash": "0ea31f37e44c09987e4d94a60ba8e86e",
+    "semantic_hash": ""
+  },
+  "docs/releases/v2.10.0.md": {
+    "mtime": 1794835828.316297,
+    "seen": 1794837156.452017,
+    "ast_hash": "ccd5950d11e533aafaee2db3e27d0d5a",
+    "semantic_hash": ""
+  },
+  "src-tauri/tests/fixtures/update-manifest.txt": {
+    "mtime": 1794835562.9931467,
+    "seen": 1794837156.4520411,
+    "ast_hash": "5a76980a1fc36cc063d89591842394c3",
+    "semantic_hash": ""
+  },
+  "src-tauri/update-public-key.txt": {
+    "mtime": 1794835517.8616698,
+    "seen": 1794837156.4520428,
+    "ast_hash": "901bbb97554f8ed3fc22191d643d2a3b",
     "semantic_hash": ""
   }
 }

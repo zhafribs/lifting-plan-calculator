@@ -28,6 +28,9 @@ print, sign and file. Every figure is solved by a Rust engine ported line for
 line from the original Android Kotlin source and covered by the Kotlin tests'
 own expected values, so a drift in the arithmetic fails the build.
 
+New to the app? The [tutorial](docs/tutorial.md) walks through every tab with
+screenshots and a worked example.
+
 There is no sign-in and no plan is stored by the app itself. It asks GitHub once
 per launch whether a newer release exists, and again only if you ask from the
 About screen. The only other network traffic is the installer you choose to
@@ -36,6 +39,24 @@ written only when you save a report (the HTML and its KaTeX assets), when that
 installer is downloaded, and the small
 `~/.cache/lifting-plan-calculator/ui.log` breadcrumb used to diagnose startup
 problems.
+
+## What's new in 2.12.0
+
+Released 17 November 2026. The window now runs under a Content-Security-Policy,
+and the crane tab's jib rules use the chart's own basis.
+
+- Scripts load only from the app's own origin, and the report's KaTeX pass is a
+  bundled file rather than an inline script.
+- Going back to **Boom length** restores the main boom instead of keeping the
+  jib's reach.
+- A crane with no extended jib no longer offers that configuration on the Crane
+  or Graph tab.
+- The Graph tab's boom angle now drives the Crane tab, with or without a
+  workbook.
+- A jib boom angle between chart rows is checked at the lower row, never the
+  higher one.
+
+The full notes are in [`docs/releases/v2.12.0.md`](docs/releases/v2.12.0.md).
 
 ## Scope of use
 
@@ -134,6 +155,18 @@ chart's rated range is refused outright, naming the range the chart rates,
 instead of carrying the nearest charted capacity in. The reasoning behind each
 is recorded in [`docs/adr/`](docs/adr/).
 
+## Tutorial
+
+New here? The [step-by-step tutorial](docs/tutorial.md) covers every tab in
+order, with screenshots and the same worked example:
+
+- **Overall Weight**: load lines, lifting tackle and the 75% crane rating.
+- **Crane**: Excel load charts, manual entry and the capacity bands.
+- **Graph**: the working-range diagram.
+- **Uniform Load**, **Nonuniform Load** and **Tandem**: the three rigging checks.
+- **Summary**: the printable report.
+- **About**: version, updates and contact.
+
 ## Screenshots
 
 The form tabs below are live captures from v2.0.0, when the layout was last
@@ -141,7 +174,8 @@ captured; the report capture predates the 2.5.0 *Plan details* card and the 2.5.
 head layout. They show an example lift: 20,000 kg of load plus 350 kg of tackle,
 giving a 20,350 kg gross load and a 27,133.33 kg required capacity at the 75%
 rule. That lift is deliberately over the example crane's 20 t rating, so the plan
-shows its over-capacity band.
+shows its over-capacity band. The tutorial carries newer captures for the Excel
+import and About screens.
 
 | Overall Weight | Crane capacity check |
 | --- | --- |
@@ -207,12 +241,12 @@ cd src-tauri
 cargo test
 ```
 
-176 tests: 163 ported from the Kotlin unit suite (`CalcTest`, `CraneTest`,
-`CraneManualEntryTest`, `SlingTest`, `NonuniformTest`, `ExcelImportTest`,
-`ReportTest`, `ReportUniformTest`, `ReportCapacityTest`,
-`ReportNonuniformTest`), plus 13 tests of the Rust port itself (load figures,
-model totals, the update check). The expected figures are the Kotlin tests' own
-literals, so a drift in the arithmetic fails the build.
+226 tests, including the Kotlin unit suite's own expected values (`CalcTest`,
+`CraneTest`, `CraneManualEntryTest`, `SlingTest`, `NonuniformTest`,
+`ExcelImportTest`, `ReportTest`, `ReportUniformTest`, `ReportCapacityTest`,
+`ReportNonuniformTest`), plus tests of the Rust port itself (load figures, model
+totals, PDF export and the update check). The expected figures are the Kotlin
+tests' own literals, so a drift in the arithmetic fails the build.
 
 The same suite runs on every push and pull request, with `cargo clippy
 --all-targets -- -D warnings`, a syntax check of every frontend module, and the
@@ -240,6 +274,7 @@ ui/                 the frontend (plain ES modules; no build step)
   js/screens/       one module per screen
   vendor/katex/     bundled KaTeX (report typesetting)
 docs/releases/      one release note file per tag; the tag's file is published
+docs/tutorial.md    the step-by-step guide; screenshots are in docs/screenshots/
 docs/adr/           architecture decisions, one file per decision
 docs/council/       the review charter, the seats, and the decision records
 build-appimage.sh            host AppImage build (+ .zsync sidecar)

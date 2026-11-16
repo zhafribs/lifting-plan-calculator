@@ -74,6 +74,9 @@ jobs:
           WEBKIT_DISABLE_COMPOSITING_MODE: "1"
           WEBKIT_DISABLE_DMABUF_RENDERER: "1"
           LIBGL_ALWAYS_SOFTWARE: "1"
+          # No accessibility bus in this session; looking for one only logs a
+          # dbind warning per print.
+          NO_AT_BRIDGE: "1"
         run: |
           set -euo pipefail
           cargo run --quiet --manifest-path src-tauri/Cargo.toml --example dump_fixtures
@@ -294,10 +297,16 @@ jobs:
         run: ./packaging/check-release-notes.sh --tag "$GITHUB_REF_NAME"
 
       - name: Download the build artifacts
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
-        with:
-          path: dist
-          merge-multiple: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          for artifact in linux windows; do
+            gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+              --name "$artifact" --dir dist
+          done
+          ls -l dist
 
       # `if-no-files-found` cannot see a silently skipped .zsync, so the four
       # assets are named and required here.

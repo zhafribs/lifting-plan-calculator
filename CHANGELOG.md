@@ -2,6 +2,14 @@
 
 Nothing yet.
 
+## [2.9.2] - 2026-11-16
+
+### Fixed
+
+- The release workflow's PDF job no longer logs the accessibility-bus warning.
+- The artifacts are downloaded with `gh` instead of a Node action, so publishing
+  no longer prints the `Buffer()` deprecation. Nothing in the app changed.
+
 ## [2.9.1] - 2026-11-16
 
 ### Changed

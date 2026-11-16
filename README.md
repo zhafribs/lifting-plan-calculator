@@ -22,23 +22,24 @@
 
 ![The Overall Weight tab](docs/screenshots/01-overall.png)
 
-Rigging and crane lifts, calculated and documented in one window: the load at
-the hook, the crane's rated capacity, the sling arrangement, and a plan you can
-print, sign and file. Every figure is solved by a Rust engine ported line for
-line from the original Android Kotlin source and covered by the Kotlin tests'
-own expected values, so a drift in the arithmetic fails the build.
+Lifting Plan Calculator is a desktop app for planning a crane lift and printing
+the working. It adds up the load at the hook, checks the crane against its own
+load chart, sizes the slings, and builds a report that shows every formula and
+the values behind it.
 
-New to the app? The [tutorial](docs/tutorial.md) walks through every tab with
-screenshots and a worked example.
+It runs on Linux and Windows, needs no sign-in, and keeps no plan between
+launches. The calculation engine is a Rust port of the original Android app,
+with the Kotlin tests' own expected figures. A drift in the arithmetic fails the
+build.
 
-There is no sign-in and no plan is stored by the app itself. It asks GitHub once
-per launch whether a newer release exists, and again only if you ask from the
-About screen. The only other network traffic is the installer you choose to
-download from the update reminder or the About screen, on Windows. Files are
-written only when you save a report (the HTML and its KaTeX assets), when that
-installer is downloaded, and the small
-`~/.cache/lifting-plan-calculator/ui.log` breadcrumb used to diagnose startup
-problems.
+New to the app? Start with the [tutorial](docs/tutorial.md) or watch the
+[52-second walkthrough](docs/video/tutorial.mp4).
+
+The app asks GitHub once at launch whether a newer release exists, and only
+again if you ask from About. On Windows it can download the installer you
+choose. Nothing else leaves the machine. Files are written only when you save a
+report, download an installer, or write the small
+`~/.cache/lifting-plan-calculator/ui.log` log used to diagnose startup problems.
 
 ## What's new in 2.12.0
 
@@ -57,6 +58,8 @@ and the crane tab's jib rules use the chart's own basis.
   higher one.
 
 The full notes are in [`docs/releases/v2.12.0.md`](docs/releases/v2.12.0.md).
+Since that release, the Excel workbook table opens collapsed after an import,
+so the chart controls stay in view.
 
 ## Scope of use
 
@@ -155,27 +158,29 @@ chart's rated range is refused outright, naming the range the chart rates,
 instead of carrying the nearest charted capacity in. The reasoning behind each
 is recorded in [`docs/adr/`](docs/adr/).
 
-## Tutorial
+## Tutorial and walkthrough
 
 New here? The [step-by-step tutorial](docs/tutorial.md) covers every tab in
-order, with screenshots and the same worked example:
+order, with screenshots and a worked example. There is also a
+[52-second walkthrough video](docs/video/tutorial.mp4) that runs from Overall
+Weight to a saved PDF.
+
+The written guide covers:
 
 - **Overall Weight**: load lines, lifting tackle and the 75% crane rating.
-- **Crane**: Excel load charts, manual entry and the capacity bands.
+- **Crane**: Excel load charts, the collapsed workbook table, manual entry and the capacity bands.
 - **Graph**: the working-range diagram.
 - **Uniform Load**, **Nonuniform Load** and **Tandem**: the three rigging checks.
-- **Summary**: the printable report.
+- **Summary**: the printable report, page margins and PDF export.
 - **About**: version, updates and contact.
 
 ## Screenshots
 
-The form tabs below are live captures from v2.0.0, when the layout was last
-captured; the report capture predates the 2.5.0 *Plan details* card and the 2.5.1
-head layout. They show an example lift: 20,000 kg of load plus 350 kg of tackle,
-giving a 20,350 kg gross load and a 27,133.33 kg required capacity at the 75%
-rule. That lift is deliberately over the example crane's 20 t rating, so the plan
-shows its over-capacity band. The tutorial carries newer captures for the Excel
-import and About screens.
+These captures are from version 2.12.0. They use a 20,000 kg load plus 350 kg of
+lifting tackle, giving a 20,350 kg gross load and a 27,133.33 kg required
+capacity at the 75% rule. The crane check in the screenshot uses a 28,000 kg
+chart point at 10 m, so it shows the green **WITHIN LIMIT** band at 72.68%. The
+tutorial adds the Excel import, workbook table and About captures.
 
 | Overall Weight | Crane capacity check |
 | --- | --- |
@@ -275,6 +280,7 @@ ui/                 the frontend (plain ES modules; no build step)
   vendor/katex/     bundled KaTeX (report typesetting)
 docs/releases/      one release note file per tag; the tag's file is published
 docs/tutorial.md    the step-by-step guide; screenshots are in docs/screenshots/
+docs/video/         the short walkthrough video
 docs/adr/           architecture decisions, one file per decision
 docs/council/       the review charter, the seats, and the decision records
 build-appimage.sh            host AppImage build (+ .zsync sidecar)

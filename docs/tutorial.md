@@ -4,6 +4,8 @@ Welcome to the Lifting Plan Calculator. This guide walks through every tab in th
 
 Think of it as the walkthrough I would give you at a demo table: no jargon, just the fields to fill and the checks that matter. You can read it from start to finish, or jump to the tab you need.
 
+**Prefer to watch?** The [52-second walkthrough](video/tutorial.mp4) follows a 4,000 kg round load on a 2-Leg Round Choke from Overall Weight through to a saved PDF. The screenshots below use the larger 20,350 kg example so the 75% warning is visible. Both are from version 2.12.0.
+
 ## Contents
 
 1. [Before you start](#before-you-start)
@@ -78,7 +80,7 @@ When the figures look right, click **Check the crane**.
 
 ![Crane tab with an imported Excel load chart](screenshots/09-crane-excel.png)
 
-The Crane tab does two things: it records which crane is on the job, and it checks the gross load against the crane's load chart at the working radius.
+The Crane tab does two things: it records which crane is on the job, and it checks the gross load against the crane's load chart at the working radius. The capture uses the 20,350 kg example, so the 20 t chart shows the warning band. The walkthrough video uses a 4,350 kg round load and stays within limit.
 
 ### Crane identity
 
@@ -106,7 +108,9 @@ Things worth knowing about the import:
 - If the workbook carries a jib sheet, a **Jib configuration** card appears. Choose the main boom, boom with jib, or boom with extended jib, then set the boom angle and jib offset angle.
 - The app suggests the farthest radius that still meets the 75% rule. Enter the lift weight first, or the suggestion cannot be calculated.
 
-If the workbook has a workbook table, the **Workbook table** toggle shows the rows the app read. This is a quick way to confirm the import picked up the right columns.
+The workbook table starts collapsed after an import, so the chart controls stay in view. Click **▸ Workbook table** to open it, and **▾ Workbook table** to fold it away. It is a quick way to confirm the import picked up the right columns.
+
+![Workbook table opened under the crane chart](screenshots/10-crane-workbook.png)
 
 ### Use manual data
 
@@ -156,7 +160,7 @@ To put the diagram in the report, tick **Working range diagram** in the Summary 
 
 ![Uniform Load tab with a sling result](screenshots/04-uniform.png)
 
-Use Uniform Load when one continuous sling shares the load across its legs. The app lists 19 arrangements, including the common one-leg, two-leg, nested and bridle setups.
+Use Uniform Load when one continuous sling shares the load across its legs. The app lists 19 arrangements, including the common one-leg, two-leg, nested and bridle setups. The screenshots and the video use **2-Leg Round Choke** for a round load.
 
 1. Choose the **Arrangement**.
 2. Enter the **Sling total length**.
@@ -242,6 +246,8 @@ You can also edit the **Footer** centre text. It is printed in the centre of eve
 - **Open in browser** opens the saved report in your default browser.
 
 If the desktop cannot print from the preview, save the HTML and print it from a browser. Keep the browser's margin setting on **Default** so the app's A4 margin is not overridden.
+
+The [walkthrough video](video/tutorial.mp4) shows the full Summary flow: tick the working-range diagram, open **Margins**, choose the 20 mm preset, apply it, and save the PDF.
 
 ---
 

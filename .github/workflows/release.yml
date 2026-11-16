@@ -43,9 +43,11 @@ jobs:
       # publish an update every installed copy refuses. Fail before the builds.
       - name: Check the signing key is available
         env:
-          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+          # A boolean, not the secret: this job runs repository scripts and has
+          # no reason to see the key itself.
+          HAS_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY != '' }}
         run: |
-          if [ -s src-tauri/update-public-key.txt ] && [ -z "${UPDATE_SIGNING_KEY:-}" ]; then
+          if [ -s src-tauri/update-public-key.txt ] && [ "$HAS_SIGNING_KEY" != "true" ]; then
             echo "::error::src-tauri/update-public-key.txt is set, so releases must be signed; add the UPDATE_SIGNING_KEY secret." >&2
             exit 1
           fi

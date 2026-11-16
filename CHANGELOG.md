@@ -2,6 +2,22 @@
 
 Nothing yet.
 
+## [2.9.3] - 2026-11-16
+
+### Fixed
+
+- A workbook that declares a huge used area (cells at `A1` and `XFD1048576`, for
+  example) made the spreadsheet parser allocate the whole rectangle — hundreds
+  of gigabytes — before any limit applied, aborting the app as soon as the file
+  was opened. Sheets are now read cell by cell under a row ceiling, a column
+  ceiling and a workbook-wide cell budget, and an over-large sheet is refused
+  with a message instead of being materialised.
+- The 24 MB workbook limit is now applied before the file is read, not after it
+  has been loaded into memory.
+- On Windows, opening a report or a link went through `cmd /C start`, where an
+  `&` in a file name or URL started a second command. The opener now uses
+  `ShellExecuteW`, so the target is data and no shell parses it.
+
 ## [2.9.2] - 2026-11-16
 
 ### Fixed

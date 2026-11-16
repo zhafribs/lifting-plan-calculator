@@ -44,14 +44,14 @@ who can publish to the repository can replace both and every check passes.
 - Two review rounds. The first pass scored 7 and 5 and found a panic on non-ASCII
   signature input, a `generate` that could truncate the only key, a publish job
   that could not build the signer, and no check that the secret matches the
-  committed key. All are fixed and re-verified; the second pass scored 8.5 and 8.
+  committed key. All are fixed and re-verified; the second pass scored 8.5 and 9.
 
 ## Scores
 
 | Seat | Score | Position |
 | --- | --- | --- |
 | Application Security Engineer | 8.5/10 | Panic and key-truncation fixed, verification fails closed, fixture proves the key pair matches |
-| Release engineering (build) | 8/10 | Standalone signer, key liveness checked, early failure, `target/` untracked, secret not exposed to the notes job |
+| Release engineering (build) | 9/10 | Standalone signer, key liveness checked, early failure, `target/` untracked, secret confined to the sign step |
 
 ## Decision
 

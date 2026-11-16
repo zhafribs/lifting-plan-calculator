@@ -290,6 +290,22 @@ pub const COLOUR_NEUTRAL: &str = "#2a3347";
 ///
 /// A chart rates the points it lists. Saying so — and naming the range — is
 /// what keeps "not rated here" from reading like a passed check.
+/// The charted angle at or below `angle`, or None when the chart starts above
+/// it.
+///
+/// A jib chart rates discrete boom angles and its capacity rises with the
+/// angle, so an angle between two rows must be read at the lower row: the
+/// higher row's capacity belongs to a steeper boom and would overstate the
+/// lift. The lookup is the conservative counterpart of the chart's own
+/// interpolation.
+fn charted_angle_below(points: &[(f64, f64)], angle: f64) -> Option<f64> {
+    points
+        .iter()
+        .map(|(charted, _)| *charted)
+        .filter(|charted| *charted <= angle + 1e-9)
+        .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
+}
+
 fn lookup_rated(
     points: &[(f64, f64)],
     key: f64,
@@ -393,13 +409,21 @@ pub fn solve_crane(inputs: &CraneInputs, gross: f64) -> Result<CraneResult, Cran
     if inputs.jib_active() && inputs.chart_source == "excel" && !inputs.chart_jib_points.is_empty()
     {
         chart_capacity = match boom_angle {
-            Some(angle) => Some(lookup_rated(
-                &inputs.chart_jib_points,
-                angle,
-                "boom angle",
-                "the jib chart",
-                "\u{00b0}",
-            )?),
+            // The table is written at discrete boom angles and its capacity
+            // rises with the angle, so an angle between rows is read at the
+            // next **lower** row: the higher row would claim capacity the
+            // lift cannot have. Below the first row there is no conservative
+            // one, and the lookup reports the angle as outside the chart.
+            Some(angle) => {
+                let lookup = charted_angle_below(&inputs.chart_jib_points, angle).unwrap_or(angle);
+                Some(lookup_rated(
+                    &inputs.chart_jib_points,
+                    lookup,
+                    "boom angle",
+                    "the jib chart",
+                    "\u{00b0}",
+                )?)
+            }
             None => None,
         };
     }
@@ -1016,6 +1040,60 @@ mod tests {
         assert!((result.chart_capacity_kg.unwrap() - 1650.0).abs() < 1e-9);
         assert_eq!(result.capacity_source, "Excel chart");
         assert!((result.boom_angle_deg.unwrap() - 72.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_jib_angle_between_chart_rows_uses_the_lower_row() {
+        // Capacity rises with the boom angle: 1.65 t at 72 deg, 1.8 t at 83.
+        // At 80 deg the 83 row's 1.8 t would be optimistic, and interpolating
+        // would still claim more than the 72 row. The check uses 72's 1.65 t.
+        let inputs = CraneInputs {
+            chart_points: vec![(5.0, 35000.0), (10.0, 21000.0)],
+            working_radius: 10.0,
+            chart_source: "excel".to_string(),
+            chart_booms: vec![34.0],
+            chart_boom: Some(34.0),
+            chart_position: Some((-1.7, 2.8)),
+            jib_config: "boom_jib".to_string(),
+            jib_length: Some(7.2),
+            jib_offset: Some(25.0),
+            chart_jib_points: vec![(83.0, 1800.0), (72.0, 1650.0)],
+            boom_angle_deg: Some(80.0),
+            ..CraneInputs::default()
+        };
+        let result = solve_crane(&inputs, 1000.0).unwrap();
+        assert!((result.chart_capacity_kg.unwrap() - 1650.0).abs() < 1e-9);
+        // The boom really is at 80 deg; only the chart row it is read at is 72.
+        assert!((result.boom_angle_deg.unwrap() - 80.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_jib_angle_below_the_first_row_is_refused() {
+        let inputs = CraneInputs {
+            chart_points: vec![(5.0, 35000.0), (10.0, 21000.0)],
+            working_radius: 10.0,
+            chart_source: "excel".to_string(),
+            chart_booms: vec![34.0],
+            chart_boom: Some(34.0),
+            chart_position: Some((-1.7, 2.8)),
+            jib_config: "boom_jib".to_string(),
+            jib_length: Some(7.2),
+            jib_offset: Some(25.0),
+            chart_jib_points: vec![(83.0, 1800.0), (72.0, 1650.0)],
+            boom_angle_deg: Some(60.0),
+            ..CraneInputs::default()
+        };
+        let error = solve_crane(&inputs, 1000.0).unwrap_err();
+        assert!(error.0.contains("outside the jib chart"), "{}", error.0);
+    }
+
+    #[test]
+    fn the_charted_angle_below_never_rounds_up() {
+        let points = [(45.0, 500.0), (60.0, 900.0), (65.0, 1800.0)];
+        assert_eq!(charted_angle_below(&points, 64.0), Some(60.0));
+        assert_eq!(charted_angle_below(&points, 65.0), Some(65.0));
+        assert_eq!(charted_angle_below(&points, 90.0), Some(65.0));
+        assert_eq!(charted_angle_below(&points, 30.0), None);
     }
 
     #[test]

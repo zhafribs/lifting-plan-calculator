@@ -17,7 +17,7 @@ import {
   withUnit,
 } from "../components.js";
 import { fmt } from "../format.js";
-import { JIB_CONFIGS, jibAvailability } from "../jib.js";
+import { JIB_CONFIGS, jibAngleAtOrBelow, jibAvailability } from "../jib.js";
 
 export function createCraneScreen(ctx) {
   const { store, catalog } = ctx;
@@ -353,7 +353,9 @@ export function createCraneScreen(ctx) {
     const effectiveAngle =
       state.crane.boom_angle_deg ?? store.solved?.crane?.result?.boom_angle_deg ?? null;
     if (effectiveAngle !== null && effectiveAngle !== undefined && angles.length) {
-      jibBoomAngleSelect.value = String(nearest(angles, effectiveAngle));
+      // Between two charted angles the lower row is the one the check may
+      // use: the higher row carries more capacity than the actual angle can.
+      jibBoomAngleSelect.value = String(jibAngleAtOrBelow(angles, effectiveAngle));
     }
 
     const offsets = jibs

@@ -32,3 +32,22 @@ export function jibLengthFor(jibs, config) {
   if (!lengths.length) return null;
   return config === "boom_ext_jib" ? lengths[lengths.length - 1] : lengths[0];
 }
+
+/**
+ * The charted boom angle at or below `wanted` — the row a jib check may use.
+ *
+ * The jib chart is tabulated at discrete boom angles and its capacity rises
+ * with the angle, so an angle between rows must be read at the next lower row:
+ * taking the higher one would claim capacity the lift cannot have. Below the
+ * lowest row there is no conservative one, and the lowest is returned so the
+ * check can report that the angle is outside the chart.
+ */
+export function jibAngleAtOrBelow(angles, wanted) {
+  const sorted = [...(angles || [])].sort((a, b) => a - b);
+  if (!sorted.length) return null;
+  let best = null;
+  for (const angle of sorted) {
+    if (angle <= wanted + 1e-9) best = angle;
+  }
+  return best ?? sorted[0];
+}

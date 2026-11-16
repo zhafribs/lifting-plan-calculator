@@ -272,8 +272,10 @@ to the GitHub release — and the installers are unsigned, so Windows shows its
 
 - **Excel import**: pick a `.xlsx` load chart; both matrix charts (boom lengths
   across the top) and column charts (radius / load / boom columns) are detected
-  automatically. The working radius is suggested as the farthest charted radius
-  that still meets the 75% rule. Two example charts ship in `docs/examples/`
+  automatically. A title line above the chart names the machine and its rating
+  ("Tadano TL200M (20 ton)"), and importing fills the Crane tab's **Crane name**
+  and **Crane rated capacity** from it. The working radius is suggested as the
+  farthest charted radius that still meets the 75% rule. Two example charts ship in `docs/examples/`
   (a 35 t TR-350M-1 and a 20 t TL-200M) if you want to try the import without a
   workbook of your own; the TL-200M also ships as its manufacturer's
   specification PDF, which the workbook transcribes.

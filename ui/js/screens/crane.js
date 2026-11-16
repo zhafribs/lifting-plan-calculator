@@ -139,7 +139,7 @@ export function createCraneScreen(ctx) {
         card({
           title: "Crane",
           note: "As booked for this lift",
-          body: el("div", { class: "fields" }, field({ label: "Crane", input: nameInput }), field({ label: "Crane rated capacity", unit: "ton", input: capacityInput })),
+          body: el("div", { class: "fields" }, field({ label: "Crane name", input: nameInput }), field({ label: "Crane rated capacity", unit: "ton", input: capacityInput })),
         }),
         card({
           title: "Load chart — Excel workbook",
@@ -477,7 +477,7 @@ export function createCraneScreen(ctx) {
 
     checkRows.replaceChildren(
       kvRows([
-        ["Crane", result.crane_name || "—"],
+        ["Crane name", result.crane_name || "—"],
         ["Crane rated capacity", result.crane_capacity_kg ? fmt(result.crane_capacity_kg, 2, "kg") : "—"],
         [
           "Booked rating check",

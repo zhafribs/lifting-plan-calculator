@@ -160,6 +160,12 @@ pub struct LoadChartData {
     /// The jib sheet's tables, when the workbook has one.
     #[serde(default)]
     pub jib_columns: Vec<JibColumn>,
+    /// The crane a title line above the chart names, e.g. "Tadano TL200M".
+    #[serde(default)]
+    pub crane_name: Option<String>,
+    /// That line's rated capacity, in tonnes.
+    #[serde(default)]
+    pub crane_capacity_t: Option<f64>,
 }
 
 impl LoadChartData {
@@ -650,6 +656,8 @@ fn parse_column_rows(
         unit: "kg".to_string(),
         position: None,
         jib_columns: Vec::new(),
+        crane_name: None,
+        crane_capacity_t: None,
     })
 }
 
@@ -715,7 +723,58 @@ fn parse_matrix_rows(
         unit,
         position: None,
         jib_columns: Vec::new(),
+        crane_name: None,
+        crane_capacity_t: None,
     })
+}
+
+/// A crane title line, e.g. `Tadano TL200M (20 ton)`.
+///
+/// The workbook names the machine above its chart table and gives its rating in
+/// brackets. Only a line that carries a rating is read, so a heading such as
+/// "TOTAL RATED LOADS — With outriggers fully extended (360°)" cannot be
+/// mistaken for one.
+fn crane_line(text: &str) -> Option<(String, f64)> {
+    let open = text.rfind('(')?;
+    let close = text.rfind(')')?;
+    if close < open {
+        return None;
+    }
+    let inner = text[open + 1..close].trim();
+    let digits: String = inner
+        .chars()
+        .take_while(|character| character.is_ascii_digit() || *character == '.')
+        .collect();
+    let value: f64 = digits.parse().ok()?;
+    let unit = inner[digits.len()..].trim().to_lowercase();
+    let tonnes = match unit.as_str() {
+        "t" | "ton" | "tons" | "tonne" | "tonnes" => value,
+        "kg" => value / 1000.0,
+        _ => return None,
+    };
+    let name = text[..open]
+        .trim()
+        .trim_end_matches(['-', ':', ',', '|'])
+        .trim()
+        .to_string();
+    if name.is_empty() || tonnes <= 0.0 {
+        return None;
+    }
+    Some((name, tonnes))
+}
+
+/// The first crane title line in a sheet's rows, and its rating.
+fn find_crane_line(rows: &[Vec<Option<CellValue>>]) -> Option<(String, f64)> {
+    for row in rows.iter().take(15) {
+        for cell in row {
+            if let Some(CellValue::Text(text)) = cell {
+                if let Some(found) = crane_line(text) {
+                    return Some(found);
+                }
+            }
+        }
+    }
+    None
 }
 
 fn header_text(rows: &[Vec<Option<CellValue>>], header_row: usize, column: usize) -> Option<CellValue> {
@@ -820,6 +879,10 @@ pub fn read_chart(bytes: &[u8]) -> Result<LoadChartData, ExcelImportException> {
         .iter()
         .find_map(|rows| parse_jib_sheet(rows))
         .unwrap_or_default();
+    if let Some((name, capacity_t)) = parsed.iter().find_map(|rows| find_crane_line(rows)) {
+        chart.crane_name = Some(name);
+        chart.crane_capacity_t = Some(capacity_t);
+    }
     Ok(chart)
 }
 
@@ -1067,7 +1130,14 @@ pub fn imported_inputs(
         .iter()
         .copied()
         .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-    applied(inputs, chart, name, boom, gross)
+    let imported = applied(inputs, chart, name, boom, gross);
+    // The workbook's own title line names the crane and its rating; a workbook
+    // that carries neither leaves what the operator typed alone.
+    CraneInputs {
+        name: chart.crane_name.clone().unwrap_or(imported.name),
+        capacity_t: chart.crane_capacity_t.unwrap_or(imported.capacity_t),
+        ..imported
+    }
 }
 
 /// The inputs after the operator picks a different boom.
@@ -1501,6 +1571,56 @@ xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">
     }
 
     #[test]
+    fn a_crane_title_line_names_the_machine_and_its_rating() {
+        assert_eq!(
+            crane_line("Tadano TL200M (20 ton)"),
+            Some(("Tadano TL200M".to_string(), 20.0))
+        );
+        assert_eq!(
+            crane_line("Tadano TR350M-1 (30 TON)"),
+            Some(("Tadano TR350M-1".to_string(), 30.0))
+        );
+        assert_eq!(
+            crane_line("Kobelco CKE90G-2 (20000 kg)"),
+            Some(("Kobelco CKE90G-2".to_string(), 20.0))
+        );
+        // A heading that names no rating is not a crane line.
+        assert_eq!(
+            crane_line("TOTAL RATED LOADS \u{2014} With outriggers fully extended (360\u{00b0}), Unit: ton"),
+            None
+        );
+        assert_eq!(crane_line("Crane location on axis (X, Y)"), None);
+        assert_eq!(crane_line(""), None);
+    }
+
+    #[test]
+    fn a_workbook_title_line_fills_the_crane_name_and_rating() {
+        let mut rows = vec![vec![S("Tadano TL200M (20 ton)")]];
+        rows.extend(matrix_rows());
+        let chart = read_chart(&build_workbook("Chart", &rows)).unwrap();
+        assert_eq!(chart.crane_name.as_deref(), Some("Tadano TL200M"));
+        assert_eq!(chart.crane_capacity_t, Some(20.0));
+
+        let imported = imported_inputs(&CraneInputs::default(), &chart, "Chart.xlsx", 2000.0);
+        assert_eq!(imported.name, "Tadano TL200M");
+        assert!((imported.capacity_t - 20.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_workbook_without_a_title_line_leaves_the_crane_fields_alone() {
+        let chart = matrix_chart();
+        assert_eq!(chart.crane_name, None);
+        let typed = CraneInputs {
+            name: "Typed on the tab".to_string(),
+            capacity_t: 40.0,
+            ..CraneInputs::default()
+        };
+        let imported = imported_inputs(&typed, &chart, "Chart.xlsx", 2000.0);
+        assert_eq!(imported.name, "Typed on the tab");
+        assert!((imported.capacity_t - 40.0).abs() < 1e-9);
+    }
+
+    #[test]
     fn a_matrix_workbook_parses_to_the_references_own_table() {
         let chart = matrix_chart();
         assert!(chart.matrix);
@@ -1749,6 +1869,8 @@ xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">
         // The full boom at 5 m and the short boom at 6 m, in kg.
         assert!((chart.capacity_at(5.0, Some(34.0)).unwrap() - 6500.0).abs() < 1e-9);
         assert!((chart.capacity_at(6.0, Some(9.0)).unwrap() - 17500.0).abs() < 1e-9);
+        assert_eq!(chart.crane_name.as_deref(), Some("Tadano TR350M-1"));
+        assert_eq!(chart.crane_capacity_t, Some(30.0));
         // The jib sheet: two jib lengths, three offset angles each.
         let jibs = jib_options(&chart);
         assert_eq!(jibs.len(), 6);
@@ -1793,6 +1915,8 @@ xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">
         assert_eq!(chart.unit, "ton");
         assert_eq!(chart.position, Some((-1.6, 2.2)));
         assert!((chart.capacity_at(5.0, Some(9.8)).unwrap() - 14850.0).abs() < 1e-9);
+        assert_eq!(chart.crane_name.as_deref(), Some("Tadano TL200M"));
+        assert_eq!(chart.crane_capacity_t, Some(20.0));
         let jibs = jib_options(&chart);
         assert_eq!(jibs.len(), 2);
         assert!((jibs[1].length - 8.0).abs() < 1e-9);

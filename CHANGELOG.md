@@ -1,6 +1,15 @@
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- Importing a load chart fills the crane name and its rated capacity from the
+  workbook's own title line ("Tadano TL200M (20 ton)"). A workbook without that
+  line leaves what the operator typed alone.
+
+### Changed
+
+- The Crane tab labels its machine field **Crane name**, matching the value it
+  holds.
 
 ## [2.8.2] - 2026-11-14
 

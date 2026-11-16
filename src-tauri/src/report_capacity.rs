@@ -2,7 +2,7 @@
 //! capacity and equipment selection, and the notes. Ported from
 //! `ReportCapacity.kt`.
 
-use crate::report::{equation, fmt, heading, p, subheading, tex_deg, tex_num, work_block, working_pair};
+use crate::report::{equation, fmt, heading, p, subheading, tex_deg, tex_num, work_block, working_grid};
 use crate::sling::{HitchSpec, SlingResult, SINGLE_LEG};
 
 /// The four arrangements a choke reduction applies to.
@@ -42,88 +42,110 @@ pub fn factors_section(result: &SlingResult, spec: &HitchSpec) -> String {
     let eff = result.effective_legs;
     let tension = result.tension_each;
     let mut out = vec![heading(4, "Rigging Factors & Tension Calculations")];
-    let mut simple_angle: Option<String> = None;
+    // Every factor this arrangement uses, in the order the tension formula
+    // multiplies them; the grid lays them two to a row.
+    let mut factors: Vec<String> = Vec::new();
 
     if result.nested != 0 {
         let af_long = result.af_long.unwrap_or(1.0);
         let secondary_af = result.secondary_af.unwrap_or(1.0);
         let secondary_combined = result.secondary_combined_af.unwrap_or(1.0);
         let nested_labels = crate::report_uniform::secondary_labels(result, result.nested);
-        out.push(subheading("Longitudinal Sling Angle Factor (AF Long):"));
-        out.push(equation(&format!(
-            "\\text{{AF}}_{{Long}} = \\cos({}) = {}",
-            tex_deg(result.angle_long, 2),
-            tex_num(Some(af_long), 3)
-        )));
+        factors.push(work_block(
+            "Longitudinal Sling Angle Factor (AF Long)",
+            &equation(&format!(
+                "\\text{{AF}}_{{Long}} = \\cos({}) = {}",
+                tex_deg(result.angle_long, 2),
+                tex_num(Some(af_long), 3)
+            )),
+        ));
         if !nested_labels.is_empty() {
             // The 3- and 4-leg nested documents publish one factor per group.
             for (group, label) in &nested_labels {
-                out.push(subheading(&format!(
-                    "Transverse Sling Angle Factor for {} Legs (AF Trans {}):",
-                    label.token, label.token
-                )));
-                out.push(equation(&format!(
-                    "\\text{{AF}}_{{\\text{{Trans {}}}}} = \\cos({}) = {}",
-                    label.token,
-                    tex_deg(Some(group.angle), 2),
-                    tex_num(Some(group.af), 3)
-                )));
-                out.push(subheading(&format!(
-                    "Combined Sling Angle Factor (AF) for {} Secondary Legs:",
-                    label.name
-                )));
-                out.push(equation(&format!(
-                    "\\text{{AF}}_{{\\text{{Combined {}}}}} = \
-                     \\text{{AF}}_{{Long}} \\times \\text{{AF}}_{{\\text{{Trans {}}}}} = \
-                     {} \\times {} = {}",
-                    label.token,
-                    label.token,
-                    tex_num(Some(af_long), 3),
-                    tex_num(Some(group.af), 3),
-                    tex_num(Some(group.combined_af), 3)
-                )));
+                factors.push(work_block(
+                    &format!(
+                        "Transverse Sling Angle Factor for {} Legs (AF Trans {})",
+                        label.token, label.token
+                    ),
+                    &equation(&format!(
+                        "\\text{{AF}}_{{\\text{{Trans {}}}}} = \\cos({}) = {}",
+                        label.token,
+                        tex_deg(Some(group.angle), 2),
+                        tex_num(Some(group.af), 3)
+                    )),
+                ));
+                factors.push(work_block(
+                    &format!(
+                        "Combined Sling Angle Factor (AF) for {} Secondary Legs",
+                        label.name
+                    ),
+                    &equation(&format!(
+                        "\\text{{AF}}_{{\\text{{Combined {}}}}} = \
+                         \\text{{AF}}_{{Long}} \\times \\text{{AF}}_{{\\text{{Trans {}}}}} = \
+                         {} \\times {} = {}",
+                        label.token,
+                        label.token,
+                        tex_num(Some(af_long), 3),
+                        tex_num(Some(group.af), 3),
+                        tex_num(Some(group.combined_af), 3)
+                    )),
+                ));
             }
         } else {
-            out.push(subheading("Transverse Sling Angle Factor (AF Trans):"));
-            out.push(equation(&format!(
-                "\\text{{AF}}_{{Trans}} = \\cos({}) = {}",
-                tex_deg(result.secondary_angle, 2),
-                tex_num(Some(secondary_af), 3)
-            )));
-            out.push(subheading("Combined Sling Angle Factor (AF Combined):"));
-            out.push(equation(&format!(
-                "\\text{{AF}}_{{Combined}} = \\text{{AF}}_{{Long}} \\times \
-                 \\text{{AF}}_{{Trans}} = {} \\times {} = {}",
-                tex_num(Some(af_long), 3),
-                tex_num(Some(secondary_af), 3),
-                tex_num(Some(secondary_combined), 3)
-            )));
+            factors.push(work_block(
+                "Transverse Sling Angle Factor (AF Trans)",
+                &equation(&format!(
+                    "\\text{{AF}}_{{Trans}} = \\cos({}) = {}",
+                    tex_deg(result.secondary_angle, 2),
+                    tex_num(Some(secondary_af), 3)
+                )),
+            ));
+            factors.push(work_block(
+                "Combined Sling Angle Factor (AF Combined)",
+                &equation(&format!(
+                    "\\text{{AF}}_{{Combined}} = \\text{{AF}}_{{Long}} \\times \
+                     \\text{{AF}}_{{Trans}} = {} \\times {} = {}",
+                    tex_num(Some(af_long), 3),
+                    tex_num(Some(secondary_af), 3),
+                    tex_num(Some(secondary_combined), 3)
+                )),
+            ));
         }
     } else if TWO_LEG_BASKET_KEYS.contains(&key) {
         let af_long = result.af_long.unwrap_or(1.0);
         let af_trans = result.af_trans.unwrap_or(1.0);
-        out.push(subheading("Longitudinal Sling Angle Factor (AF Long):"));
-        out.push(equation(&format!(
-            "\\text{{AF}}_{{Long}} = \\cos({}) = {}",
-            tex_deg(result.angle_long, 2),
-            tex_num(Some(af_long), 3)
-        )));
-        out.push(subheading("Transverse Basket Angle Factor (AF Trans):"));
-        out.push(equation(&format!(
-            "\\text{{AF}}_{{Trans}} = \\cos({}) = {}",
-            tex_deg(result.angle_trans, 2),
-            tex_num(Some(af_trans), 3)
-        )));
-        out.push(subheading("Combined Sling Angle Factor (AF):"));
-        out.push(equation(&format!(
-            "\\text{{AF}} = \\text{{AF}}_{{Long}} \\times \\text{{AF}}_{{Trans}} = \
-             {} \\times {} = {}",
-            tex_num(Some(af_long), 3),
-            tex_num(Some(af_trans), 3),
-            tex_num(Some(af), 3)
-        )));
+        factors.push(work_block(
+            "Longitudinal Sling Angle Factor (AF Long)",
+            &equation(&format!(
+                "\\text{{AF}}_{{Long}} = \\cos({}) = {}",
+                tex_deg(result.angle_long, 2),
+                tex_num(Some(af_long), 3)
+            )),
+        ));
+        factors.push(work_block(
+            "Transverse Basket Angle Factor (AF Trans)",
+            &equation(&format!(
+                "\\text{{AF}}_{{Trans}} = \\cos({}) = {}",
+                tex_deg(result.angle_trans, 2),
+                tex_num(Some(af_trans), 3)
+            )),
+        ));
+        factors.push(work_block(
+            "Combined Sling Angle Factor (AF)",
+            &equation(&format!(
+                "\\text{{AF}} = \\text{{AF}}_{{Long}} \\times \\text{{AF}}_{{Trans}} = \
+                 {} \\times {} = {}",
+                tex_num(Some(af_long), 3),
+                tex_num(Some(af_trans), 3),
+                tex_num(Some(af), 3)
+            )),
+        ));
     } else {
-        let formula = if key == "round_choke" || key == "rect_choke" {
+        // Only the single-leg chokes stand perfectly vertical; a two-leg choke
+        // still has an angle to its legs, and saying otherwise contradicted the
+        // factor printed beside it.
+        let single_leg_choke = key == "round_choke" || key == "rect_choke";
+        let formula = if single_leg_choke {
             equation("\\text{AF} = \\cos(0^\\circ) = 1.0")
         } else {
             equation(&format!(
@@ -132,52 +154,45 @@ pub fn factors_section(result: &SlingResult, spec: &HitchSpec) -> String {
                 tex_num(Some(af), 3)
             ))
         };
-        let note = if CHOKE_KEYS.contains(&key) {
+        let note = if single_leg_choke {
             p("The main lifting leg stands perfectly vertical (0\u{00b0}).", "")
         } else {
             String::new()
         };
-        simple_angle = Some(format!(
-            "{}{}{}",
-            work_block("Sling Angle Factor (AF)", ""),
-            note,
-            formula
+        factors.push(format!(
+            "{}{note}{formula}",
+            work_block("Sling Angle Factor (AF)", "")
         ));
     }
 
-    let reeve_formula = equation(&format!(
-        "\\text{{RF}}_{{Base}} = {}",
-        tex_num(Some(rf), 2)
-    ));
-    match simple_angle {
-        // The two factors the tension formula multiplies, read side by side.
-        Some(angle_block) => out.push(working_pair(
-            &angle_block,
-            &work_block("Base Reeve Factor (RF)", &reeve_formula),
+    factors.push(work_block(
+        "Base Reeve Factor (RF)",
+        &equation(&format!(
+            "\\text{{RF}}_{{Base}} = {}",
+            tex_num(Some(rf), 2)
         )),
-        // A nested or basket arrangement builds its angle factor in several
-        // steps; the factors stay one under the other so the chain reads down.
-        None => {
-            out.push(subheading("Base Reeve Factor (RF):"));
-            out.push(reeve_formula);
-        }
-    }
+    ));
     if CHOKE_KEYS.contains(&key) {
-        out.push(subheading("Choke Angle Reduction Factor:"));
-        out.push(equation(&format!(
-            "\\text{{Reduction Factor}} = {}",
-            tex_num(Some(reduction), 2)
-        )));
-        out.push(subheading("Combined Reeve Factor:"));
-        out.push(equation(&format!(
-            "\\text{{Combined RF}} = \\text{{RF}}_{{Base}} \\times \
-             \\text{{Reduction Factor}} = {} \\times {} = {}",
-            tex_num(Some(rf), 2),
-            tex_num(Some(reduction), 2),
-            tex_num(Some(combined), 4)
-        )));
+        factors.push(work_block(
+            "Choke Angle Reduction Factor",
+            &equation(&format!(
+                "\\text{{Reduction Factor}} = {}",
+                tex_num(Some(reduction), 2)
+            )),
+        ));
+        factors.push(work_block(
+            "Combined Reeve Factor",
+            &equation(&format!(
+                "\\text{{Combined RF}} = \\text{{RF}}_{{Base}} \\times \
+                 \\text{{Reduction Factor}} = {} \\times {} = {}",
+                tex_num(Some(rf), 2),
+                tex_num(Some(reduction), 2),
+                tex_num(Some(combined), 4)
+            )),
+        ));
     }
 
+    out.push(working_grid(&factors));
     if result.nested != 0 {
         let secondary_tension = result.secondary_tension.unwrap_or(0.0);
         let secondary_combined = result.secondary_combined_af.unwrap_or(1.0);
@@ -814,12 +829,12 @@ mod tests {
         let factors = sections(&nested3()).0;
         for expected in [
             "\\[\\text{AF}_{Long} = \\cos(20.91^\\circ) = 0.934\\]",
-            "Transverse Sling Angle Factor for Outer Legs (AF Trans Outer):",
+            "<div class=\"work-label\">Transverse Sling Angle Factor for Outer Legs (AF Trans Outer)</div>",
             "\\[\\text{AF}_{\\text{Trans Outer}} = \\cos(19.47^\\circ) = 0.943\\]",
-            "Combined Sling Angle Factor (AF) for Outer Secondary Legs:",
+            "<div class=\"work-label\">Combined Sling Angle Factor (AF) for Outer Secondary Legs</div>",
             "\\[\\text{AF}_{\\text{Combined Outer}} = \\text{AF}_{Long} \\times \\text{AF}_{\\text{Trans Outer}} = 0.934 \\times 0.943 = 0.881\\]",
-            "Transverse Sling Angle Factor for Mid Legs (AF Trans Mid):",
-            "Combined Sling Angle Factor (AF) for Middle Secondary Legs:",
+            "<div class=\"work-label\">Transverse Sling Angle Factor for Mid Legs (AF Trans Mid)</div>",
+            "<div class=\"work-label\">Combined Sling Angle Factor (AF) for Middle Secondary Legs</div>",
             "Tension in the Sloped Outer Secondary Legs:",
             "\\[\\text{Tension}_{\\text{Secondary Outer}} = \\frac{\\text{Load Weight}}{\\text{Sling Legs}_1 \\times \\text{Sling Legs}_2 \\times \\text{AF}_{\\text{Combined Outer}}} = \\frac{2{,}000}{2 \\times 3 \\times 0.881} = 378.4\\ \\text{kg}\\]",
         ] {

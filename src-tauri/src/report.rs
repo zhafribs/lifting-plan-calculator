@@ -125,7 +125,15 @@ pub const REPORT_CSS: &str = r#"
 .report .working-wrap { padding: 0; margin-top: 6pt; }
 .report table.working { width: 100%; border-collapse: collapse; margin: 4pt 0 4pt;
     table-layout: fixed; }
-.report table.working td { border: 0; padding: 0; vertical-align: top; }
+.report table.working td { border: 0; padding: 0; vertical-align: top;
+    break-inside: avoid; page-break-inside: avoid; }
+/* A factor's label and formula are one row; never print them on two pages. */
+.report table.working tr { break-inside: avoid; page-break-inside: avoid; }
+/* Rows of factors need air between them. */
+.report table.working tr + tr td { padding-top: 5pt; }
+/* A heading is never the last thing on a page. */
+.report .section-card h2, .report .section-card h3 { break-after: avoid;
+    page-break-after: avoid; }
 .report table.working td:first-child { width: 42%; padding-right: 8pt; }
 .report table.working td:last-child { width: 58%; padding-left: 8pt;
     border-left: 0.5pt solid #e4eaf1; }
@@ -462,6 +470,26 @@ pub fn working_pair(left: &str, right: &str) -> String {
 /// A working block: a label and the formula under it.
 pub fn work_block(label: &str, formula: &str) -> String {
     format!("<div class=\"work-label\">{}</div>{formula}", escape(label))
+}
+
+/// The workings laid out two to a row; a lone last one spans the row.
+pub fn working_grid(blocks: &[String]) -> String {
+    let mut out = String::from("<div class=\"working-wrap\"><table class=\"working\"><tbody>");
+    for chunk in blocks.chunks(2) {
+        out.push_str("<tr>");
+        match chunk {
+            [one, two] => {
+                out.push_str(&format!("<td>{one}</td><td>{two}</td>"));
+            }
+            [one] => {
+                out.push_str(&format!("<td colspan=\"2\">{one}</td>"));
+            }
+            _ => {}
+        }
+        out.push_str("</tr>");
+    }
+    out.push_str("</tbody></table></div>");
+    out
 }
 
 /// `48.00°` rather than `48.00 °` in the head's prose.
@@ -928,38 +956,50 @@ mod tests {
     }
 
     #[test]
-    fn a_direct_hitch_reads_its_angle_and_reeve_factors_side_by_side() {
+    fn the_rigging_factors_pair_up_two_to_a_row() {
         use crate::sling::{example_inputs, solve_one_leg};
 
-        let inputs = ReportInputs {
-            totals: LiftTotals::of(
-                &[LoadItem {
-                    weight_kg: 5000.0,
-                    ..LoadItem::default()
-                }],
-                &[] as &[TackleItem],
-            ),
-            sling: Some(
-                solve_one_leg(&example_inputs("two_leg_direct").unwrap(), 5000.0).unwrap(),
-            ),
-            ..ReportInputs::default()
+        let report_for = |hitch: &str| {
+            let inputs = ReportInputs {
+                totals: LiftTotals::of(
+                    &[LoadItem {
+                        weight_kg: 5000.0,
+                        ..LoadItem::default()
+                    }],
+                    &[] as &[TackleItem],
+                ),
+                sling: Some(solve_one_leg(&example_inputs(hitch).unwrap(), 5000.0).unwrap()),
+                ..ReportInputs::default()
+            };
+            build_report_html(&inputs, &["uniform".to_string()])
         };
-        let html = build_report_html(&inputs, &["uniform".to_string()]);
-        // The two factors sit in one row: the angle block's cell is followed
-        // straight by the reeve block's cell.
-        assert!(html.contains("<div class=\"work-label\">Sling Angle Factor (AF)</div>"));
-        assert!(html.contains(
+
+        // A direct hitch: the two factors share one row, the angle block's cell
+        // followed straight by the reeve block's cell.
+        let direct = report_for("two_leg_direct");
+        assert!(direct.contains("<div class=\"work-label\">Sling Angle Factor (AF)</div>"));
+        assert!(direct.contains(
             "</div></td><td><div class=\"work-label\">Base Reeve Factor (RF)</div>"
         ));
-        // A stacked arrangement still prints the reeve factor as its own row.
-        let nested = ReportInputs {
-            sling: Some(
-                solve_one_leg(&example_inputs("two_leg_nested_3leg").unwrap(), 5000.0).unwrap(),
-            ),
-            ..inputs
-        };
-        let nested_html = build_report_html(&nested, &["uniform".to_string()]);
-        assert!(nested_html.contains("<h3>Base Reeve Factor (RF):</h3>"));
+
+        // A choke adds the reduction and the combined factor: four, two rows.
+        let choke = report_for("two_leg_round_choke");
+        for label in [
+            "Choke Angle Reduction Factor",
+            "Combined Reeve Factor",
+        ] {
+            assert!(
+                choke.contains(&format!("<div class=\"work-label\">{label}</div>")),
+                "missing {label}"
+            );
+        }
+        // A two-leg choke still has an angle; it must not claim to hang vertical.
+        assert!(!choke.contains("stands perfectly vertical"));
+
+        // A nested arrangement lists every step of its angle factor, and RF.
+        let nested = report_for("two_leg_nested_3leg");
+        assert!(nested.contains("<div class=\"work-label\">Base Reeve Factor (RF)</div>"));
+        assert!(nested.contains("Longitudinal Sling Angle Factor (AF Long)"));
     }
 
     #[test]

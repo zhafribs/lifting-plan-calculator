@@ -11,10 +11,18 @@
 - The Crane tab labels its machine field **Crane name**, matching the value it
   holds.
 
-- In the uniform report, a direct hitch's **Sling Angle Factor (AF)** and
-  **Base Reeve Factor (RF)** are printed side by side, the way the crane's
-  required capacity and usage are. A nested or basket arrangement builds its
-  angle factor in several steps, so those stay one under the other.
+- In the uniform report, every factor in **Rigging factors & tension
+  calculations** is laid out two to a row, the way the crane's required
+  capacity and usage are: the angle factor beside the base reeve factor, and a
+  choke's reduction beside the combined reeve factor. The two-leg basket's
+  three factors and a nested hitch's longer chain follow the same grid, with a
+  lone last factor spanning the row.
+
+### Fixed
+
+- A two-leg choke said "the main lifting leg stands perfectly vertical (0°)"
+  while printing an angle factor below 1.0. Only the single-leg chokes stand
+  vertical; the note now appears for those alone.
 
 ### Removed
 

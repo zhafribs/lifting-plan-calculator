@@ -82,8 +82,25 @@ export function createReportScreen(ctx) {
     ),
   );
 
+  // The preview runs under the app's Content-Security-Policy: scripts only from
+  // the app's own origin, no inline script and no inline handler. A `sandbox`
+  // attribute was tried and rejected: an opaque origin makes `script-src 'self'`
+  // match nothing, so the report's own KaTeX pass would not run.
   const frame = el("iframe", { title: "Report preview" });
   const frameWrap = el("div", { class: "report-frame" }, frame);
+
+  // The frame reports its KaTeX pass by message: an opaque-origin document
+  // cannot be read from here.
+  window.addEventListener("message", (event) => {
+    const data = event.data;
+    if (!data || (data.lpcReport !== "ready" && data.lpcReport !== "error")) return;
+    window.uilog &&
+      window.uilog(
+        data.lpcReport === "error"
+          ? `report katex error: ${data.error}`
+          : `report preview ready: ${data.equations} typeset equations`,
+      );
+  });
 
   // The page view: the report as the PDF that will be saved, so the operator
   // sees the real page breaks and can zoom into a figure. It is rendered on
@@ -314,34 +331,6 @@ export function createReportScreen(ctx) {
   previewPane.classList.add("is-pages");
   modeButtons.pages.classList.add("on");
 
-  // One scrollable: stacked (the same max-width the layout stacks at), the
-  // Summary tab reads as a single document — the frame opens to the report's
-  // full height and the screen owns the only scrollbar. Side by side the
-  // frame keeps its viewport-sized box and its own scroll, which is the one
-  // scrollable there. 980px is the stack cut shared with the CSS breakpoints.
-  const stackedQuery = window.matchMedia("(max-width: 980px)");
-  function fitFrame() {
-    if (!stackedQuery.matches) {
-      frameWrap.style.height = "";
-      return;
-    }
-    try {
-      const doc = frame.contentDocument;
-      if (!doc || !doc.documentElement) return;
-      const content = Math.max(
-        doc.documentElement.scrollHeight,
-        doc.body ? doc.body.scrollHeight : 0,
-      );
-      if (content > 0) {
-        // Border-box: the wrapper's height includes its 1px top and bottom
-        // border, which the iframe (height: 100%) does not get to use.
-        frameWrap.style.height = `${Math.ceil(content) + 2}px`;
-      }
-    } catch (error) {
-      /* unreadable until the next load or resize — retried then */
-    }
-  }
-  window.addEventListener("resize", debounce(() => fitFrame(), 150));
   window.addEventListener(
     "resize",
     debounce(() => {
@@ -555,26 +544,6 @@ export function createReportScreen(ctx) {
       // stylesheet and scripts are pinned against the app's own base URL.
       const katexBase = new URL("vendor/katex/", document.baseURI).href;
       frame.srcdoc = html.split('"vendor/katex/').join(`"${katexBase}`);
-      // A quiet self-check: the log records whether the equations actually
-      // typeset, which is the one thing the window itself cannot show.
-      frame.onload = () => {
-        try {
-          const doc = frame.contentDocument;
-          const error = doc && doc.body ? doc.body.getAttribute("data-katex-error") : null;
-          const nodes = doc ? doc.querySelectorAll(".katex").length : 0;
-          window.uilog &&
-            window.uilog(
-              error ? `report katex error: ${error}` : `report preview ready: ${nodes} typeset equations`,
-            );
-        } catch (ignored) {
-          /* the preview is still visible even when it cannot be inspected */
-        }
-        // Fit once the document is parsed, then once more when the KaTeX
-        // fonts settle — their metrics shift the typeset line heights.
-        fitFrame();
-        const fonts = frame.contentDocument && frame.contentDocument.fonts;
-        if (fonts && fonts.ready) fonts.ready.then(fitFrame, () => {});
-      };
     } catch (error) {
       frame.srcdoc = `<p style="font-family: sans-serif; color: #9b1c1c; padding: 16px">${escapeHtml(errorText(error))}</p>`;
     }
@@ -613,7 +582,6 @@ export function createReportScreen(ctx) {
     pdfWrap.hidden = mode !== "pages";
     previewPane.classList.toggle("is-pages", mode === "pages");
     if (mode === "pages") refreshPdf();
-    else fitFrame();
   }
 
   async function refreshPdf({ force = false } = {}) {

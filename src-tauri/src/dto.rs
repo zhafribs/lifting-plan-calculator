@@ -197,10 +197,11 @@ impl From<&TandemMethod> for TandemMethodDto {
 
 /// The KaTeX files bundled with the app, saved alongside a report so the file
 /// prints with its equations typeset wherever it is opened.
-pub const KATEX_FILES: [&str; 23] = [
+pub const KATEX_FILES: [&str; 24] = [
     "katex.min.css",
     "katex.min.js",
     "auto-render.min.js",
+    "lpc-autorender.js",
     "fonts/KaTeX_AMS-Regular.woff2",
     "fonts/KaTeX_Caligraphic-Bold.woff2",
     "fonts/KaTeX_Caligraphic-Regular.woff2",

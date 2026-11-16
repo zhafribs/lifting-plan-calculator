@@ -254,20 +254,6 @@ impl PageMargins {
     }
 }
 
-/// The auto-render pass, as a string so the backslashes reach JavaScript intact.
-const KATEX_AUTO_RENDER: &str = r#"
-document.addEventListener("DOMContentLoaded", function () {
-  try { renderMathInElement(document.body, {
-    delimiters: [
-      {left: "\\(", right: "\\)", display: false},
-      {left: "\\[", right: "\\]", display: true}
-    ], throwOnError: false, strict: false
-  }); } catch (e) {
-    document.body.setAttribute("data-katex-error", e.message);
-  }
-});
-"#;
-
 /// `body` as a complete page that typesets its own equations, at the default
 /// one-inch margin.
 pub fn wrap_katex(body: &str) -> String {
@@ -303,11 +289,12 @@ pub fn wrap_katex_with(body: &str, margins: PageMargins) -> String {
     out.push_str("<link rel=\"stylesheet\" href=\"vendor/katex/katex.min.css\">");
     out.push_str("<script src=\"vendor/katex/katex.min.js\"></script>");
     out.push_str("<script src=\"vendor/katex/auto-render.min.js\"></script>");
+    // A file, not an inline pass: the app's CSP allows scripts from its own
+    // origin only.
+    out.push_str("<script src=\"vendor/katex/lpc-autorender.js\"></script>");
     out.push_str("</head><body>");
     out.push_str(body);
-    out.push_str("<script>");
-    out.push_str(KATEX_AUTO_RENDER);
-    out.push_str("</script></body></html>");
+    out.push_str("</body></html>");
     out
 }
 
@@ -1308,17 +1295,32 @@ mod tests {
             "<link rel=\"stylesheet\" href=\"vendor/katex/katex.min.css\">",
             "<script src=\"vendor/katex/katex.min.js\"></script>",
             "<script src=\"vendor/katex/auto-render.min.js\"></script>",
+            "<script src=\"vendor/katex/lpc-autorender.js\"></script>",
             "@page { size: A4; margin: 25.4mm; }",
-            "data-katex-error",
-            "throwOnError: false",
-            r#"{left: "\\(", right: "\\)", display: false}"#,
-            r#"{left: "\\[", right: "\\]", display: true}"#,
             "<p>body</p>",
         ] {
             assert!(page.contains(expected), "missing {expected}");
         }
-        assert!(!page.contains("http://"));
-        assert!(!page.contains("https://"));
+        // The app runs under a CSP that allows scripts from its own origin only,
+        // so the report must not carry an inline script.
+        assert!(
+            !page.contains("<script>"),
+            "the report must not carry an inline script"
+        );
+    }
+
+    #[test]
+    fn the_auto_render_pass_is_a_file_that_sets_the_equations() {
+        let script = include_str!("../../ui/vendor/katex/lpc-autorender.js");
+        for expected in [
+            "renderMathInElement",
+            "throwOnError: false",
+            "data-katex-error",
+            "{ left: \"\\\\(\", right: \"\\\\)\", display: false }",
+            "postMessage",
+        ] {
+            assert!(script.contains(expected), "missing {expected}");
+        }
     }
 
     #[test]

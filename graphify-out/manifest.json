@@ -30,9 +30,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/release.yml": {
-    "mtime": 1794829259.7204168,
-    "seen": 1794829426.2776542,
-    "ast_hash": "feea2e527064a7935f9290950a019ed0",
+    "mtime": 1794834388.2945814,
+    "seen": 1794835022.7842557,
+    "ast_hash": "68d62896f08827f10dc9b057df589e0f",
     "semantic_hash": ""
   },
   "build-appimage-portable.sh": {
@@ -66,9 +66,9 @@
     "semantic_hash": "b20dea1f31d5244bada45a9490f1f4ab"
   },
   "src-tauri/Cargo.toml": {
-    "mtime": 1794829259.7234168,
-    "seen": 1794829426.2776618,
-    "ast_hash": "b92f76f5e7badf828a5c2fdbe86d400a",
+    "mtime": 1794834388.2945814,
+    "seen": 1794835022.784265,
+    "ast_hash": "ba607dc48ec090b85fc5cfd4bb21fb31",
     "semantic_hash": ""
   },
   "src-tauri/build.rs": {
@@ -96,9 +96,9 @@
     "semantic_hash": "fa8171b3903ab98be11840c6b87b58a4"
   },
   "src-tauri/src/commands.rs": {
-    "mtime": 1794829259.7234168,
-    "seen": 1794829426.2776687,
-    "ast_hash": "542c742b24064aecc9abcd96ba4ab1dd",
+    "mtime": 1794833125.9740088,
+    "seen": 1794835022.784272,
+    "ast_hash": "c8cf6aad5dc74383ebb7326264468c6d",
     "semantic_hash": ""
   },
   "src-tauri/src/crane.rs": {
@@ -114,9 +114,9 @@
     "semantic_hash": "61098a434ca4c3ebdd8dcb1184841457"
   },
   "src-tauri/src/excel.rs": {
-    "mtime": 1794829259.7244167,
-    "seen": 1794829426.2776716,
-    "ast_hash": "8b3d4dc2688afa94fa6f665fb7673eab",
+    "mtime": 1794833125.9740088,
+    "seen": 1794835022.784275,
+    "ast_hash": "c5295049d12e05c398e980eb29881f0a",
     "semantic_hash": ""
   },
   "src-tauri/src/figures.rs": {
@@ -180,15 +180,15 @@
     "semantic_hash": "74ec3b6b053077beb7084dfbaf3b588a"
   },
   "src-tauri/src/update.rs": {
-    "mtime": 1794570843.1580362,
-    "seen": 1794578094.7970002,
-    "ast_hash": "32dc790fd774aa19332b15debdc2ae1f",
-    "semantic_hash": "32dc790fd774aa19332b15debdc2ae1f"
+    "mtime": 1794834388.2945814,
+    "seen": 1794835022.7842915,
+    "ast_hash": "5daee5dc7df0827345bd8b3b07c23186",
+    "semantic_hash": ""
   },
   "src-tauri/tauri.conf.json": {
-    "mtime": 1794829259.7244167,
-    "seen": 1794829426.277688,
-    "ast_hash": "7cd5bda591b301307126b3b357f37a92",
+    "mtime": 1794834388.2945814,
+    "seen": 1794835022.784293,
+    "ast_hash": "636e5811d521e99719608848715e4218",
     "semantic_hash": ""
   },
   "ui/js/api.js": {
@@ -300,9 +300,9 @@
     "semantic_hash": "3a57d99448f802024d640c81af3341a8"
   },
   "CHANGELOG.md": {
-    "mtime": 1794829259.7204168,
-    "seen": 1794829426.2777123,
-    "ast_hash": "34080fb38b124122929b09bb52bb0c6b",
+    "mtime": 1794834388.2945814,
+    "seen": 1794835022.784317,
+    "ast_hash": "4fba63a9222be3c3acc9200d072f76be",
     "semantic_hash": ""
   },
   "CODE_OF_CONDUCT.md": {
@@ -900,9 +900,9 @@
     "semantic_hash": ""
   },
   "packaging/check-vendored.sh": {
-    "mtime": 1794640444.2981634,
-    "seen": 1794641609.4891608,
-    "ast_hash": "83abe53b3b770ee95adf967a234ffe2d",
+    "mtime": 1794834388.2945814,
+    "seen": 1794835022.7842612,
+    "ast_hash": "fb4021bf43fc65489273e0fc45dfeab3",
     "semantic_hash": ""
   },
   "ui/js/pdf-math.js": {
@@ -1029,6 +1029,42 @@
     "mtime": 1794829259.7224166,
     "seen": 1794829426.2777748,
     "ast_hash": "9081a24cea984a70e083b00e27823d09",
+    "semantic_hash": ""
+  },
+  "docs/council/decisions/0010-workbook-bounds-and-opener.md": {
+    "mtime": 1794833198.3451278,
+    "seen": 1794835022.7843432,
+    "ast_hash": "fa05e0722bafa21ddc14250ecc5420b1",
+    "semantic_hash": ""
+  },
+  "docs/council/decisions/0011-verified-update-and-pinned-tools.md": {
+    "mtime": 1794834388.2945814,
+    "seen": 1794835022.7843444,
+    "ast_hash": "c20d488bb7e10f6f379e806c3a04d294",
+    "semantic_hash": ""
+  },
+  "docs/releases/v2.9.3.md": {
+    "mtime": 1794833198.3451278,
+    "seen": 1794835022.7843704,
+    "ast_hash": "09f7390c752ff52edda1dc2b348a0828",
+    "semantic_hash": ""
+  },
+  "docs/releases/v2.9.4.md": {
+    "mtime": 1794834388.2945814,
+    "seen": 1794835022.7843714,
+    "ast_hash": "b45b5e75f5ba80bc6e675e900e3933ea",
+    "semantic_hash": ""
+  },
+  "ui/fonts/CHECKSUMS.txt": {
+    "mtime": 1794834388.2945814,
+    "seen": 1794835022.7843764,
+    "ast_hash": "bd55636db8708fa8796dad9e11349ccc",
+    "semantic_hash": ""
+  },
+  "ui/vendor/katex/CHECKSUMS.txt": {
+    "mtime": 1794834388.2945814,
+    "seen": 1794835022.7843783,
+    "ast_hash": "981bac6bd1c56c3014d74d5df332d88e",
     "semantic_hash": ""
   }
 }

@@ -2,6 +2,38 @@
 
 Nothing yet.
 
+## [2.12.0] - 2026-11-17
+
+### Security
+
+- **The window runs under a Content-Security-Policy.** Scripts load only from
+  the app's own origin, so an inline script or an inline event handler no longer
+  runs; nothing may be fetched from another origin; the IPC endpoints are the
+  only connection target; plugins and forms are off. The report's KaTeX pass
+  moved from an inline script to `vendor/katex/lpc-autorender.js`, and the
+  preview reports its result by message instead of reading across frames. A
+  sandboxed preview frame was tried and rejected: an opaque origin makes
+  `script-src 'self'` match nothing, so the equations would not typeset.
+
+### Fixed
+
+- **The jib configuration returns to the main boom properly.** Choosing "Boom
+  length" again restores the import's radius basis — the farthest charted radius
+  within the 75% rule, its row mirrored, the jib's table and angle cleared —
+  instead of keeping the jib's reach and a zeroed angle.
+- **A crane without an extended jib no longer offers one.** "Boom length +
+  extended jib" is disabled and greyed when the workbook carries a single jib
+  length, on both the Crane and Graph tabs, and the store refuses it as well.
+- **The Graph tab's boom angle reaches the Crane tab.** It no longer needs a
+  workbook or a live radius: with a workbook an angle edit also publishes the
+  reach it produces, so the chart check and the printed diagram agree with the
+  printed angle. Dragging the crane itself leaves the working radius alone.
+- **A jib boom angle between chart rows is read at the lower row.** Capacity
+  rises with the boom angle, so a value between two rows must not borrow the
+  higher one; the Crane tab's angle select shows the lower row and the check
+  uses that row's capacity. Below the first row the angle is refused as outside
+  the chart.
+
 ## [2.11.0] - 2026-11-16
 
 ### Security

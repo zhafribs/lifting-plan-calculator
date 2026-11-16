@@ -2092,7 +2092,7 @@ dependencies = [
 
 [[package]]
 name = "lifting-plan-calculator"
-version = "2.11.0"
+version = "2.12.0"
 dependencies = [
  "calamine",
  "ed25519-compact",

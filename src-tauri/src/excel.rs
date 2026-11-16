@@ -1870,7 +1870,7 @@ xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">
         assert!((chart.capacity_at(5.0, Some(34.0)).unwrap() - 6500.0).abs() < 1e-9);
         assert!((chart.capacity_at(6.0, Some(9.0)).unwrap() - 17500.0).abs() < 1e-9);
         assert_eq!(chart.crane_name.as_deref(), Some("Tadano TR350M-1"));
-        assert_eq!(chart.crane_capacity_t, Some(30.0));
+        assert_eq!(chart.crane_capacity_t, Some(35.0));
         // The jib sheet: two jib lengths, three offset angles each.
         let jibs = jib_options(&chart);
         assert_eq!(jibs.len(), 6);

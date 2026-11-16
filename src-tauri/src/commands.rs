@@ -158,8 +158,7 @@ pub fn import_chart(
     state: AppState,
     path: String,
 ) -> Result<ChartImport, String> {
-    let bytes = std::fs::read(&path).map_err(|_| "That file could not be opened.".to_string())?;
-    let chart = excel::read_chart(&bytes).map_err(|error| error.0)?;
+    let chart = excel::read_chart_file(Path::new(&path)).map_err(|error| error.0)?;
     let name = Path::new(&path)
         .file_name()
         .map(|name| name.to_string_lossy().to_string())
@@ -1088,26 +1087,36 @@ fn probe_one(app: &tauri::AppHandle, target: &Path) -> Result<(), String> {
 }
 
 /// Open a path or URL with the platform's own opener.
+///
+/// Windows uses `ShellExecuteW` rather than `cmd /C start`, so the target is
+/// data: a file name or URL containing `&`, `|` or `%` cannot become a second
+/// command. `cmd` was the old path, and Rust's argument quoting follows the C
+/// runtime's rules, not cmd's.
 pub fn open_with_desktop(target: &str) -> Result<(), String> {
-    // The desktop opener differs per platform: `xdg-open` on Linux, `start` on
-    // Windows. `start` needs an explicit window-title argument (the empty
-    // string) or it treats the first quoted token of the target as the title.
     #[cfg(target_os = "windows")]
-    let mut command = {
-        let mut command = std::process::Command::new("cmd");
-        command.args(["/C", "start", "", target]);
-        command
-    };
+    {
+        use windows::core::{w, HSTRING};
+        use windows::Win32::UI::Shell::ShellExecuteW;
+        use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+
+        let file = HSTRING::from(target);
+        // SAFETY: the strings outlive the call, and `open` is a fixed verb.
+        let result = unsafe { ShellExecuteW(None, w!("open"), &file, None, None, SW_SHOWNORMAL) };
+        // ShellExecuteW reports success as a value greater than 32.
+        if result.0 as isize > 32 {
+            return Ok(());
+        }
+        return Err("No application could open that.".to_string());
+    }
     #[cfg(not(target_os = "windows"))]
-    let mut command = {
+    {
         let mut command = std::process::Command::new("xdg-open");
         command.arg(target);
-        command
-    };
-    outside_the_appimage(&mut command)
-        .spawn()
-        .map(|_| ())
-        .map_err(|error| format!("No application could open that: {error}"))
+        outside_the_appimage(&mut command)
+            .spawn()
+            .map(|_| ())
+            .map_err(|error| format!("No application could open that: {error}"))
+    }
 }
 
 /// Open a saved report in the desktop's own browser.

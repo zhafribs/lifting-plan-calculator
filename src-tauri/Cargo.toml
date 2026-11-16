@@ -38,6 +38,8 @@ webkit2gtk = "2.0"
 [target.'cfg(target_os = "windows")'.dependencies]
 webview2-com = "0.39"
 windows-core = "0.62"
+# ShellExecuteW for the desktop opener: a URL or file name must never reach a shell.
+windows = { version = "0.62", features = ["Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }
 
 [dev-dependencies]
 zip = "9.5.1"

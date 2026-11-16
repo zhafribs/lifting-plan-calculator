@@ -13,7 +13,7 @@ use std::sync::mpsc::{self, Sender};
 use std::time::Duration;
 
 use tauri::webview::PageLoadEvent;
-use tauri::{Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri::{WebviewUrl, WebviewWindowBuilder};
 use webview2_com::Microsoft::Web::WebView2::Win32::{
     ICoreWebView2_7, ICoreWebView2Environment6,
 };
@@ -88,7 +88,7 @@ pub fn print_to_pdf(
                 let environment = platform.environment();
                 // The closure cannot return a value, so every failure is sent
                 // through the same channel the success uses.
-                let outcome = print(&controller, &environment, &target, done_tx.clone());
+                let outcome = print(&controller, &environment, &target, margins, done_tx.clone());
                 if let Err(error) = outcome {
                     let _ = done_tx.send(Err(error));
                 }
@@ -112,6 +112,7 @@ fn print(
     controller: &webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Controller,
     environment: &webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Environment,
     target: &Path,
+    margins: crate::report::PageMargins,
     done: Sender<Result<(), String>>,
 ) -> Result<(), String> {
     // SAFETY: every call is on the WebView2 UI thread, inside `with_webview`,
@@ -132,7 +133,7 @@ fn print(
             .CreatePrintSettings()
             .map_err(|error| format!("The print settings could not be created: {error}"))?;
         // A4, with the margin the operator chose (WebView2 takes inches).
-        let inches = |mm: f64| (mm / 25.4) as f64;
+        let inches = |mm: f64| mm / 25.4;
         settings.SetPageWidth(8.27).ok();
         settings.SetPageHeight(11.69).ok();
         settings.SetMarginTop(inches(margins.top)).ok();

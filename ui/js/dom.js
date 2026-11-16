@@ -1,5 +1,12 @@
 // Tiny DOM helpers: enough structure to build screens without a framework.
 
+/** Escape text for the one place a document is built as a string (srcdoc). */
+export function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, (character) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#x27;" })[character],
+  );
+}
+
 export function el(tag, props = {}, ...children) {
   const node = document.createElement(tag);
   for (const [key, value] of Object.entries(props || {})) {

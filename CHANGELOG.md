@@ -19,6 +19,8 @@ Nothing yet.
   an arbitrary file.
 - The report save dialog is pre-filled with a leaf name only, and the file is
   written with an `.html` extension.
+- The preview's error message is escaped before it is written into the frame, so
+  an error carrying markup can no longer become markup.
 - The release job records each artifact's SHA-256 where it was built and the
   publish job refuses a download that does not match, so `SHA256SUMS.txt` is no
   longer a restatement of whatever the artifact store held.

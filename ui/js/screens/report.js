@@ -1,6 +1,6 @@
 // Summary: the printable calculation report, typeset with the bundled KaTeX.
 
-import { el, svgIcon, debounce } from "../dom.js";
+import { el, svgIcon, debounce, escapeHtml } from "../dom.js";
 import { api, errorText } from "../api.js";
 import { card, field, textInput } from "../components.js";
 import { captureWorkingDiagram } from "../graph/snapshot.js";
@@ -576,7 +576,7 @@ export function createReportScreen(ctx) {
         if (fonts && fonts.ready) fonts.ready.then(fitFrame, () => {});
       };
     } catch (error) {
-      frame.srcdoc = `<p style="font-family: sans-serif; color: #9b1c1c; padding: 16px">${errorText(error)}</p>`;
+      frame.srcdoc = `<p style="font-family: sans-serif; color: #9b1c1c; padding: 16px">${escapeHtml(errorText(error))}</p>`;
     }
   }
 

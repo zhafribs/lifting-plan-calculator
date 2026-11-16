@@ -11,6 +11,11 @@
 - The Crane tab labels its machine field **Crane name**, matching the value it
   holds.
 
+- In the uniform report, a direct hitch's **Sling Angle Factor (AF)** and
+  **Base Reeve Factor (RF)** are printed side by side, the way the crane's
+  required capacity and usage are. A nested or basket arrangement builds its
+  angle factor in several steps, so those stay one under the other.
+
 ### Removed
 
 - The crane's booked rating is no longer checked against the 75% rule. The load

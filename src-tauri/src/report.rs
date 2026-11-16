@@ -447,6 +447,23 @@ fn metric_cell_html(key: &str, value: &str, note_html: &str) -> String {
     out
 }
 
+/// Two workings side by side: a label and its formula in each cell.
+///
+/// The report's one two-column row, so a pair of formulas that are read
+/// together (the crane's required capacity and usage, a sling's angle factor
+/// and reeve factor) costs one row instead of two.
+pub fn working_pair(left: &str, right: &str) -> String {
+    format!(
+        "<div class=\"working-wrap\"><table class=\"working\"><tbody>\
+         <tr><td>{left}</td><td>{right}</td></tr></tbody></table></div>"
+    )
+}
+
+/// A working block: a label and the formula under it.
+pub fn work_block(label: &str, formula: &str) -> String {
+    format!("<div class=\"work-label\">{}</div>{formula}", escape(label))
+}
+
 /// `48.00°` rather than `48.00 °` in the head's prose.
 fn degrees(angle: f64) -> String {
     fmt(Some(angle), 2, "\u{00b0}").replace(" \u{00b0}", "\u{00b0}")
@@ -782,9 +799,7 @@ fn crane_section(crane: &CraneResult, gross: f64) -> String {
         ))
     );
 
-    format!(
-        "<div class=\"working-wrap\"><table class=\"working\"><tbody><tr><td>{right}</td><td>{left}</td></tr></tbody></table></div>"
-    )
+    working_pair(&right, &left)
 }
 
 #[cfg(test)]
@@ -910,6 +925,41 @@ mod tests {
         no_weight.chart_capacity_kg = Some(16_000.0);
         no_weight.capacity_usage_percent = None;
         assert!(metrics_table(&no_weight, 0.0).contains("enter the lift weight"));
+    }
+
+    #[test]
+    fn a_direct_hitch_reads_its_angle_and_reeve_factors_side_by_side() {
+        use crate::sling::{example_inputs, solve_one_leg};
+
+        let inputs = ReportInputs {
+            totals: LiftTotals::of(
+                &[LoadItem {
+                    weight_kg: 5000.0,
+                    ..LoadItem::default()
+                }],
+                &[] as &[TackleItem],
+            ),
+            sling: Some(
+                solve_one_leg(&example_inputs("two_leg_direct").unwrap(), 5000.0).unwrap(),
+            ),
+            ..ReportInputs::default()
+        };
+        let html = build_report_html(&inputs, &["uniform".to_string()]);
+        // The two factors sit in one row: the angle block's cell is followed
+        // straight by the reeve block's cell.
+        assert!(html.contains("<div class=\"work-label\">Sling Angle Factor (AF)</div>"));
+        assert!(html.contains(
+            "</div></td><td><div class=\"work-label\">Base Reeve Factor (RF)</div>"
+        ));
+        // A stacked arrangement still prints the reeve factor as its own row.
+        let nested = ReportInputs {
+            sling: Some(
+                solve_one_leg(&example_inputs("two_leg_nested_3leg").unwrap(), 5000.0).unwrap(),
+            ),
+            ..inputs
+        };
+        let nested_html = build_report_html(&nested, &["uniform".to_string()]);
+        assert!(nested_html.contains("<h3>Base Reeve Factor (RF):</h3>"));
     }
 
     #[test]

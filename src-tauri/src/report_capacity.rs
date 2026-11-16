@@ -2,7 +2,7 @@
 //! capacity and equipment selection, and the notes. Ported from
 //! `ReportCapacity.kt`.
 
-use crate::report::{equation, fmt, heading, p, subheading, tex_deg, tex_num};
+use crate::report::{equation, fmt, heading, p, subheading, tex_deg, tex_num, work_block, working_pair};
 use crate::sling::{HitchSpec, SlingResult, SINGLE_LEG};
 
 /// The four arrangements a choke reduction applies to.
@@ -42,6 +42,7 @@ pub fn factors_section(result: &SlingResult, spec: &HitchSpec) -> String {
     let eff = result.effective_legs;
     let tension = result.tension_each;
     let mut out = vec![heading(4, "Rigging Factors & Tension Calculations")];
+    let mut simple_angle: Option<String> = None;
 
     if result.nested != 0 {
         let af_long = result.af_long.unwrap_or(1.0);
@@ -122,26 +123,45 @@ pub fn factors_section(result: &SlingResult, spec: &HitchSpec) -> String {
             tex_num(Some(af), 3)
         )));
     } else {
-        out.push(subheading("Sling Angle Factor (AF):"));
-        if CHOKE_KEYS.contains(&key) {
-            out.push(p("The main lifting leg stands perfectly vertical (0\u{00b0}).", ""));
-        }
-        if key == "round_choke" || key == "rect_choke" {
-            out.push(equation("\\text{AF} = \\cos(0^\\circ) = 1.0"));
+        let formula = if key == "round_choke" || key == "rect_choke" {
+            equation("\\text{AF} = \\cos(0^\\circ) = 1.0")
         } else {
-            out.push(equation(&format!(
+            equation(&format!(
                 "\\text{{AF}} = \\cos({}) = {}",
                 tex_deg(Some(angle), 2),
                 tex_num(Some(af), 3)
-            )));
-        }
+            ))
+        };
+        let note = if CHOKE_KEYS.contains(&key) {
+            p("The main lifting leg stands perfectly vertical (0\u{00b0}).", "")
+        } else {
+            String::new()
+        };
+        simple_angle = Some(format!(
+            "{}{}{}",
+            work_block("Sling Angle Factor (AF)", ""),
+            note,
+            formula
+        ));
     }
 
-    out.push(subheading("Base Reeve Factor (RF):"));
-    out.push(equation(&format!(
+    let reeve_formula = equation(&format!(
         "\\text{{RF}}_{{Base}} = {}",
         tex_num(Some(rf), 2)
-    )));
+    ));
+    match simple_angle {
+        // The two factors the tension formula multiplies, read side by side.
+        Some(angle_block) => out.push(working_pair(
+            &angle_block,
+            &work_block("Base Reeve Factor (RF)", &reeve_formula),
+        )),
+        // A nested or basket arrangement builds its angle factor in several
+        // steps; the factors stay one under the other so the chain reads down.
+        None => {
+            out.push(subheading("Base Reeve Factor (RF):"));
+            out.push(reeve_formula);
+        }
+    }
     if CHOKE_KEYS.contains(&key) {
         out.push(subheading("Choke Angle Reduction Factor:"));
         out.push(equation(&format!(

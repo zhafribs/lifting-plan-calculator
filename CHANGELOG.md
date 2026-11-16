@@ -2,6 +2,25 @@
 
 Nothing yet.
 
+## [2.9.4] - 2026-11-16
+
+### Fixed
+
+- The Windows updater now verifies the installer's SHA-256 against the checksum
+  manifest published with that release before it runs it. A download that is not
+  listed, does not match, or cannot be read is deleted and never executed.
+- The release build pins the Tauri CLI archive by SHA-256 for both platforms and
+  verifies it before extraction; the cache key includes the digest, so a restored
+  cache is the verified archive.
+- The vendored-code check now covers KaTeX and the bundled fonts, not only
+  pdf.js.
+
+### Security
+
+- This verifies integrity, not authorship: the checksum manifest is served from
+  the same release. Signing the manifest remains the next step and is not claimed
+  here.
+
 ## [2.9.3] - 2026-11-16
 
 ### Fixed

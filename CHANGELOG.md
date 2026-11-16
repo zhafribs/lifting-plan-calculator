@@ -1,6 +1,9 @@
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+
+- The Excel workbook table starts collapsed after an import, so the chart
+  controls stay in view. Click the table toggle to read the rows.
 
 ## [2.12.0] - 2026-11-17
 

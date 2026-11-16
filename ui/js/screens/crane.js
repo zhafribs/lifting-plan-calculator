@@ -51,7 +51,7 @@ export function createCraneScreen(ctx) {
   const radiusWrap = el("div", { class: "field" });
   const workbookBox = el("div", {});
   const positionLine = el("div", { class: "faint small", style: { margin: "10px 0 0" } });
-  let tableOpen = true;
+  let tableOpen = false;
   let lastTable = null;
   const workbookSection = el(
     "div",
@@ -369,8 +369,9 @@ export function createCraneScreen(ctx) {
   }
 
   // The workbook table under the chart controls, foldable: the toggle header
-  // stays put, the table body comes and goes. The open state lasts while the
-  // tab lives, like every other form state.
+  // stays put, the table body comes and goes. It starts collapsed so the chart
+  // controls stay in view after an import; the open state lasts while the tab
+  // lives, like every other form state.
   function renderWorkbookTable(table) {
     // The table only changes with the workbook (or the fold); untouched across
     // re-solves, it stays put — rewriting it under the operator's scroll is

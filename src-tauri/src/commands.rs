@@ -12,7 +12,7 @@ use crate::dto::{build_catalog, table_for, AppState, Catalog, ChartImport, Chart
 use crate::excel::{
     self, boom_changed, forget_chart, imported_inputs, radius_changed, LoadChartData,
 };use crate::nonuniform::{solve_nonuniform, NonuniformResult};
-use crate::report::{build_report_html, wrap_katex, ReportInputs};
+use crate::report::{build_report_html, wrap_katex_with, ReportInputs};
 use crate::sling::solve_one_leg;
 
 /// The parsed workbook behind the current import, held for the boom and radius
@@ -256,6 +256,7 @@ pub fn build_report(
     signoff: PlanSignoff,
     working_diagram: Option<String>,
     footer_center: Option<String>,
+    margins: Option<crate::report::PageMargins>,
 ) -> String {
     let solved = solve_all_internal(&state);
     let tandem = match solved.tandem.result {
@@ -276,7 +277,10 @@ pub fn build_report(
         working_diagram,
         footer_center,
     };
-    wrap_katex(&build_report_html(&inputs, &include))
+    wrap_katex_with(
+        &build_report_html(&inputs, &include),
+        margins.unwrap_or_default(),
+    )
 }
 
 /// Save the report beside a copy of its KaTeX assets, so the file typesets its
@@ -455,11 +459,24 @@ static PREVIEW_LOCK: Mutex<()> = Mutex::new(());
 const SUPERSEDED: &str = "The preview was superseded by a newer change.";
 
 /// A cheap, stable key for a report: its HTML and the footer it is printed with.
-fn report_key(html: &str, footer: &crate::pdf::Footer) -> u64 {
+fn report_key(
+    html: &str,
+    footer: &crate::pdf::Footer,
+    margins: crate::report::PageMargins,
+) -> u64 {
     // FNV-1a, 64-bit: comparing the whole report would cost as much as the
     // render it is avoiding.
     let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
-    for bytes in [html.as_bytes(), footer.reference.as_bytes(), footer.center.as_bytes()] {
+    let margin_key = format!(
+        "{:.2},{:.2},{:.2},{:.2}",
+        margins.top, margins.right, margins.bottom, margins.left
+    );
+    for bytes in [
+        html.as_bytes(),
+        footer.reference.as_bytes(),
+        footer.center.as_bytes(),
+        margin_key.as_bytes(),
+    ] {
         for byte in bytes {
             hash ^= *byte as u64;
             hash = hash.wrapping_mul(0x1000_0000_01b3);
@@ -490,10 +507,11 @@ fn render_plan_bytes(
     app: &tauri::AppHandle,
     html: &str,
     footer: &crate::pdf::Footer,
+    margins: crate::report::PageMargins,
 ) -> Result<Vec<u8>, String> {
     let workspace = private_workspace()?;
     let path = workspace.join("plan.pdf");
-    let rendered = render_pdf_into(app, html, &path, footer);
+    let rendered = render_pdf_into(app, html, &path, footer, margins);
     let bytes = match rendered {
         Ok(()) => std::fs::read(&path)
             .map_err(|error| format!("The preview could not be read back: {error}")),
@@ -510,9 +528,11 @@ pub async fn preview_pdf(
     app: tauri::AppHandle,
     html: String,
     footer: Option<PdfFooter>,
+    margins: Option<crate::report::PageMargins>,
 ) -> Result<tauri::ipc::Response, String> {
     let footer = printed_footer(footer.as_ref());
-    let key = report_key(&html, &footer);
+    let margins = margins.unwrap_or_default().clamped();
+    let key = report_key(&html, &footer, margins);
     if let Some(bytes) = cached_preview(key) {
         return Ok(tauri::ipc::Response::new(bytes));
     }
@@ -527,7 +547,7 @@ pub async fn preview_pdf(
         if superseded(generation) {
             return Err(SUPERSEDED.to_string());
         }
-        let bytes = render_plan_bytes(&app, &html, &footer)?;
+        let bytes = render_plan_bytes(&app, &html, &footer, margins)?;
         if superseded(generation) {
             return Err(SUPERSEDED.to_string());
         }
@@ -541,14 +561,20 @@ pub async fn preview_pdf(
     Ok(tauri::ipc::Response::new(bytes))
 }
 
-fn render_pdf(app: &tauri::AppHandle, html: &str, target: &Path, footer: &crate::pdf::Footer) -> Result<(), String> {
+fn render_pdf(
+    app: &tauri::AppHandle,
+    html: &str,
+    target: &Path,
+    footer: &crate::pdf::Footer,
+    margins: crate::report::PageMargins,
+) -> Result<(), String> {
     // The pages are printed, and then footered, into a staging file beside the
     // target. Only a finished PDF ever reaches the path the operator chose, so a
     // failed footer cannot leave a plan without its reference and page numbers.
     sweep_stale_attempts(target);
     let staging = staged_path(target);
     let _ = std::fs::remove_file(&staging);
-    let rendered = render_pdf_into(app, html, &staging, footer);
+    let rendered = render_pdf_into(app, html, &staging, footer, margins);
     match rendered {
         Ok(()) => move_into_place(&staging, target),
         Err(error) => {
@@ -563,6 +589,7 @@ fn render_pdf_into(
     html: &str,
     target: &Path,
     footer: &crate::pdf::Footer,
+    margins: crate::report::PageMargins,
 ) -> Result<(), String> {
     let temp = private_workspace()?;
     let html_path = temp.join("report.html");
@@ -580,10 +607,11 @@ fn render_pdf_into(
         app,
         file_url(&html_path),
         target.to_path_buf(),
+        margins,
     )
     .map(|()| target.to_path_buf());
     #[cfg(target_os = "windows")]
-    let printed = print_on_windows(app, &html_path, &temp, target);
+    let printed = print_on_windows(app, &html_path, &temp, target, margins);
 
     let _ = std::fs::remove_dir_all(&temp);
     let printed = printed?;
@@ -595,7 +623,7 @@ fn render_pdf_into(
         check_pdf(&printed)?;
         let stamped = sibling_path(&printed, "stamped");
         let _ = std::fs::remove_file(&stamped);
-        let outcome = crate::pdf::stamp_to(&printed, &stamped, footer)
+        let outcome = crate::pdf::stamp_to(&printed, &stamped, footer, margins)
             .and_then(|()| check_pdf(&stamped))
             .and_then(|()| move_into_place(&stamped, target));
         if outcome.is_err() {
@@ -618,6 +646,7 @@ fn print_on_windows(
     html_path: &Path,
     temp: &Path,
     target: &Path,
+    margins: crate::report::PageMargins,
 ) -> Result<std::path::PathBuf, String> {
     // Beside the target, not in the temp workspace: Windows cannot rename across
     // volumes, and the operator's folder is often on another drive.
@@ -626,7 +655,7 @@ fn print_on_windows(
     let _ = std::fs::remove_file(&in_app);
     let _ = std::fs::remove_file(&via_edge);
 
-    let in_app_result = crate::pdf_windows::print_to_pdf(app, html_path, &in_app)
+    let in_app_result = crate::pdf_windows::print_to_pdf(app, html_path, &in_app, margins)
         .and_then(|()| check_pdf(&in_app));
     match in_app_result {
         Ok(()) => Ok(in_app),
@@ -870,6 +899,7 @@ pub async fn save_pdf(
     html: String,
     suggested_name: String,
     footer: Option<PdfFooter>,
+    margins: Option<crate::report::PageMargins>,
 ) -> Result<Option<String>, String> {
     let handle = rfd::AsyncFileDialog::new()
         .set_title("Save lifting plan as PDF")
@@ -891,7 +921,8 @@ pub async fn save_pdf(
     }
 
     let footer = printed_footer(footer.as_ref());
-    let key = report_key(&html, &footer);
+    let margins = margins.unwrap_or_default().clamped();
+    let key = report_key(&html, &footer, margins);
     let cached = cached_preview(key);
 
     let target_for_render = target.clone();
@@ -905,7 +936,7 @@ pub async fn save_pdf(
             let _guard = PREVIEW_LOCK
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner());
-            render_pdf(&app, &html, &target_for_render, &footer)
+            render_pdf(&app, &html, &target_for_render, &footer, margins)
         }
     })
     .await
@@ -1028,7 +1059,13 @@ fn probe_one(app: &tauri::AppHandle, target: &Path) -> Result<(), String> {
          <p>PROBE-MARKER</p></div></body></html>",
         crate::report::REPORT_CSS
     );
-    render_pdf(app, &html, target, &footer)?;
+    render_pdf(
+        app,
+        &html,
+        target,
+        &footer,
+        crate::report::PageMargins::default(),
+    )?;
     check_pdf(target)?;
 
     // The footer must be on the page, and the page must be a real one.
@@ -1197,21 +1234,45 @@ mod pdf_export_tests {
             reference: "LP-1".to_string(),
             center: "Credit".to_string(),
         };
-        let base = report_key("<p>plan</p>", &footer);
-        assert_eq!(base, report_key("<p>plan</p>", &footer));
+        let base = report_key(
+            "<p>plan</p>",
+            &footer,
+            crate::report::PageMargins::default(),
+        );
+        assert_eq!(
+            base,
+            report_key("<p>plan</p>", &footer, crate::report::PageMargins::default())
+        );
 
         let other_footer = crate::pdf::Footer {
             reference: "LP-2".to_string(),
             center: "Credit".to_string(),
         };
-        assert_ne!(base, report_key("<p>plan</p>", &other_footer));
-        assert_ne!(base, report_key("<p>plan 2</p>", &footer));
+        assert_ne!(
+            base,
+            report_key(
+                "<p>plan</p>",
+                &other_footer,
+                crate::report::PageMargins::default()
+            )
+        );
+        assert_ne!(
+            base,
+            report_key("<p>plan 2</p>", &footer, crate::report::PageMargins::default())
+        );
         // A credit-line edit is a different printed footer, so a different key.
         let other_credit = crate::pdf::Footer {
             reference: "LP-1".to_string(),
             center: "Someone else".to_string(),
         };
-        assert_ne!(base, report_key("<p>plan</p>", &other_credit));
+        assert_ne!(
+            base,
+            report_key(
+                "<p>plan</p>",
+                &other_credit,
+                crate::report::PageMargins::default()
+            )
+        );
     }
 
     #[test]

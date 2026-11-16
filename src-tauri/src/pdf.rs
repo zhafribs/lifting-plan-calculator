@@ -25,20 +25,23 @@ const FONT: &[u8] = include_bytes!("../assets/fonts/LiberationSerif-Regular.ttf"
 const FONT_NAME: &str = "LiberationSerif";
 /// The font resource the footer is drawn with, as a PDF name.
 const FONT_KEY: &str = "LPCFooter";
-/// 25.4 mm: the report's own 1-inch content margin.
-pub const MARGIN_PT: f32 = report_margin_pt();
-/// The baseline, 11.6 mm up from the page's bottom edge — where the Chromium
-/// build put the footer, so the plan keeps the same look.
-const BASELINE_PT: f32 = 33.0;
+/// The baseline sat 33 pt up a one-inch (72 pt) bottom margin; a smaller or
+/// larger margin keeps the same share of it, so the footer stays inside the
+/// margin it belongs to.
+const BASELINE_SHARE: f32 = 33.0 / 72.0;
 /// 6 pt, the same size the report's margin boxes used.
 const SIZE_PT: f32 = 6.0;
 /// `#555`, the footer's grey.
 const GREY: f32 = 0.333;
 
-/// The report's page margin, converted from the millimetres its CSS declares to
-/// the points this module draws in. One number, so the two cannot drift.
-const fn report_margin_pt() -> f32 {
-    (crate::report::PRINT_MARGIN_MM as f32) * 72.0 / 25.4
+/// A margin in millimetres, in the points this module draws in.
+fn margin_pt(mm: f64) -> f32 {
+    (mm as f32) * 72.0 / 25.4
+}
+
+/// Where the footer's baseline sits, given the page's bottom margin.
+fn baseline_pt(bottom_mm: f64) -> f32 {
+    (margin_pt(bottom_mm) * BASELINE_SHARE).max(6.0)
 }
 
 /// The text that runs along the bottom of every page.
@@ -51,10 +54,14 @@ pub struct Footer {
 }
 
 /// Draw the footer onto every page of the PDF at `path`, in place.
-pub fn stamp(path: &Path, footer: &Footer) -> Result<(), String> {
+pub fn stamp(
+    path: &Path,
+    footer: &Footer,
+    margins: crate::report::PageMargins,
+) -> Result<(), String> {
     let mut doc = Document::load(path)
         .map_err(|error| format!("The saved PDF could not be reopened for its footer: {error}"))?;
-    finish(&mut doc, footer)?;
+    finish(&mut doc, footer, margins)?;
     doc.save(path)
         .map_err(|error| format!("The PDF footer could not be written: {error}"))?;
     Ok(())
@@ -63,16 +70,26 @@ pub fn stamp(path: &Path, footer: &Footer) -> Result<(), String> {
 /// Draw the footer into a new file, leaving the printed original untouched.
 /// The Windows engine can still hold its output when the print reports
 /// finished, so writing beside it is safer than writing over it.
-pub fn stamp_to(source: &Path, target: &Path, footer: &Footer) -> Result<(), String> {
+pub fn stamp_to(
+    source: &Path,
+    target: &Path,
+    footer: &Footer,
+    margins: crate::report::PageMargins,
+) -> Result<(), String> {
     let mut doc = Document::load(source)
         .map_err(|error| format!("The printed PDF could not be reopened for its footer: {error}"))?;
-    finish(&mut doc, footer)?;
+    finish(&mut doc, footer, margins)?;
     doc.save(target)
         .map_err(|error| format!("The PDF footer could not be written: {error}"))?;
     Ok(())
 }
 
-fn finish(doc: &mut Document, footer: &Footer) -> Result<(), String> {
+fn finish(
+    doc: &mut Document,
+    footer: &Footer,
+    margins: crate::report::PageMargins,
+) -> Result<(), String> {
+    let margins = margins.clamped();
     let pages: Vec<ObjectId> = doc.get_pages().into_values().collect();
     if pages.is_empty() {
         return Err("The saved PDF has no pages, so the footer could not be written.".to_string());
@@ -83,8 +100,8 @@ fn finish(doc: &mut Document, footer: &Footer) -> Result<(), String> {
     let mut lines: Vec<(String, String, String)> = Vec::with_capacity(total);
     let mut bounds: Vec<(f32, f32, f32)> = Vec::with_capacity(total);
     for (index, page) in pages.iter().enumerate() {
-        let (left, right) = page_bounds(doc, *page)?;
-        bounds.push((left, right, baseline(doc, *page)?));
+        let (left, right) = page_bounds(doc, *page, margins)?;
+        bounds.push((left, right, baseline(doc, *page, margins)?));
         lines.push((
             footer.reference.clone(),
             footer.center.clone(),
@@ -468,12 +485,20 @@ fn font_file(doc: &mut Document) -> ObjectId {
 /// A rotated page is refused rather than stamped in the wrong place: the report
 /// is never printed rotated, and a footer across the side of a page would be
 /// worse than a failed save.
-fn page_bounds(doc: &Document, page: ObjectId) -> Result<(f32, f32), String> {
+fn page_bounds(
+    doc: &Document,
+    page: ObjectId,
+    margins: crate::report::PageMargins,
+) -> Result<(f32, f32), String> {
     let (llx, urx) = media_box(doc, page)?;
-    Ok((llx + MARGIN_PT, urx - MARGIN_PT))
+    Ok((llx + margin_pt(margins.left), urx - margin_pt(margins.right)))
 }
 
-fn baseline(doc: &Document, page: ObjectId) -> Result<f32, String> {
+fn baseline(
+    doc: &Document,
+    page: ObjectId,
+    margins: crate::report::PageMargins,
+) -> Result<f32, String> {
     let mut current = page;
     for _ in 0..8 {
         let dict = read_dict(doc, current, "page")?;
@@ -487,7 +512,7 @@ fn baseline(doc: &Document, page: ObjectId) -> Result<f32, String> {
             }
         }
         match dict.get(b"MediaBox") {
-            Ok(_) => return Ok(BASELINE_PT),
+            Ok(_) => return Ok(baseline_pt(margins.bottom)),
             _ => {
                 current = dict
                     .get(b"Parent")
@@ -735,14 +760,28 @@ mod tests {
     }
 
     #[test]
+    fn the_footer_keeps_its_share_of_the_bottom_margin() {
+        // One inch puts the baseline where the Chromium build did.
+        assert!((baseline_pt(crate::report::PRINT_MARGIN_MM) - 33.0).abs() < 0.01);
+        // A narrower margin lifts the footer with it, and never into the page.
+        let half = baseline_pt(12.7);
+        assert!(half < 33.0 && half > 10.0, "{half}");
+        assert!(baseline_pt(5.0) >= 6.0);
+    }
+
+    #[test]
     fn every_page_carries_the_reference_credit_and_counter() {
         let (mut doc, pages) = document();
         let path = save(&mut doc, "plan.pdf");
 
-        stamp(&path, &Footer {
+        stamp(
+            &path,
+            &Footer {
             reference: "LP-2026-014".to_string(),
             center: "Prepared by A. Rigger".to_string(),
-        })
+        },
+            crate::report::PageMargins::default(),
+        )
         .unwrap();
 
         let doc = Document::load(&path).unwrap();
@@ -773,10 +812,14 @@ mod tests {
     fn the_footer_font_reaches_the_page_through_its_resources() {
         let (mut doc, pages) = document();
         let path = save(&mut doc, "resources.pdf");
-        stamp(&path, &Footer {
+        stamp(
+            &path,
+            &Footer {
             reference: "REF".to_string(),
             center: "Credit".to_string(),
-        })
+        },
+            crate::report::PageMargins::default(),
+        )
         .unwrap();
 
         let doc = Document::load(&path).unwrap();
@@ -808,8 +851,9 @@ mod tests {
     fn the_margin_is_one_constant_across_the_report_and_the_footer() {
         // 25.4 mm is 72 pt; the CSS margin, the GTK page setup and the footer's
         // x position must all come from the same number.
-        assert!((MARGIN_PT - 72.0).abs() < 0.01, "{MARGIN_PT}");
-        assert!((MARGIN_PT - crate::report::PRINT_MARGIN_MM as f32 * 72.0 / 25.4).abs() < 0.01);
+        let one_inch = margin_pt(crate::report::PRINT_MARGIN_MM);
+        assert!((one_inch - 72.0).abs() < 0.01, "{one_inch}");
+        assert!((baseline_pt(crate::report::PRINT_MARGIN_MM) - 33.0).abs() < 0.01);
     }
 
     #[test]
@@ -834,10 +878,14 @@ mod tests {
         page.set("Rotate", 90);
         let path = save(&mut doc, "rotated.pdf");
 
-        let error = stamp(&path, &Footer {
+        let error = stamp(
+            &path,
+            &Footer {
             reference: "REF".to_string(),
             center: "Credit".to_string(),
-        })
+        },
+            crate::report::PageMargins::default(),
+        )
         .expect_err("a rotated page must not be stamped");
         assert!(error.contains("rotated"), "{error}");
     }
@@ -856,10 +904,14 @@ mod tests {
         page.set("Contents", array);
         let path = save(&mut doc, "contents-array.pdf");
 
-        stamp(&path, &Footer {
+        stamp(
+            &path,
+            &Footer {
             reference: "REF".to_string(),
             center: "Credit".to_string(),
-        })
+        },
+            crate::report::PageMargins::default(),
+        )
         .unwrap();
 
         let doc = Document::load(&path).unwrap();
@@ -891,10 +943,14 @@ mod tests {
         }
         drop(before);
 
-        stamp(&path, &Footer {
+        stamp(
+            &path,
+            &Footer {
             reference: "Nguyễn Văn Ánh — LP/2026 (A)".to_string(),
             center: "Prepared by A. Rigger".to_string(),
-        })
+        },
+            crate::report::PageMargins::default(),
+        )
         .unwrap();
 
         let after = Document::load(&path).unwrap();

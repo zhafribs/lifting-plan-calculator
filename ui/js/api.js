@@ -17,12 +17,21 @@ export const api = {
   pickChartFile: () => invoke("pick_chart_file"),
   importChart: (state, path) => invoke("import_chart", { state, path }),
   chartUpdate: (crane, action) => invoke("chart_update", { crane, action }),
-  buildReport: (state, include, issuedAt, signoff, workingDiagram, footerCenter) =>
-    invoke("build_report", { state, include, issuedAt, signoff, workingDiagram, footerCenter }),
+  buildReport: (state, include, issuedAt, signoff, workingDiagram, footerCenter, margins) =>
+    invoke("build_report", {
+      state,
+      include,
+      issuedAt,
+      signoff,
+      workingDiagram,
+      footerCenter,
+      margins,
+    }),
   saveReport: (html, suggestedName) => invoke("save_report", { html, suggestedName }),
-  savePdf: (html, suggestedName, footer) => invoke("save_pdf", { html, suggestedName, footer }),
+  savePdf: (html, suggestedName, footer, margins) =>
+    invoke("save_pdf", { html, suggestedName, footer, margins }),
   // The report as PDF bytes, for the Summary page view (an ArrayBuffer).
-  previewPdf: (html, footer) => invoke("preview_pdf", { html, footer }),
+  previewPdf: (html, footer, margins) => invoke("preview_pdf", { html, footer, margins }),
   openReportFile: (path) => invoke("open_report_file", { path }),
   checkUpdate: () => invoke("check_update"),
   installUpdate: (asset) => invoke("install_update", { asset }),

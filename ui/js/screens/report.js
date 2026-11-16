@@ -141,6 +141,162 @@ export function createReportScreen(ctx) {
   const pagesButton = previewButton("pages", "Pages", "The report as the PDF that will be saved");
   const liveButton = previewButton("live", "Live", "The report as it is being typed");
 
+  // --- Page margins -------------------------------------------------------
+  // Millimetres, session-only like the plan itself: the print, the footer and
+  // the exported HTML all take these four numbers, so the page cannot be
+  // printed with one margin and labelled with another.
+  let margins = { top: 25.4, right: 25.4, bottom: 25.4, left: 25.4 };
+  const MARGIN_MIN = 5;
+  const MARGIN_MAX = 50;
+  const marginInputs = {};
+  const marginHint = el("span", { class: "margin-hint" });
+  const marginError = el("p", { class: "margin-error", role: "alert", hidden: true });
+
+  const marginSides = [
+    ["top", "Top"],
+    ["right", "Right"],
+    ["bottom", "Bottom"],
+    ["left", "Left"],
+  ];
+  const marginGrid = el(
+    "div",
+    { class: "margin-grid" },
+    ...marginSides.map(([key, label]) => {
+      const input = el("input", {
+        type: "number",
+        min: String(MARGIN_MIN),
+        max: String(MARGIN_MAX),
+        step: "1",
+        value: String(margins[key]),
+      });
+      input.addEventListener("input", updateMarginHint);
+      marginInputs[key] = input;
+      return field({ label, unit: "mm", input });
+    }),
+  );
+  const applyMargins = el(
+    "button",
+    { class: "btn primary small", onClick: () => applyPageMargins() },
+    "Apply",
+  );
+  function presetMargins(mm) {
+    for (const [key] of marginSides) marginInputs[key].value = String(mm);
+    updateMarginHint();
+  }
+  const marginPanel = el(
+    "div",
+    {
+      class: "margin-panel",
+      role: "dialog",
+      "aria-label": "Page margins",
+      hidden: true,
+    },
+    el("h4", { text: "Page margins" }),
+    marginGrid,
+    el(
+      "div",
+      { class: "margin-presets" },
+      el("button", { class: "btn small", onClick: () => presetMargins(25.4) }, "1 inch"),
+      el("button", { class: "btn small", onClick: () => presetMargins(20) }, "20 mm"),
+      el("button", { class: "btn small", onClick: () => presetMargins(12.7) }, "0.5 inch"),
+      el("button", { class: "btn small", onClick: () => presetMargins(10) }, "10 mm"),
+    ),
+    marginHint,
+    marginError,
+    el(
+      "div",
+      { class: "margin-actions" },
+      el("button", { class: "btn small", onClick: () => closeMargins() }, "Cancel"),
+      applyMargins,
+    ),
+  );
+  const marginButton = el(
+    "button",
+    {
+      class: "btn small",
+      title: "The printed page's margins, in millimetres",
+      "aria-haspopup": "dialog",
+      "aria-expanded": "false",
+      onClick: () => toggleMargins(),
+    },
+    "Margins",
+  );
+  const marginControl = el("div", { class: "margin-control" }, marginButton, marginPanel);
+
+  function readMargins() {
+    const next = {};
+    for (const [key] of marginSides) next[key] = Number(marginInputs[key].value);
+    return next;
+  }
+
+  /** Why these four numbers cannot be printed, or "" when they can. */
+  function marginProblem(next) {
+    for (const [key, label] of marginSides) {
+      const value = next[key];
+      if (!Number.isFinite(value)) return `Enter a number for ${label.toLowerCase()}.`;
+      if (value < MARGIN_MIN || value > MARGIN_MAX) {
+        return `Each margin must be between ${MARGIN_MIN} and ${MARGIN_MAX} mm.`;
+      }
+    }
+    const width = 210 - next.left - next.right;
+    const height = 297 - next.top - next.bottom;
+    if (width < 60 || height < 60) {
+      return "That leaves too little of the sheet. Keep at least 60 mm of text width and height.";
+    }
+    return "";
+  }
+
+  function updateMarginHint() {
+    const next = readMargins();
+    const problem = marginProblem(next);
+    const width = Math.max(0, 210 - next.left - next.right);
+    const height = Math.max(0, 297 - next.top - next.bottom);
+    marginHint.textContent = `Text area: ${width.toFixed(0)} × ${height.toFixed(0)} mm on A4`;
+    marginError.textContent = problem;
+    marginError.hidden = problem === "";
+    applyMargins.disabled = problem !== "";
+  }
+
+  function toggleMargins() {
+    if (marginPanel.hidden) {
+      for (const [key] of marginSides) marginInputs[key].value = String(margins[key]);
+      updateMarginHint();
+      marginPanel.hidden = false;
+      marginButton.setAttribute("aria-expanded", "true");
+      marginInputs.top.focus();
+      marginInputs.top.select();
+    } else {
+      closeMargins();
+    }
+  }
+
+  function closeMargins() {
+    if (marginPanel.hidden) return;
+    marginPanel.hidden = true;
+    marginButton.setAttribute("aria-expanded", "false");
+  }
+
+  async function applyPageMargins() {
+    const next = readMargins();
+    if (marginProblem(next)) return;
+    margins = next;
+    closeMargins();
+    // The page view carries the margin in its cache key; a forced refresh makes
+    // the change visible without waiting for the next keystroke.
+    await rebuild();
+    if (previewMode === "pages") refreshPdf({ force: true });
+  }
+
+  document.addEventListener("mousedown", (event) => {
+    if (!marginPanel.hidden && !marginControl.contains(event.target)) closeMargins();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !marginPanel.hidden) {
+      closeMargins();
+      marginButton.focus();
+    }
+  });
+
   const previewBar = el(
     "div",
     { class: "preview-bar" },
@@ -149,6 +305,7 @@ export function createReportScreen(ctx) {
     pdfPageLabel,
     pdfStatus,
     el("span", { class: "spacer" }),
+    marginControl,
     refreshButton,
   );
 
@@ -240,10 +397,15 @@ export function createReportScreen(ctx) {
           const html = await ensureHtml();
           // The footer is drawn onto the PDF's pages after printing, so the
           // export needs the same reference and credit the preview showed.
-          const path = await api.savePdf(html, "lifting-plan.pdf", {
-            reference: signoff.reference,
-            center: footerText,
-          });
+          const path = await api.savePdf(
+            html,
+            "lifting-plan.pdf",
+            {
+              reference: signoff.reference,
+              center: footerText,
+            },
+            margins,
+          );
           if (path) {
             toast(`PDF saved to ${path}`, "ok");
           }
@@ -379,7 +541,15 @@ export function createReportScreen(ctx) {
     try {
       const diagram = diagramInput.checked ? captureWorkingDiagram() : null;
       if (diagramInput.checked && !diagram) diagramInput.checked = false;
-      const html = await api.buildReport(store.state, include, issuedAt, signoff, diagram, footerText);
+      const html = await api.buildReport(
+        store.state,
+        include,
+        issuedAt,
+        signoff,
+        diagram,
+        footerText,
+        margins,
+      );
       lastHtml = html;
       // srcdoc pages do not resolve the wrapper's relative asset paths, so the
       // stylesheet and scripts are pinned against the app's own base URL.
@@ -462,7 +632,7 @@ export function createReportScreen(ctx) {
     try {
       const html = await ensureHtml();
       if (!force && html === lastPdfHtml) return;
-      const bytes = await api.previewPdf(html, footerParams());
+      const bytes = await api.previewPdf(html, footerParams(), margins);
       // Tauri returns the raw response as an ArrayBuffer; accept a typed array
       // as well so the viewer does not depend on that detail.
       const data = bytes instanceof ArrayBuffer || ArrayBuffer.isView(bytes)

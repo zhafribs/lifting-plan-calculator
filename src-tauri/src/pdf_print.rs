@@ -35,11 +35,12 @@ pub fn print_to_pdf(
     app: &tauri::AppHandle,
     uri: String,
     target: std::path::PathBuf,
+    margins: crate::report::PageMargins,
 ) -> Result<(), String> {
     let (sender, receiver) = mpsc::channel();
     // The web view has to be built and printed from the GTK main thread; the
     // caller is a blocking task, so that thread is free to drive the print.
-    app.run_on_main_thread(move || start(&uri, &target, sender))
+    app.run_on_main_thread(move || start(&uri, &target, margins, sender))
         .map_err(|error| format!("The report could not be handed to the printer: {error}"))?;
     match receiver.recv_timeout(TIMEOUT) {
         Ok(result) => result,
@@ -63,8 +64,17 @@ pub fn print_to_pdf(
 /// through [`print_to_pdf`]; this seam is what the `export_pdf` example and the
 /// integration test drive with their own main loop.
 pub fn begin_print(uri: &str, target: &Path) -> Receiver<Result<(), String>> {
+    begin_print_with(uri, target, crate::report::PageMargins::default())
+}
+
+/// The same seam, with the page margin the caller wants printed.
+pub fn begin_print_with(
+    uri: &str,
+    target: &Path,
+    margins: crate::report::PageMargins,
+) -> Receiver<Result<(), String>> {
     let (sender, receiver) = mpsc::channel();
-    start(uri, target, sender);
+    start(uri, target, margins, sender);
     receiver
 }
 
@@ -82,7 +92,12 @@ thread_local! {
     static JOBS: RefCell<Vec<Rc<Job>>> = const { RefCell::new(Vec::new()) };
 }
 
-fn start(uri: &str, target: &Path, sender: Sender<Result<(), String>>) {
+fn start(
+    uri: &str,
+    target: &Path,
+    margins: crate::report::PageMargins,
+    sender: Sender<Result<(), String>>,
+) {
     static NEXT_ID: AtomicU64 = AtomicU64::new(1);
 
     let view = WebView::new();
@@ -90,14 +105,11 @@ fn start(uri: &str, target: &Path, sender: Sender<Result<(), String>>) {
 
     let setup = gtk::PageSetup::new();
     setup.set_paper_size(&gtk::PaperSize::new(Some("iso_a4")));
-    for margin in [
-        gtk::PageSetup::set_top_margin,
-        gtk::PageSetup::set_bottom_margin,
-        gtk::PageSetup::set_left_margin,
-        gtk::PageSetup::set_right_margin,
-    ] {
-        margin(&setup, crate::pdf::MARGIN_PT as f64 / 72.0 * 25.4, gtk::Unit::Mm);
-    }
+    let margins = margins.clamped();
+    setup.set_top_margin(margins.top, gtk::Unit::Mm);
+    setup.set_bottom_margin(margins.bottom, gtk::Unit::Mm);
+    setup.set_left_margin(margins.left, gtk::Unit::Mm);
+    setup.set_right_margin(margins.right, gtk::Unit::Mm);
     operation.set_page_setup(&setup);
 
     let settings = gtk::PrintSettings::new();

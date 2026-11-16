@@ -2,6 +2,11 @@
 
 ### Added
 
+- The plan's **page margins** are set in the app: **Margins** beside *Refresh*
+  opens four fields (5–50 mm, presets for 1 inch, 20 mm, 0.5 inch and 10 mm) and
+  reports the text area on A4. The choice drives the page view, *Save as PDF*
+  (footer included) and the exported HTML's `@page`, so all three cannot
+  disagree. One inch remains the default.
 - Importing a load chart fills the crane name and its rated capacity from the
   workbook's own title line ("Tadano TL200M (20 ton)"). A workbook without that
   line leaves what the operator typed alone.

@@ -6,6 +6,8 @@
 //! in the reference documents, while keeping the formulas readable when KaTeX
 //! is unavailable.
 
+use serde::{Deserialize, Serialize};
+
 use crate::calc::{crane_usage_band, UsageState};
 use crate::crane::{CraneResult, DESIGN_LOAD_RATIO};
 use crate::dto::PlanSignoff;
@@ -192,6 +194,66 @@ pub const REPORT_CSS: &str = r#"
 /// not change because a CDN did.
 pub const PRINT_MARGIN_MM: f64 = 25.4;
 
+/// The narrowest and widest margin the app will print with: below 5 mm the
+/// printer's own unprintable edge is reached, above 50 mm the sheet has no
+/// usable page left.
+pub const MIN_MARGIN_MM: f64 = 5.0;
+pub const MAX_MARGIN_MM: f64 = 50.0;
+
+/// The printed page's margins, in millimetres.
+///
+/// One value drives all three surfaces — the web view's print, the footer
+/// stamping, and the exported HTML's `@page` — so a page cannot be printed
+/// with one margin and labelled with another.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct PageMargins {
+    pub top: f64,
+    pub right: f64,
+    pub bottom: f64,
+    pub left: f64,
+}
+
+impl Default for PageMargins {
+    fn default() -> Self {
+        Self {
+            top: PRINT_MARGIN_MM,
+            right: PRINT_MARGIN_MM,
+            bottom: PRINT_MARGIN_MM,
+            left: PRINT_MARGIN_MM,
+        }
+    }
+}
+
+impl PageMargins {
+    /// Every side inside what the app will print, so a typed value cannot
+    /// produce a page with no content area or an unprintable edge.
+    pub fn clamped(self) -> Self {
+        let side = |value: f64| {
+            if value.is_finite() {
+                value.clamp(MIN_MARGIN_MM, MAX_MARGIN_MM)
+            } else {
+                PRINT_MARGIN_MM
+            }
+        };
+        Self {
+            top: side(self.top),
+            right: side(self.right),
+            bottom: side(self.bottom),
+            left: side(self.left),
+        }
+    }
+
+    /// The area left for the plan on A4, in millimetres.
+    pub fn content_mm(self) -> (f64, f64) {
+        let margins = self.clamped();
+        (
+            (210.0 - margins.left - margins.right).max(0.0),
+            (297.0 - margins.top - margins.bottom).max(0.0),
+        )
+    }
+}
+
 /// The auto-render pass, as a string so the backslashes reach JavaScript intact.
 const KATEX_AUTO_RENDER: &str = r#"
 document.addEventListener("DOMContentLoaded", function () {
@@ -206,16 +268,33 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 "#;
 
-/// `body` as a complete page that typesets its own equations.
+/// `body` as a complete page that typesets its own equations, at the default
+/// one-inch margin.
 pub fn wrap_katex(body: &str) -> String {
+    wrap_katex_with(body, PageMargins::default())
+}
+
+/// `body` as a complete page, with the page margin the operator chose.
+pub fn wrap_katex_with(body: &str, margins: PageMargins) -> String {
+    let margins = margins.clamped();
     let mut out = String::new();
     out.push_str("<!DOCTYPE html><html><head><meta charset=\"utf-8\">");
     out.push_str("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
     out.push_str("<style>");
-    out.push_str(&format!(
-        "@page {{ size: A4; margin: {}mm; }} ",
-        PRINT_MARGIN_MM
-    ));
+    // The four-value shorthand only where the sides differ; the common
+    // one-inch page keeps the plain declaration.
+    let margin = if margins.top == margins.right
+        && margins.right == margins.bottom
+        && margins.bottom == margins.left
+    {
+        format!("{}mm", margins.top)
+    } else {
+        format!(
+            "{}mm {}mm {}mm {}mm",
+            margins.top, margins.right, margins.bottom, margins.left
+        )
+    };
+    out.push_str(&format!("@page {{ size: A4; margin: {margin}; }} "));
     out.push_str("html, body { background: #fff; margin: 0; padding: 0; } ");
     out.push_str("body { background-color: #fff; color: #111; font-size: 7pt; line-height: 1.2; } ");
     out.push_str("table { font-size: inherit; } ");
@@ -1183,6 +1262,43 @@ mod tests {
     fn thousands_separators_are_braced_so_tex_can_read_them() {
         assert_eq!(tex_num(Some(2000.0), 2), "2{,}000.00");
         assert_eq!(tex_num(Some(999.5), 2), "999.50");
+    }
+
+    #[test]
+    fn the_page_margin_defaults_to_one_inch_and_clamps_what_it_is_given() {
+        let one = PageMargins::default();
+        let (width, height) = one.content_mm();
+        assert!((width - 159.2).abs() < 0.01, "{width}");
+        assert!((height - 246.2).abs() < 0.01, "{height}");
+
+        let wild = PageMargins {
+            top: -10.0,
+            right: 999.0,
+            bottom: f64::NAN,
+            left: 12.0,
+        };
+        let clamped = wild.clamped();
+        assert!((clamped.top - MIN_MARGIN_MM).abs() < 1e-9);
+        assert!((clamped.right - MAX_MARGIN_MM).abs() < 1e-9);
+        assert!((clamped.bottom - PRINT_MARGIN_MM).abs() < 1e-9);
+        assert!((clamped.left - 12.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_chosen_margin_reaches_the_page_that_is_printed() {
+        let margins = PageMargins {
+            top: 20.0,
+            right: 15.0,
+            bottom: 30.0,
+            left: 15.0,
+        };
+        let html = wrap_katex_with("<p>body</p>", margins);
+        assert!(
+            html.contains("@page { size: A4; margin: 20mm 15mm 30mm 15mm; }"),
+            "the four sides must reach the page"
+        );
+        // An evenly margined page keeps the plain shorthand.
+        assert!(wrap_katex("<p>body</p>").contains("@page { size: A4; margin: 25.4mm; }"));
     }
 
     #[test]

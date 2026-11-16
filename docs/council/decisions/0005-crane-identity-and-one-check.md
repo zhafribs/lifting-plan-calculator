@@ -36,6 +36,11 @@ Two changes to the Crane tab, both from the operator's seat:
 - The locally built 2.9.0 AppImage shows the "Crane name" field and no booked
   row; the workbook picker could not be driven headlessly (the XDG portal has
   no backend under Xvfb), so the import is proven by tests, not by a click.
+- The page-margin control was driven in the running app under Xvfb: the popover
+  opens from **Margins**, the 20 mm preset fills the four fields and reports
+  "Text area: 170 × 257 mm on A4", and Apply re-renders the page view at the new
+  margin. Values outside 5–50 mm or leaving under 60 mm of text block Apply with
+  a spoken error.
 
 ## Scores
 

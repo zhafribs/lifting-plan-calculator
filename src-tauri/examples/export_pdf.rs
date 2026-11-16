@@ -80,7 +80,11 @@ fn main() {
         println!("wrote {}", out.display());
         return;
     }
-    if let Err(error) = stamp(&out, &Footer { reference, center }) {
+    if let Err(error) = stamp(
+        &out,
+        &Footer { reference, center },
+        lifting_plan_calculator_lib::report::PageMargins::default(),
+    ) {
         eprintln!("footer failed: {error}");
         std::process::exit(1);
     }

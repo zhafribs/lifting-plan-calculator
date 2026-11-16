@@ -36,6 +36,7 @@ pub fn print_to_pdf(
     app: &tauri::AppHandle,
     html_path: &Path,
     target: &Path,
+    margins: crate::report::PageMargins,
 ) -> Result<(), String> {
     if UNAVAILABLE.load(std::sync::atomic::Ordering::Relaxed) {
         return Err("This WebView2 runtime could not print earlier in this session.".to_string());
@@ -130,13 +131,14 @@ fn print(
         let settings = environment
             .CreatePrintSettings()
             .map_err(|error| format!("The print settings could not be created: {error}"))?;
-        // A4 with the report's one-inch margin, in inches.
+        // A4, with the margin the operator chose (WebView2 takes inches).
+        let inches = |mm: f64| (mm / 25.4) as f64;
         settings.SetPageWidth(8.27).ok();
         settings.SetPageHeight(11.69).ok();
-        settings.SetMarginTop(1.0).ok();
-        settings.SetMarginBottom(1.0).ok();
-        settings.SetMarginLeft(1.0).ok();
-        settings.SetMarginRight(1.0).ok();
+        settings.SetMarginTop(inches(margins.top)).ok();
+        settings.SetMarginBottom(inches(margins.bottom)).ok();
+        settings.SetMarginLeft(inches(margins.left)).ok();
+        settings.SetMarginRight(inches(margins.right)).ok();
         settings.SetShouldPrintBackgrounds(true.into()).ok();
         // The footer comes from the report's `@page` margin boxes, not the
         // browser's own header and footer.

@@ -21,7 +21,8 @@
 - The uniform report's **Note** section is one row: the choke notes and the
   tag-rating rule sit side by side, under one-line headings whose rules line up
   ("Choke Notes" / "Sling Legs per Tag Rating"). The choker note no longer
-  prints the "(1) Percent of sling rated capacity…" paragraph.
+  prints the "(1) Percent of sling rated capacity…" paragraph, and its
+  reduction table is split in two side by side (120° to 60°, then the rest).
 - The divider in a two-column row is set by the content, not fixed at 42/58: it
   sits at the true centre when both sides fit, and moves to give room to
   whichever side needs it.

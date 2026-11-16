@@ -131,6 +131,11 @@ pub const REPORT_CSS: &str = r#"
     break-inside: avoid; page-break-inside: avoid; }
 /* A factor's label and formula are one row; never print them on two pages. */
 .report table.working tr { break-inside: avoid; page-break-inside: avoid; }
+/* The choke reduction is two tables side by side, without a frame of its own. */
+.report table.choke-split { margin: 2pt 0; }
+.report table.choke-split > tbody > tr > td { border: 0; padding: 0 5pt 0 0;
+    vertical-align: top; }
+.report table.choke-split > tbody > tr > td:last-child { padding-right: 0; }
 /* Notes read as prose: left-aligned, the choke column wider. */
 .report table.working.notes .work-label { text-align: left; }
 .report table.working.notes td { text-align: left; }

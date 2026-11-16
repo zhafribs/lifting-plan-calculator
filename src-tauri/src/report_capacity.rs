@@ -546,16 +546,32 @@ pub fn notes_section(result: &SlingResult, spec: &HitchSpec) -> String {
     } else {
         let reduction = result.choke_reduction_factor;
         let external = result.external_angle;
-        choke.push_str(
-            "<table><thead><tr><th>External choke angle</th>\
-             <th>Capacity multiplier</th></tr></thead><tbody>",
-        );
-        choke.push_str("<tr><td>120\u{00b0} and over</td><td>1.00</td></tr>");
-        choke.push_str("<tr><td>90\u{00b0} to under 120\u{00b0}</td><td>0.87</td></tr>");
-        choke.push_str("<tr><td>60\u{00b0} to under 90\u{00b0}</td><td>0.74</td></tr>");
-        choke.push_str("<tr><td>30\u{00b0} to under 60\u{00b0}</td><td>0.62</td></tr>");
-        choke.push_str("<tr><td>Below 30\u{00b0}</td><td>0.49</td></tr>");
-        choke.push_str("</tbody></table>");
+        // Two tables side by side: 120 to 60 in the first, the rest in the
+        // second, so the note is two rows shorter.
+        let choke_table = |rows: &[(&str, &str)]| {
+            let mut table = String::from(
+                "<table><thead><tr><th>External choke angle</th>\
+                 <th>Capacity multiplier</th></tr></thead><tbody>",
+            );
+            for (angle, factor) in rows {
+                table.push_str(&format!("<tr><td>{angle}</td><td>{factor}</td></tr>"));
+            }
+            table.push_str("</tbody></table>");
+            table
+        };
+        let high = choke_table(&[
+            ("120\u{00b0} and over", "1.00"),
+            ("90\u{00b0} to under 120\u{00b0}", "0.87"),
+            ("60\u{00b0} to under 90\u{00b0}", "0.74"),
+        ]);
+        let low = choke_table(&[
+            ("30\u{00b0} to under 60\u{00b0}", "0.62"),
+            ("Below 30\u{00b0}", "0.49"),
+        ]);
+        choke.push_str(&format!(
+            "<table class=\"choke-split\"><tbody><tr><td>{high}</td><td>{low}</td></tr>\
+             </tbody></table>"
+        ));
         choke.push_str(&p(
             &format!(
                 "Selected external angle: {} \u{2014} reduction factor {:.2}.",

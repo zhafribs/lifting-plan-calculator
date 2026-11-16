@@ -18,6 +18,12 @@
   three factors and a nested hitch's longer chain follow the same grid, with a
   lone last factor spanning the row.
 
+- The uniform report's **Note** section is one row: the choke notes and the
+  tag-rating rule sit side by side instead of one under the other.
+- The divider in a two-column row is set by the content, not fixed at 42/58: it
+  sits at the true centre when both sides fit, and moves to give room to
+  whichever side needs it.
+
 ### Fixed
 
 - A two-leg choke said "the main lifting leg stands perfectly vertical (0°)"

@@ -2,7 +2,7 @@
 //! capacity and equipment selection, and the notes. Ported from
 //! `ReportCapacity.kt`.
 
-use crate::report::{equation, fmt, heading, p, subheading, tex_deg, tex_num, work_block, working_grid};
+use crate::report::{equation, fmt, heading, notes_pair, p, subheading, tex_deg, tex_num, work_block, working_grid};
 use crate::sling::{HitchSpec, SlingResult, SINGLE_LEG};
 
 /// The four arrangements a choke reduction applies to.
@@ -537,36 +537,32 @@ pub fn shows_notes(spec: &HitchSpec) -> bool {
 
 /// Section 5: the choke reduction table and the tag-rating leg rule.
 pub fn notes_section(result: &SlingResult, spec: &HitchSpec) -> String {
-    let mut out = vec![
-        heading(6, "Note"),
-        subheading("Choke Notes"),
-    ];
+    let mut choke = String::new();
     if !CHOKE_KEYS.contains(&spec.key) {
-        out.push(p(
+        choke.push_str(&p(
             "No choke reduction applies to the selected arrangement.",
             "",
         ));
     } else {
         let reduction = result.choke_reduction_factor;
         let external = result.external_angle;
-        out.push(p(
+        choke.push_str(&p(
             "(1) Percent of sling rated capacity in a choker hitch. The rating \
              reduction is applied to the tag WLL, not to the resolved \
              main-leg tension.",
             "",
         ));
-        out.push(
+        choke.push_str(
             "<table><thead><tr><th>External choke angle</th>\
-             <th>Capacity multiplier</th></tr></thead><tbody>"
-                .to_string(),
+             <th>Capacity multiplier</th></tr></thead><tbody>",
         );
-        out.push("<tr><td>120\u{00b0} and over</td><td>1.00</td></tr>".to_string());
-        out.push("<tr><td>90\u{00b0} to under 120\u{00b0}</td><td>0.87</td></tr>".to_string());
-        out.push("<tr><td>60\u{00b0} to under 90\u{00b0}</td><td>0.74</td></tr>".to_string());
-        out.push("<tr><td>30\u{00b0} to under 60\u{00b0}</td><td>0.62</td></tr>".to_string());
-        out.push("<tr><td>Below 30\u{00b0}</td><td>0.49</td></tr>".to_string());
-        out.push("</tbody></table>".to_string());
-        out.push(p(
+        choke.push_str("<tr><td>120\u{00b0} and over</td><td>1.00</td></tr>");
+        choke.push_str("<tr><td>90\u{00b0} to under 120\u{00b0}</td><td>0.87</td></tr>");
+        choke.push_str("<tr><td>60\u{00b0} to under 90\u{00b0}</td><td>0.74</td></tr>");
+        choke.push_str("<tr><td>30\u{00b0} to under 60\u{00b0}</td><td>0.62</td></tr>");
+        choke.push_str("<tr><td>Below 30\u{00b0}</td><td>0.49</td></tr>");
+        choke.push_str("</tbody></table>");
+        choke.push_str(&p(
             &format!(
                 "Selected external angle: {} \u{2014} reduction factor {:.2}.",
                 fmt(external, 0, "\u{00b0}"),
@@ -575,14 +571,30 @@ pub fn notes_section(result: &SlingResult, spec: &HitchSpec) -> String {
             "",
         ));
     }
+
+    // The rating rule lives beside the choke notes, not under them: the two
+    // read as one note when the plan is printed.
+    let mut rating = String::new();
     if spec.leg_count > 1 {
-        out.push(subheading(
-            "To Calculate Sling Leg Capacity Each (Tag Rating):",
-        ));
-        out.extend(RATING_LEG_NOTE.iter().map(|note| p(note, "")));
-        if spec.nested != 0 {
-            out.push(nested_rating_note(result, spec));
+        for note in RATING_LEG_NOTE {
+            rating.push_str(&p(note, ""));
         }
+        if spec.nested != 0 {
+            rating.push_str(&nested_rating_note(result, spec));
+        }
+    }
+
+    let mut out = vec![heading(6, "Note")];
+    if rating.is_empty() {
+        out.push(work_block("Choke Notes", &choke));
+    } else {
+        out.push(notes_pair(
+            &work_block("Choke Notes", &choke),
+            &work_block(
+                "To Calculate Sling Leg Capacity Each (Tag Rating)",
+                &rating,
+            ),
+        ));
     }
     out.join("")
 }
@@ -686,7 +698,7 @@ pub fn nonuniform_rating_legs_note(pairs: &[(String, Option<i64>, Option<i64>)])
     let mut out = String::new();
     if rule_used {
         out.push_str(&subheading(
-            "To Calculate Sling Leg Capacity Each (Tag Rating):",
+            "To Calculate Sling Leg Capacity Each (Tag Rating)",
         ));
         for note in RATING_LEG_NOTE {
             out.push_str(&p(note, ""));
@@ -891,7 +903,7 @@ mod tests {
         let notes = sections(&two_leg_direct()).2;
         for expected in [
             "No choke reduction applies to the selected arrangement.",
-            "To Calculate Sling Leg Capacity Each (Tag Rating):",
+            "To Calculate Sling Leg Capacity Each (Tag Rating)",
             "If 4-Leg Sling, use Sling Legs = 3",
             "If 3-Leg Sling, use Sling Legs = 2",
             "If 2-Leg Sling, use Sling Legs = 2",

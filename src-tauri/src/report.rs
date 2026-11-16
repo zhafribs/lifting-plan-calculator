@@ -124,18 +124,27 @@ pub const REPORT_CSS: &str = r#"
 .report table.input-grid .input-v { font-size: 8pt; }
 .report .working-wrap { padding: 0; margin-top: 6pt; }
 .report table.working { width: 100%; border-collapse: collapse; margin: 4pt 0 4pt;
-    table-layout: fixed; }
+    /* Auto, not fixed: the divider sits at the true centre when both sides fit,
+       and moves to fit whichever side needs more room when they do not. */
+    table-layout: auto; }
 .report table.working td { border: 0; padding: 0; vertical-align: top;
     break-inside: avoid; page-break-inside: avoid; }
 /* A factor's label and formula are one row; never print them on two pages. */
 .report table.working tr { break-inside: avoid; page-break-inside: avoid; }
+/* Notes read as prose: left-aligned, the choke column wider. */
+.report table.working.notes .work-label { text-align: left; }
+.report table.working.notes td { text-align: left; }
+.report table.working.notes p { margin: 1pt 0; }
 /* Rows of factors need air between them. */
 .report table.working tr + tr td { padding-top: 5pt; }
 /* A heading is never the last thing on a page. */
 .report .section-card h2, .report .section-card h3 { break-after: avoid;
     page-break-after: avoid; }
-.report table.working td:first-child { width: 42%; padding-right: 8pt; }
-.report table.working td:last-child { width: 58%; padding-left: 8pt;
+/* No width hints: the columns take the room their content needs, so the
+   divider sits at the true centre when both sides fit and moves to fit the
+   wider side when they do not. */
+.report table.working td:first-child { padding-right: 8pt; }
+.report table.working td:last-child { padding-left: 8pt;
     border-left: 0.5pt solid #e4eaf1; }
 .report .work-label { font-size: 7pt; font-weight: bold; color: #1b2733;
     text-align: center; padding-bottom: 3pt; margin-bottom: 5pt;
@@ -470,6 +479,15 @@ pub fn working_pair(left: &str, right: &str) -> String {
 /// A working block: a label and the formula under it.
 pub fn work_block(label: &str, formula: &str) -> String {
     format!("<div class=\"work-label\">{}</div>{formula}", escape(label))
+}
+
+/// Two notes side by side, left-aligned prose with the same divider as a
+/// workings row: the section that explains the numbers is read in one pass.
+pub fn notes_pair(left: &str, right: &str) -> String {
+    format!(
+        "<div class=\"working-wrap\"><table class=\"working notes\"><tbody>\
+         <tr><td>{left}</td><td>{right}</td></tr></tbody></table></div>"
+    )
 }
 
 /// The workings laid out two to a row; a lone last one spans the row.
@@ -1003,9 +1021,13 @@ mod tests {
     }
 
     #[test]
-    fn the_working_columns_leave_room_for_a_five_digit_lift() {
-        assert!(REPORT_CSS.contains("td:first-child { width: 42%;"));
-        assert!(REPORT_CSS.contains("td:last-child { width: 58%;"));
+    fn the_working_columns_follow_their_content() {
+        // Auto layout: an even split is the aim, and the divider moves when one
+        // side needs the room. A fixed split wrapped a long label beside a
+        // short one.
+        assert!(REPORT_CSS.contains("table-layout: auto"));
+        assert!(!REPORT_CSS.contains("td:first-child { width:"));
+        assert!(!REPORT_CSS.contains("td:last-child { width:"));
     }
 
     #[test]

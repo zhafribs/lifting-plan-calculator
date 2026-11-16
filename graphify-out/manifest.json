@@ -24,9 +24,9 @@
     "semantic_hash": ""
   },
   ".github/workflows/ci.yml": {
-    "mtime": 1794835982.5380821,
-    "seen": 1794837156.4519196,
-    "ast_hash": "72230eb463caed36d06e446ee12f22d0",
+    "mtime": 1794843282.2245598,
+    "seen": 1794845062.9128973,
+    "ast_hash": "0c40e0303d622d5ef891b67ce76cdf29",
     "semantic_hash": ""
   },
   ".github/workflows/release.yml": {
@@ -66,9 +66,9 @@
     "semantic_hash": "b20dea1f31d5244bada45a9490f1f4ab"
   },
   "src-tauri/Cargo.toml": {
-    "mtime": 1794837634.4956636,
-    "seen": 1794839195.7474492,
-    "ast_hash": "e0f9a97e5022e79e14387c4df6137404",
+    "mtime": 1794844861.2645216,
+    "seen": 1794845062.912909,
+    "ast_hash": "cd0f266063f1223a8358ed771b7bd74d",
     "semantic_hash": ""
   },
   "src-tauri/build.rs": {
@@ -102,21 +102,21 @@
     "semantic_hash": ""
   },
   "src-tauri/src/crane.rs": {
-    "mtime": 1794829259.7244167,
-    "seen": 1794829426.2776697,
-    "ast_hash": "1e0e1f3d45d21b661c0abf41fb306421",
+    "mtime": 1794843981.4008722,
+    "seen": 1794845062.912916,
+    "ast_hash": "1bb31464d2d59550767d228b11484ac9",
     "semantic_hash": ""
   },
   "src-tauri/src/dto.rs": {
-    "mtime": 1794570843.1567972,
-    "seen": 1794578094.7969902,
-    "ast_hash": "61098a434ca4c3ebdd8dcb1184841457",
-    "semantic_hash": "61098a434ca4c3ebdd8dcb1184841457"
+    "mtime": 1794841452.0271785,
+    "seen": 1794845062.9129167,
+    "ast_hash": "2373df9eb178f8bfadf39518cabad971",
+    "semantic_hash": ""
   },
   "src-tauri/src/excel.rs": {
-    "mtime": 1794833125.9740088,
-    "seen": 1794835022.784275,
-    "ast_hash": "c5295049d12e05c398e980eb29881f0a",
+    "mtime": 1794843320.5336964,
+    "seen": 1794845062.9129179,
+    "ast_hash": "ecba94dbd3b816ba8881629cec41aa81",
     "semantic_hash": ""
   },
   "src-tauri/src/figures.rs": {
@@ -150,9 +150,9 @@
     "semantic_hash": "39fd8bdd7b986a2529af5a708f565abd"
   },
   "src-tauri/src/report.rs": {
-    "mtime": 1794829259.7244167,
-    "seen": 1794829426.2776816,
-    "ast_hash": "cc196e9e7a7dccf3fb2a085f87b6b3ca",
+    "mtime": 1794841616.8259878,
+    "seen": 1794845062.9129274,
+    "ast_hash": "ff4183449f3c1890b16553692596d3a0",
     "semantic_hash": ""
   },
   "src-tauri/src/report_capacity.rs": {
@@ -186,9 +186,9 @@
     "semantic_hash": ""
   },
   "src-tauri/tauri.conf.json": {
-    "mtime": 1794837634.5051858,
-    "seen": 1794839195.7474737,
-    "ast_hash": "b41588205f81da1127f68f136a62b4a0",
+    "mtime": 1794844861.2644439,
+    "seen": 1794845062.9129336,
+    "ast_hash": "1ce237c25a6f924fa3a73d5df5b8f400",
     "semantic_hash": ""
   },
   "ui/js/api.js": {
@@ -234,15 +234,15 @@
     "semantic_hash": "72170356ba32d6927f49c9d10ec68be1"
   },
   "ui/js/screens/crane.js": {
-    "mtime": 1794829259.7244167,
-    "seen": 1794829426.2777011,
-    "ast_hash": "c4a14c34c93265ce4eb04c9319019220",
+    "mtime": 1794843957.9682217,
+    "seen": 1794845062.912951,
+    "ast_hash": "b3566517bcd743cd3b4d56460787e1bb",
     "semantic_hash": ""
   },
   "ui/js/screens/graph.js": {
-    "mtime": 1794594086.5329013,
-    "seen": 1794634004.4794548,
-    "ast_hash": "2fcd2487adbc764024db26bd1179bc19",
+    "mtime": 1794843138.004098,
+    "seen": 1794845062.9129517,
+    "ast_hash": "089d528ea8c64747195fa4e4687ea05c",
     "semantic_hash": ""
   },
   "ui/js/screens/nonuniform.js": {
@@ -258,9 +258,9 @@
     "semantic_hash": "cc97ec2eccf73c44dc7be7865749b467"
   },
   "ui/js/screens/report.js": {
-    "mtime": 1794837783.3359077,
-    "seen": 1794839195.7474914,
-    "ast_hash": "7c0b99f40ea731885e55e09d0b9fd666",
+    "mtime": 1794841583.430433,
+    "seen": 1794845062.912955,
+    "ast_hash": "569bada6ad991a319d1801ab43eb69e8",
     "semantic_hash": ""
   },
   "ui/js/screens/tandem.js": {
@@ -276,10 +276,10 @@
     "semantic_hash": "824900cf3349826c896ac5ef471b2cb9"
   },
   "ui/js/store.js": {
-    "mtime": 1794570843.1595325,
-    "seen": 1794578094.797014,
-    "ast_hash": "63474a5a9d56dc130085bd4f85ce0023",
-    "semantic_hash": "63474a5a9d56dc130085bd4f85ce0023"
+    "mtime": 1794843052.072591,
+    "seen": 1794845062.912958,
+    "ast_hash": "b9eaff693cf2711ce6444f1616b71ee5",
+    "semantic_hash": ""
   },
   "ui/vendor/katex/auto-render.min.js": {
     "mtime": 1794570843.1600094,
@@ -300,9 +300,9 @@
     "semantic_hash": "3a57d99448f802024d640c81af3341a8"
   },
   "CHANGELOG.md": {
-    "mtime": 1794837877.7569072,
-    "seen": 1794839195.7474983,
-    "ast_hash": "c5f1bb7e8f52015b33f6514d38b648ea",
+    "mtime": 1794844861.2651649,
+    "seen": 1794845062.9129646,
+    "ast_hash": "882a63f5a1da50d700628a9565d8941b",
     "semantic_hash": ""
   },
   "CODE_OF_CONDUCT.md": {
@@ -1119,6 +1119,54 @@
     "mtime": 1794837650.3314447,
     "seen": 1794839195.747536,
     "ast_hash": "ba6d3f8b874bb9b617b5ec032d353a04",
+    "semantic_hash": ""
+  },
+  "ui/js/jib.js": {
+    "mtime": 1794843953.7706928,
+    "seen": 1794845062.9129446,
+    "ast_hash": "7f8c23583acc4b093101c3f9bf872c6d",
+    "semantic_hash": ""
+  },
+  "ui/js/jib.test.mjs": {
+    "mtime": 1794843953.7707589,
+    "seen": 1794845062.912946,
+    "ast_hash": "56932db102c68deb1524580b447f50a1",
+    "semantic_hash": ""
+  },
+  "ui/vendor/katex/lpc-autorender.js": {
+    "mtime": 1794841452.0186408,
+    "seen": 1794845062.9129608,
+    "ast_hash": "4c96420397c6c81f27a33af8cddd6348",
+    "semantic_hash": ""
+  },
+  "ui/vendor/pdfjs/pdf.min.js": {
+    "mtime": 1794639764.2096558,
+    "seen": 1794845062.9129617,
+    "ast_hash": "4d9cc6ff4971e004ee8cabe6b5663742",
+    "semantic_hash": ""
+  },
+  "ui/vendor/pdfjs/pdf.worker.min.js": {
+    "mtime": 1794639764.2106035,
+    "seen": 1794845062.912963,
+    "ast_hash": "e583321c31210719d60c883f3500b2fa",
+    "semantic_hash": ""
+  },
+  "docs/council/decisions/0014-csp-and-jib-chart-basis.md": {
+    "mtime": 1794844888.5578675,
+    "seen": 1794845062.9129944,
+    "ast_hash": "40217f61cc4455c5471a7f9978aafdc4",
+    "semantic_hash": ""
+  },
+  "docs/releases/v2.12.0.md": {
+    "mtime": 1794844873.1796677,
+    "seen": 1794845062.9130056,
+    "ast_hash": "43abed6b77478b08e55a1174fa9d35ea",
+    "semantic_hash": ""
+  },
+  "ui/vendor/pdfjs/CHECKSUMS.txt": {
+    "mtime": 1794640444.295439,
+    "seen": 1794845062.9130342,
+    "ast_hash": "593340f2e8622f4339bc479c895def18",
     "semantic_hash": ""
   }
 }

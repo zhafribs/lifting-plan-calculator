@@ -687,12 +687,17 @@ fn private_workspace() -> Result<std::path::PathBuf, String> {
         "lifting-plan-pdf-{}-{stamp}",
         std::process::id()
     ));
-    let mut builder = std::fs::DirBuilder::new();
+    // The mode is a Unix-only call, so the binding is only `mut` there; the
+    // Windows compiler would otherwise warn that the mutability is unused.
     #[cfg(unix)]
-    {
+    let builder = {
         use std::os::unix::fs::DirBuilderExt;
+        let mut builder = std::fs::DirBuilder::new();
         builder.mode(0o700);
-    }
+        builder
+    };
+    #[cfg(not(unix))]
+    let builder = std::fs::DirBuilder::new();
     builder
         .create(&temp)
         .map_err(|error| format!("The PDF workspace could not be created: {error}"))?;

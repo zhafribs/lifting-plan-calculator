@@ -1,5 +1,27 @@
 ## [Unreleased]
 
+Nothing yet.
+
+## [2.9.1] - 2026-11-16
+
+### Changed
+
+- Dependency refresh: rustls 0.23.46, rustls-webpki 0.103.17, webpki-roots
+  1.0.12, ctutils 0.4.8, rustix 1.1.6, tokio 1.54.1, and the rest of the
+  lockfile. `cargo audit` reports no vulnerabilities.
+- The dependency audit now gates the build (`--deny warnings`). The two
+  advisories this project cannot act on are listed, with their reasons, in
+  `.cargo/audit.toml`.
+
+### Fixed
+
+- The Windows build no longer warns about an unused `mut` in the PDF workspace.
+- The release is published with `gh`, so the Node deprecation from the release
+  action is gone; the git default-branch hint and the accessibility-bus warnings
+  no longer appear in CI.
+
+## [2.9.0] - 2026-11-16
+
 ### Added
 
 - The plan's **page margins** are set in the app: **Margins** beside *Refresh*

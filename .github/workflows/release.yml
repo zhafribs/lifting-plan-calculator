@@ -13,6 +13,11 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
+  # `actions/checkout` runs `git init`; without this git prints its hint about
+  # the default branch on every job.
+  GIT_CONFIG_COUNT: "1"
+  GIT_CONFIG_KEY_0: init.defaultBranch
+  GIT_CONFIG_VALUE_0: main
   # Pinned so the cached CLI binary has an explicit key: bump this to pick up a
   # newer CLI, and the cache refreshes itself on the next run.
   TAURI_CLI_VERSION: "2.12.4"
@@ -318,21 +323,31 @@ jobs:
           sha256sum ./* > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
+      # A rerun must not quietly replace published bytes: a leftover draft is
+      # deleted, a published release is refused (see CONTRIBUTING.md). The
+      # release stays a draft until every asset is on it.
       # The body is exactly this tag's notes file: nothing from an earlier
       # release can appear on a later page.
       - name: Upload to a draft release
-        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3
-        with:
-          name: Lifting Plan Calculator ${{ github.ref_name }}
-          draft: true
-          prerelease: ${{ contains(github.ref_name, '-') }}
-          # A rerun must not quietly replace published bytes; delete the draft
-          # and rerun instead (see CONTRIBUTING.md).
-          overwrite_files: false
-          files: |
-            dist/*
-          body_path: docs/releases/${{ github.ref_name }}.md
-          fail_on_unmatched_files: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+          tag="$GITHUB_REF_NAME"
+          if gh release view "$tag" --repo "$repo" >/dev/null 2>&1; then
+            if [ "$(gh release view "$tag" --repo "$repo" --json isDraft --jq .isDraft)" = "true" ]; then
+              gh release delete "$tag" --repo "$repo" --yes
+            else
+              echo "::error::release $tag is already published - bump the version instead of replacing it."
+              exit 1
+            fi
+          fi
+          flags=(--draft --title "Lifting Plan Calculator $tag" --notes-file "docs/releases/$tag.md")
+          case "$tag" in
+            *-*) flags+=(--prerelease) ;;
+          esac
+          gh release create "$tag" dist/* --repo "$repo" "${flags[@]}"
 
       # The release becomes public only once every asset uploaded.
       - name: Publish the draft

@@ -16,6 +16,11 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
+  # `actions/checkout` runs `git init`; without this git prints its hint about
+  # the default branch on every job.
+  GIT_CONFIG_COUNT: "1"
+  GIT_CONFIG_KEY_0: init.defaultBranch
+  GIT_CONFIG_VALUE_0: main
 
 jobs:
   test:
@@ -122,6 +127,9 @@ jobs:
           WEBKIT_DISABLE_COMPOSITING_MODE: "1"
           WEBKIT_DISABLE_DMABUF_RENDERER: "1"
           LIBGL_ALWAYS_SOFTWARE: "1"
+          # No accessibility bus in this session; looking for one only logs a
+          # dbind warning per print.
+          NO_AT_BRIDGE: "1"
         run: |
           set -euo pipefail
           xvfb-run -a dbus-run-session -- \
@@ -141,6 +149,9 @@ jobs:
           WEBKIT_DISABLE_COMPOSITING_MODE: "1"
           WEBKIT_DISABLE_DMABUF_RENDERER: "1"
           LIBGL_ALWAYS_SOFTWARE: "1"
+          # No accessibility bus in this session; looking for one only logs a
+          # dbind warning per print.
+          NO_AT_BRIDGE: "1"
         run: |
           set -euo pipefail
           xvfb-run -a dbus-run-session -- \
@@ -211,14 +222,11 @@ jobs:
       - name: Install cargo-audit
         run: cargo install cargo-audit --locked
 
-      # Reported, not gating: the tree carries advisories inherited from the
-      # Tauri/GTK stack (glib, rustls, zip, zstd, calamine, tokio) and from
-      # crates with no fixed upgrade, so a blocking check would be red for
-      # reasons this repository cannot fix. A new advisory in a crate this
-      # project chooses still shows up here, and dependabot handles upgrades.
+      # Gating. The two advisories this project cannot act on are listed, with
+      # their reasons, in .cargo/audit.toml; anything else is a red build, and
+      # `--deny warnings` covers unmaintained and unsound crates too.
       - name: Audit the lockfile
-        continue-on-error: true
-        run: cargo audit --file src-tauri/Cargo.lock
+        run: cargo audit --file src-tauri/Cargo.lock --deny warnings
 
   # The Windows export path (Edge, the process spawning and the platform
   # branches of the PDF code) is never compiled by the Linux jobs.

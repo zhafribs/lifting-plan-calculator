@@ -1,0 +1,16 @@
+# `cargo audit` reads this file from the repository root.
+#
+# Only advisories this project cannot act on are ignored, each with the reason.
+# Anything else is a red build.
+
+[advisories]
+ignore = [
+    # proc-macro-error is unmaintained and has no fixed upgrade. It is a
+    # build-time macro dependency (it never runs in the shipped binary), so the
+    # unmaintained status carries no runtime risk here.
+    "RUSTSEC-2024-0370",
+    # glib 0.18's `VariantStrIter` iterators are unsound. The app never uses
+    # them, and the version is pinned by Tauri's GTK 0.18 binding; glib 0.20
+    # arrives with a Tauri/GTK major upgrade, not here.
+    "RUSTSEC-2024-0429",
+]

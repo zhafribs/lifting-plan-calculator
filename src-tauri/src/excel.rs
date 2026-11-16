@@ -2249,12 +2249,14 @@ xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">
     fn returning_to_the_main_boom_without_a_lift_keeps_a_sane_radius() {
         let chart = read_chart(&build_workbook("Chart", &new_format_rows())).unwrap();
         let imported = imported_inputs(&CraneInputs::default(), &chart, "Chart.xlsx", 0.0);
-        let selected = jib_changed(&imported, &chart, "boom_jib", Some(7.2), Some(25.0), 0.0);
-        // No lift to meet: the suggestion declines and the previous radius is
-        // kept, exactly as the import's own rule does.
+        let mut selected = jib_changed(&imported, &chart, "boom_jib", Some(7.2), Some(25.0), 0.0);
+        // The solver put the hook where the jib angle reaches.
+        selected.working_radius = 24.0;
+        // No lift to meet: the suggestion declines and the radius the hook is
+        // already at is kept, exactly as the import's own rule does.
         let back = jib_changed(&selected, &chart, "boom", None, None, 0.0);
         assert_eq!(back.boom_angle_deg, None);
-        assert_eq!(back.working_radius, imported.working_radius);
+        assert_eq!(back.working_radius, 24.0);
     }
 
     #[test]

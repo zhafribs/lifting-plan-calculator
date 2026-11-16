@@ -56,16 +56,17 @@ jobs:
       - name: cargo clippy
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
-      # The page view's zoom and fitting arithmetic, run without a webview.
-      - name: Test the page view arithmetic
+      # The page view's arithmetic and the jib configuration rules, run
+      # without a webview.
+      - name: Test the frontend's pure modules
         run: |
           set -e
           work="$(mktemp -d)"
-          cp ui/js/pdf-math.js ui/js/pdf-math.test.mjs "$work/"
+          cp ui/js/pdf-math.js ui/js/pdf-math.test.mjs ui/js/jib.js ui/js/jib.test.mjs "$work/"
           printf '{"type":"module"}' > "$work/package.json"
           # The file, not the directory: directory discovery differs between the
           # Node versions the runners carry.
-          node --test "$work/pdf-math.test.mjs"
+          node --test "$work/pdf-math.test.mjs" "$work/jib.test.mjs"
 
       # The vendored PDF parser is pinned by hash: a different file is a
       # deliberate change, not an update.

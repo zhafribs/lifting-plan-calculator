@@ -2076,7 +2076,7 @@ dependencies = [
 
 [[package]]
 name = "lifting-plan-calculator"
-version = "2.9.2"
+version = "2.9.4"
 dependencies = [
  "calamine",
  "gtk",
@@ -2084,6 +2084,7 @@ dependencies = [
  "rfd",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
  "tauri",
  "tauri-build",
  "ureq",

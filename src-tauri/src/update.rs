@@ -7,6 +7,8 @@
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
+#[cfg(any(target_os = "windows", test))]
+use sha2::{Digest, Sha256};
 
 /// The repository every check and download is kept to.
 pub const REPO_URL: &str = "https://github.com/zhafribs/lifting-plan-calculator";
@@ -127,6 +129,37 @@ pub fn check(current: &str) -> Result<UpdateInfo, String> {
     })
 }
 
+#[cfg(any(target_os = "windows", test))]
+/// The SHA-256 of some bytes, lowercase hex.
+fn digest(bytes: &[u8]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(bytes);
+    hasher
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+#[cfg(any(target_os = "windows", test))]
+/// The digest a release's `SHA256SUMS.txt` records for `name`.
+///
+/// The file is `sha256sum ./*` output, so the name may carry a `./` prefix.
+fn expected_digest(manifest: &str, name: &str) -> Option<String> {
+    manifest.lines().find_map(|line| {
+        let (hash, file) = line.split_once(char::is_whitespace)?;
+        let file = file.trim().trim_start_matches("./");
+        (file == name && hash.len() == 64).then(|| hash.to_ascii_lowercase())
+    })
+}
+
+#[cfg(any(target_os = "windows", test))]
+/// The release's checksum manifest, next to the asset itself.
+fn manifest_url(asset_url: &str) -> Option<String> {
+    let (base, _) = asset_url.rsplit_once('/')?;
+    Some(format!("{base}/SHA256SUMS.txt"))
+}
+
 /// Fetch the installer and start it, on Windows. Returns the saved path; the
 /// caller then quits so the installer can replace the running files.
 #[cfg(target_os = "windows")]
@@ -137,6 +170,22 @@ pub fn install(asset: &InstallerAsset) -> Result<String, String> {
     if !(asset.name.ends_with("-setup.exe") || asset.name.ends_with(".msi")) {
         return Err("That file is not a Windows installer.".to_string());
     }
+    // The release publishes SHA256SUMS.txt beside its assets; an installer that
+    // is not in it, or does not match it, is not executed. This catches a
+    // corrupted or substituted download; it does not prove who built it.
+    let manifest = ureq::get(&manifest_url(&asset.url).ok_or_else(|| {
+        "That download does not belong to a release with checksums.".to_string()
+    })?)
+    .set("User-Agent", USER_AGENT)
+    .timeout(CHECK_TIMEOUT)
+    .call()
+    .map_err(|error| format!("The release checksums could not be read: {error}"))?
+    .into_string()
+    .map_err(|error| format!("The release checksums could not be read: {error}"))?;
+    let expected = expected_digest(&manifest, &asset.name).ok_or_else(|| {
+        "That installer is not listed in its release's checksums.".to_string()
+    })?;
+
     let directory = std::env::temp_dir().join("lifting-plan-calculator-update");
     std::fs::create_dir_all(&directory)
         .map_err(|error| format!("The installer could not be saved: {error}"))?;
@@ -149,9 +198,23 @@ pub fn install(asset: &InstallerAsset) -> Result<String, String> {
         .into_reader();
     let mut file = std::fs::File::create(&target)
         .map_err(|error| format!("The installer could not be saved: {error}"))?;
-    std::io::copy(&mut reader, &mut file)
-        .map_err(|error| format!("The installer could not be saved: {error}"))?;
+    let copied = std::io::copy(&mut reader, &mut file);
     drop(file);
+    copied.map_err(|error| {
+        let _ = std::fs::remove_file(&target);
+        format!("The installer could not be saved: {error}")
+    })?;
+
+    let bytes = std::fs::read(&target).map_err(|error| {
+        let _ = std::fs::remove_file(&target);
+        format!("The installer could not be read back: {error}")
+    })?;
+    if digest(&bytes) != expected {
+        let _ = std::fs::remove_file(&target);
+        return Err("The downloaded installer does not match its release checksum. \
+                    It was not run."
+            .to_string());
+    }
 
     let mut command = if asset.name.ends_with(".msi") {
         let mut command = std::process::Command::new("msiexec");
@@ -211,6 +274,34 @@ pub fn quit_app(app: tauri::AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_release_manifest_names_its_installer_by_digest() {
+        let manifest = "\n1e4acd312bebe5992bcb4cd563b16464355229602425f1de56bfd2f18b4290c1  ./Lifting-Plan-Calculator-2.9.3-linux-x86_64.AppImage\n820ae3c7580ca637cad15f65638960ee2a96e5a491e224691c86d6f25e6c9e8a  ./Lifting-Plan-Calculator-2.9.3-windows-x86_64-setup.exe\n";
+        assert_eq!(
+            expected_digest(manifest, "Lifting-Plan-Calculator-2.9.3-windows-x86_64-setup.exe").as_deref(),
+            Some("820ae3c7580ca637cad15f65638960ee2a96e5a491e224691c86d6f25e6c9e8a")
+        );
+        // Not listed: the installer must not run.
+        assert_eq!(expected_digest(manifest, "other-setup.exe"), None);
+        // A malformed line is not a checksum.
+        assert_eq!(expected_digest("abc  ./x-setup.exe", "x-setup.exe"), None);
+    }
+
+    #[test]
+    fn the_manifest_for_an_asset_sits_beside_it() {
+        assert_eq!(
+            manifest_url("https://github.com/o/r/releases/download/v1/x-setup.exe").as_deref(),
+            Some("https://github.com/o/r/releases/download/v1/SHA256SUMS.txt")
+        );
+        assert_eq!(manifest_url("no-slash"), None);
+    }
+
+    #[test]
+    fn a_digest_is_lowercase_sha256() {
+        // SHA-256 of the empty string.
+        assert_eq!(digest(b""), "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+    }
 
     #[test]
     fn versions_compare_component_by_component() {

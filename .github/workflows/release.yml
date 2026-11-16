@@ -124,7 +124,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cargo/bin/cargo-tauri
-          key: cargo-tauri-${{ runner.os }}-${{ env.TAURI_CLI_VERSION }}
+          key: cargo-tauri-${{ runner.os }}-${{ env.TAURI_CLI_VERSION }}-820ae3c7
 
       - name: Install the Tauri CLI
         if: steps.tauri-cli.outputs.cache-hit != 'true'
@@ -132,8 +132,18 @@ jobs:
         run: |
           set -euo pipefail
           url="https://github.com/tauri-apps/tauri/releases/download/tauri-cli-v${TAURI_CLI_VERSION}/cargo-tauri-x86_64-unknown-linux-gnu.tgz"
+          # Pinned: this binary builds the artifact users download.
+          sha256="820ae3c7580ca637cad15f65638960ee2a96e5a491e224691c86d6f25e6c9e8a"
+          archive="$(mktemp)"
+          curl -sSfL -o "$archive" "$url"
+          if ! echo "${sha256}  ${archive}" | sha256sum --check --status -; then
+            echo "::error::the Tauri CLI archive does not match its pinned digest" >&2
+            rm -f "$archive"
+            exit 1
+          fi
           mkdir -p "$HOME/.cargo/bin"
-          curl -sSfL "$url" | tar -xz -C "$HOME/.cargo/bin" cargo-tauri
+          tar -xzf "$archive" -C "$HOME/.cargo/bin" cargo-tauri
+          rm -f "$archive"
           chmod +x "$HOME/.cargo/bin/cargo-tauri"
 
       - name: Show the Tauri CLI version
@@ -218,7 +228,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ~/.cargo/bin/cargo-tauri.exe
-          key: cargo-tauri-${{ runner.os }}-${{ env.TAURI_CLI_VERSION }}
+          key: cargo-tauri-${{ runner.os }}-${{ env.TAURI_CLI_VERSION }}-820ae3c7
 
       - name: Install the Tauri CLI
         if: steps.tauri-cli.outputs.cache-hit != 'true'
@@ -228,6 +238,10 @@ jobs:
           $zip = Join-Path $env:RUNNER_TEMP "cargo-tauri.zip"
           $out = Join-Path $env:RUNNER_TEMP "cargo-tauri"
           Invoke-WebRequest -Uri $url -OutFile $zip
+          # Pinned: this binary builds the artifact users download.
+          $sha256 = "3e8687fb184bd7f10ebd8642f7715f79f4a605c0694c142a21507e8a24dc0f8b"
+          $actual = (Get-FileHash -Path $zip -Algorithm SHA256).Hash.ToLower()
+          if ($actual -ne $sha256) { throw "the Tauri CLI archive does not match its pinned digest" }
           Expand-Archive -Path $zip -DestinationPath $out -Force
           $dest = Join-Path $env:USERPROFILE ".cargo\bin"
           New-Item -ItemType Directory -Force -Path $dest | Out-Null

@@ -72,6 +72,10 @@ jobs:
       - name: Check the vendored viewer
         run: ./packaging/check-vendored.sh
 
+      # The release signs with this; keep it compiling on every change.
+      - name: Build the release signer
+        run: cargo build --locked --manifest-path tools/sign-manifest/Cargo.toml
+
       - name: Syntax-check the frontend
         run: |
           set -e

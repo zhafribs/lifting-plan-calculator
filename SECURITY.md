@@ -58,7 +58,11 @@ them:
   starts. It sends no identifying information, and it can be ignored entirely
   by not installing an update.
 - **Update install** downloads the release installer the check offered, from
-  `github.com`, and runs it — only after the operator asks for it.
+  `github.com`, and runs it — only after the operator asks for it. Before it
+  runs, the app verifies an Ed25519 signature over the release's checksum
+  manifest with the key compiled into the binary, then verifies the installer's
+  SHA-256 against that manifest. A missing, unsigned or mismatched manifest
+  refuses the update.
 
 The PDF export, the calculator, the chart import and the report are all
 offline.

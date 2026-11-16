@@ -1,0 +1,11 @@
+/home/zhafrisbs/Projects/lifting-plan-calculator/tools/sign-manifest/target/debug/deps/ct_codecs-9316a9ac2f2241b5.d: /home/zhafrisbs/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ct-codecs-1.1.8/src/lib.rs /home/zhafrisbs/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ct-codecs-1.1.8/src/base32.rs /home/zhafrisbs/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ct-codecs-1.1.8/src/base64.rs /home/zhafrisbs/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ct-codecs-1.1.8/src/error.rs /home/zhafrisbs/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ct-codecs-1.1.8/src/hex.rs
+
+/home/zhafrisbs/Projects/lifting-plan-calculator/tools/sign-manifest/target/debug/deps/libct_codecs-9316a9ac2f2241b5.rlib: /home/zhafrisbs/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ct-codecs-1.1.8/src/lib.rs /home/zhafrisbs/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ct-codecs-1.1.8/src/base32.rs /home/zhafrisbs/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ct-codecs-1.1.8/src/base64.rs /home/zhafrisbs/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ct-codecs-1.1.8/src/error.rs /home/zhafrisbs/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ct-codecs-1.1.8/src/hex.rs
+
+/home/zhafrisbs/Projects/lifting-plan-calculator/tools/sign-manifest/target/debug/deps/libct_codecs-9316a9ac2f2241b5.rmeta: /home/zhafrisbs/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ct-codecs-1.1.8/src/lib.rs /home/zhafrisbs/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ct-codecs-1.1.8/src/base32.rs /home/zhafrisbs/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ct-codecs-1.1.8/src/base64.rs /home/zhafrisbs/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ct-codecs-1.1.8/src/error.rs /home/zhafrisbs/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ct-codecs-1.1.8/src/hex.rs
+
+/home/zhafrisbs/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ct-codecs-1.1.8/src/lib.rs:
+/home/zhafrisbs/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ct-codecs-1.1.8/src/base32.rs:
+/home/zhafrisbs/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ct-codecs-1.1.8/src/base64.rs:
+/home/zhafrisbs/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ct-codecs-1.1.8/src/error.rs:
+/home/zhafrisbs/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ct-codecs-1.1.8/src/hex.rs:

@@ -1,0 +1,1 @@
+1e4acd312bebe5992bcb4cd563b16464355229602425f1de56bfd2f18b4290c1  ./Lifting-Plan-Calculator-2.9.4-linux-x86_64.AppImage

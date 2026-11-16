@@ -2,6 +2,25 @@
 
 Nothing yet.
 
+## [2.10.0] - 2026-11-16
+
+### Added
+
+- Releases are signed. `SHA256SUMS.txt` is signed with an Ed25519 key into
+  `SHA256SUMS.txt.sig`; the public half is compiled into the app
+  (`src-tauri/update-public-key.txt`), and the Windows updater verifies the
+  signature before it trusts any digest. An unsigned, wrongly signed or
+  mismatched update is deleted and never run.
+- `scripts/update-signing-key.sh` creates the key and prints the `gh secret set`
+  command; the private key stays on the maintainer's machine and in the
+  `UPDATE_SIGNING_KEY` repository secret.
+
+### Changed
+
+- The release workflow signs the checksum manifest in the publish job and fails
+  if the tree carries a key but the secret is missing, so a release cannot go out
+  unsigned by accident.
+
 ## [2.9.4] - 2026-11-16
 
 ### Fixed

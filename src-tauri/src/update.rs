@@ -10,6 +10,13 @@ use serde::{Deserialize, Serialize};
 #[cfg(any(target_os = "windows", test))]
 use sha2::{Digest, Sha256};
 
+/// The Ed25519 public key that signs each release's `SHA256SUMS.txt`, as 64 hex
+/// characters. Empty until the maintainer runs `scripts/update-signing-key.sh`;
+/// once set, an installer without a valid signature is never run. See
+/// `docs/releases/README.md` for the ceremony.
+#[cfg(any(target_os = "windows", test))]
+const UPDATE_PUBLIC_KEY: &str = include_str!("../update-public-key.txt");
+
 /// The repository every check and download is kept to.
 pub const REPO_URL: &str = "https://github.com/zhafribs/lifting-plan-calculator";
 const RELEASES_API: &str = "https://api.github.com/repos/zhafribs/lifting-plan-calculator/releases/latest";
@@ -154,7 +161,83 @@ fn expected_digest(manifest: &str, name: &str) -> Option<String> {
 }
 
 #[cfg(any(target_os = "windows", test))]
+/// Whether this build requires a signed checksum manifest.
+#[cfg(any(target_os = "windows", test))]
+fn signing_required() -> bool {
+    !UPDATE_PUBLIC_KEY.trim().is_empty()
+}
+
+/// Verify a 64-byte Ed25519 signature (hex) over the manifest's bytes.
+#[cfg(any(target_os = "windows", test))]
+fn verify_signature(manifest: &[u8], signature_hex: &str) -> Result<(), String> {
+    if !signing_required() {
+        return Ok(());
+    }
+    verify_with(UPDATE_PUBLIC_KEY, manifest, signature_hex)
+}
+
+/// The verification itself, against a given key, so it can be tested with a
+/// keypair the test owns.
+#[cfg(any(target_os = "windows", test))]
+fn verify_with(public_hex: &str, manifest: &[u8], signature_hex: &str) -> Result<(), String> {
+    use ed25519_compact::{PublicKey, Signature};
+
+    let hex_decode = |text: &str| -> Option<Vec<u8>> {
+        // Bytes, not characters: the signature comes from the network and a
+        // non-ASCII byte must be rejected, not panic on a UTF-8 boundary.
+        let bytes = text.trim().as_bytes();
+        if bytes.len() % 2 != 0 {
+            return None;
+        }
+        bytes
+            .chunks(2)
+            .map(|pair| u8::from_str_radix(std::str::from_utf8(pair).ok()?, 16).ok())
+            .collect()
+    };
+    let key = hex_decode(public_hex).ok_or_else(|| {
+        "This build's update key is malformed; updates are disabled.".to_string()
+    })?;
+    let signature = hex_decode(signature_hex).ok_or_else(|| {
+        "The release signature could not be read.".to_string()
+    })?;
+    let key = PublicKey::from_slice(&key)
+        .map_err(|_| "This build's update key is malformed; updates are disabled.".to_string())?;
+    let signature = Signature::from_slice(&signature)
+        .map_err(|_| "The release signature could not be read.".to_string())?;
+    key.verify(manifest, &signature)
+        .map_err(|_| "The release checksums are not signed by this application's key.".to_string())
+}
+
+/// Fetch a release's manifest, prove its signature, and find the installer in it.
+///
+/// The signature is checked before any digest is read, so an unsigned or
+/// wrongly signed manifest cannot vouch for anything.
+#[cfg(any(target_os = "windows", test))]
+fn verified_manifest(
+    asset_url: &str,
+    name: &str,
+    fetch: impl Fn(&str) -> Result<Vec<u8>, String>,
+) -> Result<String, String> {
+    let url = manifest_url(asset_url).ok_or_else(|| {
+        "That download does not belong to a release with checksums.".to_string()
+    })?;
+    let manifest = fetch(&url)?;
+    if signing_required() {
+        let signature = fetch(&format!("{url}.sig"))?;
+        let signature = String::from_utf8(signature)
+            .map_err(|_| "The release signature could not be read.".to_string())?;
+        verify_signature(&manifest, &signature)?;
+    }
+    let text = String::from_utf8(manifest)
+        .map_err(|_| "The release checksums could not be read.".to_string())?;
+    if expected_digest(&text, name).is_none() {
+        return Err("That installer is not listed in its release's checksums.".to_string());
+    }
+    Ok(text)
+}
+
 /// The release's checksum manifest, next to the asset itself.
+#[cfg(any(target_os = "windows", test))]
 fn manifest_url(asset_url: &str) -> Option<String> {
     let (base, _) = asset_url.rsplit_once('/')?;
     Some(format!("{base}/SHA256SUMS.txt"))
@@ -173,15 +256,21 @@ pub fn install(asset: &InstallerAsset) -> Result<String, String> {
     // The release publishes SHA256SUMS.txt beside its assets; an installer that
     // is not in it, or does not match it, is not executed. This catches a
     // corrupted or substituted download; it does not prove who built it.
-    let manifest = ureq::get(&manifest_url(&asset.url).ok_or_else(|| {
-        "That download does not belong to a release with checksums.".to_string()
-    })?)
-    .set("User-Agent", USER_AGENT)
-    .timeout(CHECK_TIMEOUT)
-    .call()
-    .map_err(|error| format!("The release checksums could not be read: {error}"))?
-    .into_string()
-    .map_err(|error| format!("The release checksums could not be read: {error}"))?;
+    // Bytes, not `into_string`: a lossy decode could change what is verified.
+    let fetch = |url: &str| -> Result<Vec<u8>, String> {
+        use std::io::Read;
+        let mut bytes = Vec::new();
+        ureq::get(url)
+            .set("User-Agent", USER_AGENT)
+            .timeout(CHECK_TIMEOUT)
+            .call()
+            .map_err(|error| format!("The release checksums could not be read: {error}"))?
+            .into_reader()
+            .read_to_end(&mut bytes)
+            .map_err(|error| format!("The release checksums could not be read: {error}"))?;
+        Ok(bytes)
+    };
+    let manifest = verified_manifest(&asset.url, &asset.name, fetch)?;
     let expected = expected_digest(&manifest, &asset.name).ok_or_else(|| {
         "That installer is not listed in its release's checksums.".to_string()
     })?;
@@ -274,6 +363,77 @@ pub fn quit_app(app: tauri::AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_malformed_signature_is_refused_not_panicked_on() {
+        let public = "c2393429431fc55446c93650d725f89a8af16bc29bdb20d5860a4477b53370ab";
+        for signature in ["0\u{4e00}", "zz", "", "00"] {
+            assert!(verify_with(public, b"manifest", signature).is_err(), "{signature:?}");
+        }
+    }
+
+    #[test]
+    fn the_update_path_refuses_an_unsigned_or_altered_manifest() {
+        let manifest = include_bytes!("../tests/fixtures/update-manifest.txt").to_vec();
+        let signature = include_bytes!("../tests/fixtures/update-manifest.sig").to_vec();
+        let name = "Lifting-Plan-Calculator-2.9.4-linux-x86_64.AppImage";
+        let asset = "https://github.com/o/r/releases/download/v2.9.4/x.exe";
+
+        let signed = |url: &str| -> Result<Vec<u8>, String> {
+            if url.ends_with(".sig") { Ok(signature.clone()) } else { Ok(manifest.clone()) }
+        };
+        assert!(verified_manifest(asset, name, signed).is_ok());
+
+        // A release with no signature is refused.
+        let unsigned = |url: &str| -> Result<Vec<u8>, String> {
+            if url.ends_with(".sig") { Err("404".to_string()) } else { Ok(manifest.clone()) }
+        };
+        assert!(verified_manifest(asset, name, unsigned).is_err());
+
+        // A changed manifest no longer matches its signature.
+        let altered = |url: &str| -> Result<Vec<u8>, String> {
+            if url.ends_with(".sig") {
+                Ok(signature.clone())
+            } else {
+                Ok(b"1e4acd312bebe5992bcb4cd563b16464355229602425f1de56bfd2f18b4290c1  ./other.exe\n".to_vec())
+            }
+        };
+        assert!(verified_manifest(asset, name, altered).is_err());
+
+        // A name that is not listed is refused even when the manifest is valid.
+        assert!(verified_manifest(asset, "other-setup.exe", signed).is_err());
+    }
+
+    #[test]
+    fn the_committed_key_verifies_the_manifest_that_signed_it() {
+        // Signed by the maintainer's key when the key was created. If this
+        // fails, the committed public key and the release signing key differ.
+        let manifest = include_bytes!("../tests/fixtures/update-manifest.txt");
+        let signature = include_str!("../tests/fixtures/update-manifest.sig");
+        // Through the same entry point the installer uses.
+        assert_eq!(verify_signature(manifest, signature), Ok(()));
+    }
+
+    #[test]
+    fn a_signature_proves_the_manifest_came_from_the_key() {
+        use ed25519_compact::{KeyPair, Noise, Seed};
+
+        let key = KeyPair::from_seed(Seed::generate());
+        let public = key.pk.as_ref().iter().map(|b| format!("{b:02x}")).collect::<String>();
+        let manifest = b"abc  ./installer-setup.exe\n";
+        let signature = key.sk.sign(manifest, Some(Noise::generate()));
+        let signature_hex = signature.as_ref().iter().map(|b| format!("{b:02x}")).collect::<String>();
+
+        assert_eq!(verify_with(&public, manifest, &signature_hex), Ok(()));
+        // A changed manifest, another key, or a truncated signature all fail.
+        assert!(verify_with(&public, b"abc  ./other-setup.exe\n", &signature_hex).is_err());
+        let other = KeyPair::from_seed(Seed::generate());
+        let other_public = other.pk.as_ref().iter().map(|b| format!("{b:02x}")).collect::<String>();
+        assert!(verify_with(&other_public, manifest, &signature_hex).is_err());
+        assert!(verify_with(&public, manifest, &signature_hex[..20]).is_err());
+        // This checkout carries a key, so every installed copy requires one.
+        assert!(signing_required());
+    }
 
     #[test]
     fn a_release_manifest_names_its_installer_by_digest() {

@@ -39,6 +39,17 @@ jobs:
       - name: Check the vendored viewer
         run: ./packaging/check-vendored.sh
 
+      # A signed tree without its secret would build for 40 minutes and then
+      # publish an update every installed copy refuses. Fail before the builds.
+      - name: Check the signing key is available
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        run: |
+          if [ -s src-tauri/update-public-key.txt ] && [ -z "${UPDATE_SIGNING_KEY:-}" ]; then
+            echo "::error::src-tauri/update-public-key.txt is set, so releases must be signed; add the UPDATE_SIGNING_KEY secret." >&2
+            exit 1
+          fi
+
       - name: Check the notes, the version and the council record
         if: ${{ github.event_name == 'push' }}
         run: ./packaging/check-release-notes.sh --tag "$GITHUB_REF_NAME"
@@ -345,6 +356,40 @@ jobs:
           cd dist
           sha256sum ./* > SHA256SUMS.txt
           cat SHA256SUMS.txt
+
+      # Authorship: the digests below only mean something if the app can prove
+      # who wrote them. A tree without a key signs nothing (bootstrap); a tree
+      # with one must be signed, or the release fails rather than shipping an
+      # update every installed copy will refuse.
+      - name: Install Rust (to run the signer)
+        uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+
+      # Built before the secret is in scope: the signer is a small standalone
+      # crate with no GTK dependencies, so this job can build it in seconds.
+      - name: Build the signer
+        run: cargo build --locked --manifest-path tools/sign-manifest/Cargo.toml
+
+      - name: Sign the checksums
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        run: |
+          set -euo pipefail
+          if [ ! -s src-tauri/update-public-key.txt ]; then
+            echo "unsigned build: no update key is configured yet"
+            exit 0
+          fi
+          if [ -z "${UPDATE_SIGNING_KEY:-}" ]; then
+            echo "::error::src-tauri/update-public-key.txt is set, so the manifest must be signed; add the UPDATE_SIGNING_KEY secret." >&2
+            exit 1
+          fi
+          signer=tools/sign-manifest/target/debug/sign-manifest
+          "$signer" sign dist/SHA256SUMS.txt dist/SHA256SUMS.txt.sig \
+            --expect src-tauri/update-public-key.txt
+          # Prove the signature the release is about to carry verifies under the
+          # key compiled into the app, not merely that a file was written.
+          "$signer" verify dist/SHA256SUMS.txt dist/SHA256SUMS.txt.sig \
+            --expect src-tauri/update-public-key.txt
+          test -s dist/SHA256SUMS.txt.sig
 
       # A rerun must not quietly replace published bytes: a leftover draft is
       # deleted, a published release is refused (see CONTRIBUTING.md). The

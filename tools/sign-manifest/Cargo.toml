@@ -1,0 +1,10 @@
+[package]
+name = "sign-manifest"
+version = "1.0.0"
+edition = "2021"
+publish = false
+
+# Deliberately standalone and dependency-light: the release workflow runs this in
+# the publish job, which has no GTK/WebKit toolchain. Do not depend on the app.
+[dependencies]
+ed25519-compact = { version = "2", features = ["random"] }

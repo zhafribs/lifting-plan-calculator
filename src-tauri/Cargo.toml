@@ -1,6 +1,6 @@
 [package]
 name = "lifting-plan-calculator"
-version = "2.9.4"
+version = "2.10.0"
 description = "Lifting plan calculator for rigging and crane lifts"
 authors = ["Zhafri Syazwi"]
 edition = "2021"
@@ -22,6 +22,7 @@ rfd = "0.18.0"
 ureq = { version = "2", default-features = false, features = ["tls", "gzip"] }
 sha2 = "0.10"
 lopdf = { version = "0.47.0", default-features = false }
+ed25519-compact = "2.6.1"
 
 # The PDF export prints the report in the app's own WebKit view, so no browser
 # has to be installed on the machine (and none is carried in the AppImage).

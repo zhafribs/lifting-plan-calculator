@@ -79,15 +79,21 @@ for anyone who took one asset:
 sha256sum -c --ignore-missing SHA256SUMS.txt
 ```
 
-The checksums travel over the same connection as the files, so they catch a
-corrupted or truncated download, not a compromised release. Windows will warn
-that the installers are unsigned (SmartScreen shows "Unknown publisher"); the
-source for every build is this repository.
+`SHA256SUMS.txt.sig` sits beside it: an Ed25519 signature over the checksum
+file, made with a key whose public half is compiled into the app. The app's own
+updater verifies both — the signature first, then the installer's digest — and
+refuses an update it cannot attribute. For a manual download, the signature is
+there to be checked with the same public key (`src-tauri/update-public-key.txt`);
+Windows will still warn that the installers are unsigned (SmartScreen shows
+"Unknown publisher"), because they carry no Authenticode certificate. The source
+for every build is this repository.
 
 ### Updating
 
 - **Windows:** the app's update reminder can download and start the newer
-  installer, then closes so it can replace the running files.
+  installer, then closes so it can replace the running files. The installer is
+  only run if the release's checksum manifest carries a valid signature from the
+  app's own key and the download matches its digest.
 - **Linux:** since v2.2.0 the AppImage ships a matching `.AppImage.zsync`
   sidecar, so `appimageupdatetool` (from AppImageUpdate) downloads only the
   blocks that changed rather than the whole file:

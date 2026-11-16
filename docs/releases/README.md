@@ -49,9 +49,30 @@ version heading below its title.
   the product tour.
 - **No changelog inside the app.** The update reminder's *Release notes* button
   opens the GitHub release page.
-- **No signing.** `SHA256SUMS.txt` travels over the same connection as the
-  assets, so it catches a corrupted download, not a compromised release. Windows
-  shows its "Unknown publisher" warning for the installers.
+- **No Authenticode.** The installers carry no Windows code-signing certificate,
+  so SmartScreen shows "Unknown publisher". The update path does not rely on it:
+  the release is signed with the project's own Ed25519 key instead.
+
+## Signed releases
+
+`SHA256SUMS.txt` is signed into `SHA256SUMS.txt.sig` with an Ed25519 key. The
+public half is `src-tauri/update-public-key.txt` and is compiled into every
+build; the private half is the `UPDATE_SIGNING_KEY` repository secret and a file
+on the maintainer's machine. The app verifies the signature before it trusts any
+digest, so an unsigned or wrongly signed manifest is refused rather than run.
+
+**Creating the key (once).** Run `./scripts/update-signing-key.sh`. It writes
+`~/.config/lifting-plan-calculator/update-signing.key` (mode 0600), writes the
+public key into the repository, and prints the `gh secret set` command. Commit
+the public key; from the next release the workflow signs and the app enforces.
+
+**Back the private key up somewhere safe.** Without it no release can be signed,
+and every installed copy refuses an unsigned manifest. If it is lost, recovery
+means publishing a build with a new key that users install manually, because the
+old builds will not accept it.
+
+**Rotation** is the same ceremony with the new key committed in the release that
+introduces it; the previous key only signs earlier releases.
 
 ## Checking and publishing
 

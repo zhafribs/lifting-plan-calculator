@@ -31,6 +31,8 @@ fi
 # no browser and needs none installed on the target machine.
 
 echo "==> Building the AppImage (release)"
+# linuxdeploy is an AppImage itself; FUSE is not present on every machine.
+export APPIMAGE_EXTRACT_AND_RUN=1
 cargo tauri build --bundles appimage
 
 VERSION="$(python3 -c "import json; print(json.load(open('tauri.conf.json'))['version'])")"

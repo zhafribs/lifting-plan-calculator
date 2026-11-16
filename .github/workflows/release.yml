@@ -404,6 +404,10 @@ jobs:
           checked=0
           for record in digests/*.txt; do
             while read -r hash name; do
+              # PowerShell writes CRLF; a trailing carriage return would make
+              # every Windows file look absent.
+              hash="${hash%$'\r'}"
+              name="${name%$'\r'}"
               [ -n "${hash:-}" ] || continue
               [ -f "dist/${name#./}" ] || { echo "::error::${name#./} is missing"; exit 1; }
               actual="$(sha256sum "dist/${name#./}" | cut -d' ' -f1)"

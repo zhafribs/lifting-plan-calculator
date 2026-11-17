@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+Nothing yet.
+
+## [2.12.1] - 2026-11-17
+
 ### Fixed
 
 - On Windows the report view no longer flashes a white print window on every
@@ -7,12 +11,12 @@
   The app's own WebView2 printer remains as the fallback, and it now stays
   hidden until the report has loaded.
 
+## [2.12.0] - 2026-11-17
+
 ### Changed
 
 - The Excel workbook table starts collapsed after an import, so the chart
   controls stay in view. Click the table toggle to read the rows.
-
-## [2.12.0] - 2026-11-17
 
 ### Security
 

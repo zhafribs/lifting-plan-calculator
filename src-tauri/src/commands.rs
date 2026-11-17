@@ -12,6 +12,7 @@ use crate::dto::{build_catalog, table_for, AppState, Catalog, ChartImport, Chart
 use crate::excel::{
     self, boom_changed, forget_chart, imported_inputs, radius_changed, LoadChartData,
 };use crate::nonuniform::{solve_nonuniform, NonuniformResult};
+use crate::outrigger::solve_outrigger;
 use crate::report::{build_report_html, wrap_katex_with, ReportInputs};
 use crate::sling::solve_one_leg;
 
@@ -132,6 +133,11 @@ fn solve_all_internal(state: &AppState) -> SolveAll {
         Err(error) => crate::dto::Section::failed(error.0),
     };
 
+    let outrigger = match solve_outrigger(&state.outrigger) {
+        Ok(result) => crate::dto::Section::solved(result),
+        Err(error) => crate::dto::Section::failed(error.0),
+    };
+
     let sling = match solve_one_leg(&state.sling, totals.gross) {
         Ok(result) => crate::dto::Section::solved(result),
         Err(error) => crate::dto::Section::failed(error.0),
@@ -152,6 +158,7 @@ fn solve_all_internal(state: &AppState) -> SolveAll {
         line_weights,
         tackle_subtotals,
         crane,
+        outrigger,
         sling,
         nonuniform,
         tandem,
@@ -297,6 +304,8 @@ pub fn build_report(
     let inputs = ReportInputs {
         totals: solved.totals,
         crane: solved.crane.result,
+        outrigger: solved.outrigger.result,
+        outrigger_error: solved.outrigger.error,
         sling: solved.sling.result,
         nonuniform: solved.nonuniform.result,
         nonuniform_error: solved.nonuniform.error,

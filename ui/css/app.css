@@ -1238,3 +1238,47 @@ table.grid td.num { text-align: right; }
   gap: 8px;
   margin-top: 10px;
 }
+
+/* ---------- outrigger pad size ------------------------------------------ */
+
+.ground-meta {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.ground-value {
+  font-weight: 600;
+  color: var(--accent);
+}
+.ground-note {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.ground-warning {
+  margin: 8px 0 0;
+  color: var(--caution-text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.formula-block {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.formula-line {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+.formula-line:first-child {
+  color: var(--text);
+  font-weight: 600;
+}
+.pad-diagram { margin-top: 10px; }
+.pad-diagram svg { display: block; width: 100%; }

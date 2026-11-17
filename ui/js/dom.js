@@ -58,6 +58,8 @@ const ICONS = {
     '<path d="M6.5 8.5h11l1.6 9.5a2 2 0 0 1-2 2.3H6.9a2 2 0 0 1-2-2.3z"/><path d="M9 8.5a3 3 0 1 1 6 0"/>',
   crane:
     '<path d="M4 21V5.5L15.5 4M4 6.5h12.5M15.5 4v4"/><path d="M15.5 8.5v3.2"/><path d="M15.5 11.7a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z"/><path d="M4 21h6M7 21v-3"/>',
+  pad:
+    '<rect x="5" y="8" width="14" height="9" rx="1.2"/><path d="M12 8V4.5M8.5 17v3M15.5 17v3"/><path d="M3.5 21h17"/>',
   sling:
     '<path d="M12 3.5v3.2"/><path d="M12 6.7 6.5 15.5v4h11v-4z"/><path d="M12 6.7l5.5 8.8"/><path d="M6.5 19.5h11"/>',
   graph:

@@ -14,6 +14,10 @@ use crate::nonuniform::{
     example_nonuniform_inputs, NonuniformInputs, NonuniformResult, ScenarioSpec, TandemMethod,
     SLING_LEG_OPTIONS, TANDEM_METHODS,
 };
+use crate::outrigger::{
+    example_outrigger_inputs, GroundType, OutriggerInputs, OutriggerResult, GROUND_CATEGORIES,
+    GROUND_TYPES, KG_TO_KN, OUTRIGGER_CONSTANT,
+};
 use crate::sling::{example_inputs, HitchSpec, OneLegInputs, SlingResult, HITCH_SPECS};
 
 /// Who produces, checks and approves the plan, and the reference it carries.
@@ -36,6 +40,7 @@ pub struct AppState {
     pub load_items: Vec<LoadItem>,
     pub tackle_items: Vec<TackleItem>,
     pub crane: CraneInputs,
+    pub outrigger: OutriggerInputs,
     pub sling: OneLegInputs,
     pub nonuniform: NonuniformInputs,
     pub tandem: NonuniformInputs,
@@ -82,6 +87,7 @@ pub struct SolveAll {
     /// Per-line tackle subtotals, in item order.
     pub tackle_subtotals: Vec<f64>,
     pub crane: Section<CraneResult>,
+    pub outrigger: Section<OutriggerResult>,
     pub sling: Section<SlingResult>,
     pub nonuniform: Section<NonuniformResult>,
     pub tandem: Section<NonuniformResult>,
@@ -138,6 +144,11 @@ pub struct Catalog {
     pub usage_ratio: f64,
     pub load_types: Vec<LoadTypeDto>,
     pub chart_columns: Vec<ChartColumnDto>,
+    pub ground_categories: Vec<String>,
+    pub ground_types: Vec<GroundTypeDto>,
+    pub outrigger_constant: f64,
+    pub kg_to_kn: f64,
+    pub example_outrigger: OutriggerInputs,
     pub hitches: Vec<HitchSpecDto>,
     pub scenarios: Vec<ScenarioSpec>,
     pub tandem_methods: Vec<TandemMethodDto>,
@@ -164,6 +175,35 @@ pub struct ChartColumnDto {
     pub decimals: usize,
     pub min: f64,
     pub max: f64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct GroundTypeDto {
+    pub key: String,
+    pub category: String,
+    pub description: String,
+    pub value_label: String,
+    pub v_default: Option<f64>,
+    pub v_min: Option<f64>,
+    pub v_max: Option<f64>,
+    pub notes: String,
+    pub suitable: bool,
+}
+
+impl From<&GroundType> for GroundTypeDto {
+    fn from(ground: &GroundType) -> Self {
+        GroundTypeDto {
+            key: ground.key.to_string(),
+            category: ground.category.to_string(),
+            description: ground.description.to_string(),
+            value_label: ground.value_label.to_string(),
+            v_default: ground.v_default,
+            v_min: ground.v_min,
+            v_max: ground.v_max,
+            notes: ground.notes.to_string(),
+            suitable: ground.suitable,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -251,6 +291,11 @@ pub fn build_catalog() -> Catalog {
                 max: column.max,
             })
             .collect(),
+        ground_categories: GROUND_CATEGORIES.iter().map(|category| category.to_string()).collect(),
+        ground_types: GROUND_TYPES.iter().map(GroundTypeDto::from).collect(),
+        outrigger_constant: OUTRIGGER_CONSTANT,
+        kg_to_kn: KG_TO_KN,
+        example_outrigger: example_outrigger_inputs(),
         hitches: HITCH_SPECS.iter().map(HitchSpecDto::from).collect(),
         scenarios: crate::nonuniform::SCENARIO_SPECS.to_vec(),
         tandem_methods: TANDEM_METHODS.iter().map(TandemMethodDto::from).collect(),

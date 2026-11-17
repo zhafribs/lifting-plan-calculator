@@ -111,6 +111,18 @@ function defaultNonuniform(scenario) {
   };
 }
 
+function defaultOutrigger() {
+  return {
+    ground_key: "",
+    bearing_kpa: 0,
+    crane_mass_kn: 0,
+    lift_load_kn: 0,
+    pad_shape: "square",
+    pad_length_m: 0,
+    pad_width_m: 0,
+  };
+}
+
 /// A blank sheet: one load line and one tackle line, exactly the forms the
 /// operator starts typing into.
 export function defaultState() {
@@ -118,6 +130,7 @@ export function defaultState() {
     load_items: [blankLoadItem()],
     tackle_items: [blankTackleItem()],
     crane: defaultCrane(),
+    outrigger: defaultOutrigger(),
     sling: defaultSling(),
     nonuniform: defaultNonuniform("asym_2leg_shortening"),
     tandem: defaultNonuniform("tandem_aligned_pivot"),

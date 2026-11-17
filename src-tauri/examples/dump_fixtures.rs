@@ -9,6 +9,7 @@ use lifting_plan_calculator_lib::crane::{example_crane_inputs, solve_crane};
 use lifting_plan_calculator_lib::dto::{build_catalog, AppState, Section, SolveAll};
 use lifting_plan_calculator_lib::model::{LoadItem, TackleItem};
 use lifting_plan_calculator_lib::nonuniform::{example_nonuniform_inputs, solve_nonuniform};
+use lifting_plan_calculator_lib::outrigger::{example_outrigger_inputs, solve_outrigger};
 use lifting_plan_calculator_lib::report::{build_report_html, wrap_katex, ReportInputs};
 use lifting_plan_calculator_lib::sling::{example_inputs, solve_one_leg};
 
@@ -25,6 +26,10 @@ fn solve_all(state: &AppState) -> SolveAll {
         line_weights,
         tackle_subtotals,
         crane: match solve_crane(&state.crane, state.totals().gross) {
+            Ok(result) => Section::solved(result),
+            Err(error) => Section::failed(error.0),
+        },
+        outrigger: match solve_outrigger(&state.outrigger) {
             Ok(result) => Section::solved(result),
             Err(error) => Section::failed(error.0),
         },
@@ -102,6 +107,7 @@ fn main() {
             ..TackleItem::default()
         }],
         crane: example_crane_inputs(),
+        outrigger: example_outrigger_inputs(),
         sling,
         nonuniform,
         tandem,
@@ -129,6 +135,8 @@ fn main() {
         &ReportInputs {
             totals: solved.totals.clone(),
             crane: solved.crane.result.clone(),
+            outrigger: solved.outrigger.result.clone(),
+            outrigger_error: solved.outrigger.error.clone(),
             sling: solved.sling.result.clone(),
             nonuniform: solved.nonuniform.result.clone(),
             nonuniform_error: solved.nonuniform.error.clone(),
@@ -140,7 +148,7 @@ fn main() {
             working_diagram: None,
             footer_center: None,
         },
-        &["crane", "uniform", "nonuniform", "tandem"]
+        &["crane", "outrigger", "uniform", "nonuniform", "tandem"]
             .iter()
             .map(|s| s.to_string())
             .collect::<Vec<_>>(),

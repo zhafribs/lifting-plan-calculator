@@ -9,7 +9,7 @@ import { createPdfViewer } from "../pdf-viewer.js";
 export function createReportScreen(ctx) {
   const { store, catalog, toast } = ctx;
 
-  const sections = { crane: true, uniform: true, nonuniform: true, tandem: true };
+  const sections = { crane: true, outrigger: false, uniform: true, nonuniform: true, tandem: true };
   let lastHtml = "";
   let lastSavedPath = null;
   const DEFAULT_FOOTER =
@@ -36,6 +36,7 @@ export function createReportScreen(ctx) {
   const checkBoxes = {};
   const checkNodes = {
     crane: ["Crane", "Capacity check against the load chart"],
+    outrigger: ["Outrigger Pad Size", "Bearing area from the BS 8004 ground table"],
     uniform: ["Uniform Load", "The selected sling arrangement"],
     nonuniform: ["Nonuniform Load", "The asymmetric bridle"],
     tandem: ["Tandem", "The two-crane lift"],

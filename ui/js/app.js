@@ -7,6 +7,7 @@ import { createStore } from "./store.js";
 import { fmt } from "./format.js";
 import { createOverallScreen } from "./screens/overall.js";
 import { createCraneScreen } from "./screens/crane.js";
+import { createOutriggerScreen } from "./screens/outrigger.js";
 import { createGraphScreen } from "./screens/graph.js";
 import { createUniformScreen } from "./screens/uniform.js";
 import { createNonuniformScreen } from "./screens/nonuniform.js";
@@ -20,6 +21,7 @@ const NAV = [
     items: [
       { key: "overall", label: "Overall Weight", icon: "weight", shortcut: "1", title: "Overall Weight", subtitle: "The load lines and the tackle, summed to the gross load at hook." },
       { key: "crane", label: "Crane", icon: "crane", shortcut: "2", title: "Crane", subtitle: "The crane and its load chart, checked at the working radius under the 75% rule." },
+      { key: "outrigger", label: "Outrigger Pad Size", icon: "pad", title: "Outrigger Pad Size", subtitle: "The bearing area under the crane's outrigger, from the BS 8004 presumed bearing table." },
       { key: "graph", label: "Graph", icon: "graph", shortcut: "3", title: "Working Range Diagram", subtitle: "Working range drawn to scale, with radius, heights and clearances read out." },
     ],
   },
@@ -45,13 +47,18 @@ const NAV = [
   },
 ];
 
-const ORDER = NAV.flatMap((group) => group.items).map((item) => item.key);
+const SHORTCUTS = new Map(
+  NAV.flatMap((group) => group.items)
+    .filter((item) => item.shortcut)
+    .map((item) => [item.shortcut, item.key]),
+);
 
 // Screens whose wide layout splits into two independently scrolling panes:
 // the form column and the results column each keep their own scroll position.
 const SPLIT_KEYS = new Set([
   "overall",
   "crane",
+  "outrigger",
   "graph",
   "uniform",
   "nonuniform",
@@ -157,6 +164,7 @@ async function main() {
   const screens = {
     overall: createOverallScreen(ctx),
     crane: createCraneScreen(ctx),
+    outrigger: createOutriggerScreen(ctx),
     graph: createGraphScreen(ctx),
     uniform: createUniformScreen(ctx),
     nonuniform: createNonuniformScreen(ctx),
@@ -280,11 +288,10 @@ async function main() {
 
   window.addEventListener("keydown", (event) => {
     if (!event.ctrlKey || event.altKey || event.metaKey) return;
-    const index = Number(event.key);
-    if (index >= 1 && index <= 7) {
-      event.preventDefault();
-      go(ORDER[index - 1]);
-    }
+    const key = SHORTCUTS.get(event.key);
+    if (!key) return;
+    event.preventDefault();
+    go(key);
   });
 
   updateChips();

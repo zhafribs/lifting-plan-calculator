@@ -1,6 +1,18 @@
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- **Outrigger Pad Size.** A new tab sizes the bearing area under one outrigger
+  from the BS 8004 Table 1 presumed allowable bearing values adapted for
+  Malaysian practice. It carries the ground category, description, bearing
+  value, crane mass, lift load, square or rectangular pad, utilisation check and
+  a printable report section. The same ground table ships as
+  `docs/examples/Presumed Allowable Bearing Values (BS 8004 Table 1).xlsx`.
+
+### Changed
+
+- The Excel workbook table starts collapsed after an import, so the chart
+  controls stay in view. Click the table toggle to read the rows.
 
 ## [2.12.1] - 2026-11-17
 
@@ -12,11 +24,6 @@ Nothing yet.
   hidden until the report has loaded.
 
 ## [2.12.0] - 2026-11-17
-
-### Changed
-
-- The Excel workbook table starts collapsed after an import, so the chart
-  controls stay in view. Click the table toggle to read the rows.
 
 ### Security
 

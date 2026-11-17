@@ -13,8 +13,10 @@ use crate::crane::{CraneResult, DESIGN_LOAD_RATIO};
 use crate::dto::PlanSignoff;
 use crate::model::LiftTotals;
 use crate::nonuniform::{NonuniformResult, TandemResult};
+use crate::outrigger::OutriggerResult;
 use crate::report_capacity::{capacity_section, notes_section, shows_notes, factors_section};
 use crate::report_nonuniform::{nonuniform_sections};
+use crate::report_outrigger::outrigger_section;
 use crate::report_uniform::{geometry_section, section_inputs};
 use crate::sling::{hitch_spec, SlingResult};
 
@@ -457,6 +459,9 @@ pub fn design_load_from_gross(gross: f64) -> f64 {
 pub struct ReportInputs {
     pub totals: LiftTotals,
     pub crane: Option<CraneResult>,
+    pub outrigger: Option<OutriggerResult>,
+    /// Why the outrigger pad could not be sized, or None when it could.
+    pub outrigger_error: Option<String>,
     pub sling: Option<SlingResult>,
     pub nonuniform: Option<NonuniformResult>,
     /// Why the nonuniform lift could not be solved, or None when it could.
@@ -477,7 +482,7 @@ pub struct ReportInputs {
 }
 
 /// The sections a report may carry, in the builder's own source order.
-pub const REPORT_SECTIONS: [&str; 4] = ["crane", "uniform", "nonuniform", "tandem"];
+pub const REPORT_SECTIONS: [&str; 5] = ["crane", "outrigger", "uniform", "nonuniform", "tandem"];
 
 /// The sections one tab's report carries, in the report's own order.
 pub fn report_sections_for(own: &str, include_crane: bool) -> Vec<String> {
@@ -810,6 +815,23 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
             parts.push(p(
                 &format!("{error} The crane check is not part of this plan."),
                 "",
+            ));
+        }
+    }
+
+    if selected("outrigger") {
+        if let Some(outrigger) = &inputs.outrigger {
+            parts.push(format!(
+                "<section class=\"section-card\">{}</section>",
+                outrigger_section(outrigger)
+            ));
+        } else if let Some(error) = &inputs.outrigger_error {
+            parts.push(format!(
+                "<section class=\"section-card\">{}<p>{}</p></section>",
+                heading(2, "Outrigger Pad Size"),
+                escape(&format!(
+                    "{error} The outrigger pad is not part of this plan."
+                ))
             ));
         }
     }
@@ -1385,6 +1407,14 @@ mod tests {
     fn a_tabs_report_carries_its_own_section_and_the_crane() {
         assert_eq!(report_sections_for("crane", true), vec!["crane"]);
         assert_eq!(report_sections_for("crane", false), vec!["crane"]);
+        assert_eq!(
+            report_sections_for("outrigger", true),
+            vec!["crane", "outrigger"]
+        );
+        assert_eq!(
+            report_sections_for("outrigger", false),
+            vec!["outrigger"]
+        );
         assert_eq!(report_sections_for("uniform", true), vec!["crane", "uniform"]);
         assert_eq!(report_sections_for("uniform", false), vec!["uniform"]);
         assert_eq!(report_sections_for("tandem", true), vec!["crane", "tandem"]);
@@ -1423,6 +1453,8 @@ mod tests {
             &ReportInputs {
                 totals: LiftTotals { gross: 0.0, ..Default::default() },
                 crane: None,
+                outrigger: None,
+                outrigger_error: None,
                 sling: None,
                 nonuniform: None,
                 nonuniform_error: None,

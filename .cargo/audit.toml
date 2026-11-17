@@ -13,4 +13,8 @@ ignore = [
     # them, and the version is pinned by Tauri's GTK 0.18 binding; glib 0.20
     # arrives with a Tauri/GTK major upgrade, not here.
     "RUSTSEC-2024-0429",
+    # chrono 0.4.45 is unmaintained, with no fixed upgrade. It reaches the tree
+    # through tauri-utils and serde_with; the app does not use chrono directly,
+    # and the advisory is a maintenance warning rather than a known exploit.
+    "RUSTSEC-2026-0543",
 ]

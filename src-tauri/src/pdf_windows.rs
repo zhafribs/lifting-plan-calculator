@@ -56,8 +56,11 @@ pub fn print_to_pdf(
 
     let (loaded_tx, loaded_rx) = mpsc::channel();
     let window = WebviewWindowBuilder::new(app, &label, WebviewUrl::External(url))
-        // Off-screen rather than hidden: a hidden WebView2 may stop painting,
-        // and a page that never paints prints blank.
+        // Hidden until the page has loaded: a window shown at creation paints
+        // its white background before the report, which is the flash this
+        // fallback printer used to put over the app. Off-screen as well, and
+        // shown only once the document is ready, so nothing appears even then.
+        .visible(false)
         .position(-32_000.0, -32_000.0)
         .inner_size(1060.0, 1500.0)
         .decorations(false)
@@ -76,6 +79,9 @@ pub fn print_to_pdf(
         loaded_rx
             .recv_timeout(deadline.saturating_duration_since(std::time::Instant::now()))
             .map_err(|_| "The report did not finish loading for printing.".to_string())?;
+        // The fallback engine prints a painted view; show it now that the
+        // report, not its white background, is what would appear.
+        let _ = window.show();
         // `load-finished` does not wait for web fonts; without a moment's
         // settle the first page can print with fallback metrics.
         std::thread::sleep(SETTLE);

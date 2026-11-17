@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+### Fixed
+
+- On Windows the report view no longer flashes a white print window on every
+  refresh: the plan is printed by headless Edge, which needs no window at all.
+  The app's own WebView2 printer remains as the fallback, and it now stays
+  hidden until the report has loaded.
+
 ### Changed
 
 - The Excel workbook table starts collapsed after an import, so the chart

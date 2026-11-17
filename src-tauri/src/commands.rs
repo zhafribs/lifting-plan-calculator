@@ -719,20 +719,25 @@ fn print_on_windows(
     let _ = std::fs::remove_file(&in_app);
     let _ = std::fs::remove_file(&via_edge);
 
-    let in_app_result = crate::pdf_windows::print_to_pdf(app, html_path, &in_app, margins)
-        .and_then(|()| check_pdf(&in_app));
-    match in_app_result {
-        Ok(()) => Ok(in_app),
+    // Headless Edge first: it prints without a window, so the page view's
+    // refresh cannot flash a white print window over the app. Windows always
+    // carries Edge; the app's own WebView2 printer stays as the fallback for a
+    // machine where it has been removed.
+    match render_with_browser(html_path, temp, &via_edge)
+        .and_then(|()| check_pdf(&via_edge))
+    {
+        Ok(()) => Ok(via_edge),
         Err(first) => {
-            let _ = std::fs::remove_file(&in_app);
-            match render_with_browser(html_path, temp, &via_edge)
-                .and_then(|()| check_pdf(&via_edge))
-            {
-                Ok(()) => Ok(via_edge),
+            let _ = std::fs::remove_file(&via_edge);
+            let in_app_result = crate::pdf_windows::print_to_pdf(app, html_path, &in_app, margins)
+                .and_then(|()| check_pdf(&in_app));
+            match in_app_result {
+                Ok(()) => Ok(in_app),
                 Err(second) => {
-                    let _ = std::fs::remove_file(&via_edge);
+                    let _ = std::fs::remove_file(&in_app);
                     Err(format!(
-                        "The app's own printer failed ({first}); Edge then failed too ({second})."
+                        "Edge could not print the plan ({first}); the app's own printer \
+                         failed too ({second})."
                     ))
                 }
             }

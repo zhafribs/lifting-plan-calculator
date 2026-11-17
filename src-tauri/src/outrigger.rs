@@ -276,7 +276,6 @@ pub struct OutriggerInputs {
     pub crane_mass_kn: f64,
     pub lift_load_kn: f64,
     pub pad_shape: String,
-    pub pad_length_m: f64,
     pub pad_width_m: f64,
 }
 
@@ -288,7 +287,6 @@ impl Default for OutriggerInputs {
             crane_mass_kn: 0.0,
             lift_load_kn: 0.0,
             pad_shape: "square".to_string(),
-            pad_length_m: 0.0,
             pad_width_m: 0.0,
         }
     }
@@ -310,14 +308,8 @@ pub struct OutriggerResult {
     pub recommended_square_m: f64,
     pub recommended_square_rounded_m: f64,
     pub pad_shape: String,
-    pub pad_length_m: f64,
-    pub pad_width_m: f64,
-    pub pad_area_m2: Option<f64>,
-    pub applied_pressure_kpa: Option<f64>,
-    pub utilisation_percent: Option<f64>,
-    /// `ok`, `caution`, `over` or `size_required`.
-    pub status: String,
-    pub message: String,
+    pub pad_width_m: Option<f64>,
+    pub minimum_length_m: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -354,8 +346,7 @@ pub fn example_outrigger_inputs() -> OutriggerInputs {
         crane_mass_kn: 400.0,
         lift_load_kn: 50.0,
         pad_shape: "square".to_string(),
-        pad_length_m: 2.0,
-        pad_width_m: 2.0,
+        pad_width_m: 0.0,
     }
 }
 
@@ -391,40 +382,19 @@ pub fn solve_outrigger(inputs: &OutriggerInputs) -> Result<OutriggerResult, Outr
     // Round up to the next 50 mm, the practical increment used on site.
     let recommended_square_rounded = (recommended_square / 0.05).ceil() * 0.05;
 
-    let (pad_area, applied_pressure, utilisation, status, message) = if inputs.pad_length_m > 0.0
-        || inputs.pad_width_m > 0.0
-    {
-        if inputs.pad_length_m <= 0.0 || inputs.pad_width_m <= 0.0 {
-            return Err(err("Enter both the pad length and the pad width."));
-        }
-        let area = inputs.pad_length_m * inputs.pad_width_m;
-        if !area.is_finite() || area <= 0.0 {
-            return Err(err("The pad length and width do not produce an area."));
-        }
-        let pressure = design_load / area;
-        let use_percent = pressure / v * 100.0;
-        let (status, message) = if use_percent > 100.0 {
-            ("over", "Pad is too small for the design load. Increase the bearing area.")
-        } else if use_percent >= 90.0 {
-            ("caution", "Pad is close to the limit. Check the ground and the pad build-up.")
-        } else {
-            ("ok", "Pad size is adequate for the design load.")
-        };
-        (
-            Some(area),
-            Some(pressure),
-            Some(use_percent),
-            status,
-            message,
-        )
+    let pad_shape = if inputs.pad_shape == "rectangular" {
+        "rectangular"
     } else {
-        (
-            None,
-            None,
-            None,
-            "size_required",
-            "Enter a pad size, or use the recommended square pad.",
-        )
+        "square"
+    };
+    let (pad_width, minimum_length) = if pad_shape == "rectangular" {
+        if !inputs.pad_width_m.is_finite() || inputs.pad_width_m <= 0.0 {
+            return Err(err("Enter the pad width for a rectangular pad."));
+        }
+        let length = (required_area / inputs.pad_width_m / 0.05).ceil() * 0.05;
+        (Some(inputs.pad_width_m), Some(length))
+    } else {
+        (None, None)
     };
 
     Ok(OutriggerResult {
@@ -440,18 +410,9 @@ pub fn solve_outrigger(inputs: &OutriggerInputs) -> Result<OutriggerResult, Outr
         required_area_m2: required_area,
         recommended_square_m: recommended_square,
         recommended_square_rounded_m: recommended_square_rounded,
-        pad_shape: if inputs.pad_shape == "rectangular" {
-            "rectangular".to_string()
-        } else {
-            "square".to_string()
-        },
-        pad_length_m: inputs.pad_length_m,
-        pad_width_m: inputs.pad_width_m,
-        pad_area_m2: pad_area,
-        applied_pressure_kpa: applied_pressure,
-        utilisation_percent: utilisation,
-        status: status.to_string(),
-        message: message.to_string(),
+        pad_shape: pad_shape.to_string(),
+        pad_width_m: pad_width,
+        minimum_length_m: minimum_length,
     })
 }
 
@@ -478,9 +439,8 @@ mod tests {
         assert!((result.required_area_m2 - 1.95).abs() < 1e-9);
         assert!((result.recommended_square_m - 1.95_f64.sqrt()).abs() < 1e-9);
         assert!((result.recommended_square_rounded_m - 1.40).abs() < 1e-9);
-        assert_eq!(result.status, "ok");
-        assert!((result.applied_pressure_kpa.unwrap() - 73.125).abs() < 1e-9);
-        assert!((result.utilisation_percent.unwrap() - 48.75).abs() < 1e-9);
+        assert_eq!(result.pad_shape, "square");
+        assert!(result.minimum_length_m.is_none());
     }
 
     #[test]
@@ -494,39 +454,21 @@ mod tests {
     }
 
     #[test]
-    fn a_pad_below_the_required_area_is_over() {
+    fn a_rectangular_pad_gets_the_minimum_length_for_its_width() {
         let mut input = example();
-        input.pad_length_m = 1.0;
-        input.pad_width_m = 1.0;
+        input.pad_shape = "rectangular".to_string();
+        input.pad_width_m = 2.0;
         let result = solve_outrigger(&input).unwrap();
-        assert_eq!(result.status, "over");
-        assert!((result.utilisation_percent.unwrap() - 195.0).abs() < 1e-9);
+        assert_eq!(result.pad_shape, "rectangular");
+        assert_eq!(result.pad_width_m, Some(2.0));
+        // 1.95 m2 / 2.00 m = 0.975 m, rounded up to the next 50 mm = 1.00 m.
+        assert_eq!(result.minimum_length_m, Some(1.0));
     }
 
     #[test]
-    fn a_pad_at_ninety_percent_is_caution() {
+    fn a_rectangular_pad_without_a_width_is_refused() {
         let mut input = example();
-        // 292.5 / (1.43 * 1.44) / 150 = 94.6%
-        input.pad_length_m = 1.43;
-        input.pad_width_m = 1.44;
-        let result = solve_outrigger(&input).unwrap();
-        assert_eq!(result.status, "caution");
-    }
-
-    #[test]
-    fn no_pad_dimensions_ask_for_a_size_instead_of_failing() {
-        let mut input = example();
-        input.pad_length_m = 0.0;
-        input.pad_width_m = 0.0;
-        let result = solve_outrigger(&input).unwrap();
-        assert_eq!(result.status, "size_required");
-        assert!(result.pad_area_m2.is_none());
-    }
-
-    #[test]
-    fn one_missing_dimension_is_refused() {
-        let mut input = example();
-        input.pad_length_m = 2.0;
+        input.pad_shape = "rectangular".to_string();
         input.pad_width_m = 0.0;
         assert!(solve_outrigger(&input).is_err());
     }

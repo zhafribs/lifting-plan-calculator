@@ -1,5 +1,5 @@
-// Outrigger Pad Size: the bearing area under one outrigger, sized from the
-// BS 8004 presumed allowable bearing values in the ground table.
+// Outrigger Pad Size: the minimum bearing pad under one outrigger, sized from
+// the BS 8004 presumed allowable bearing values in the ground table.
 
 import { el } from "../dom.js";
 import {
@@ -8,7 +8,6 @@ import {
   exampleButton,
   field,
   kvRows,
-  meter,
   note,
   numberInput,
   reportButton,
@@ -52,11 +51,19 @@ export function createOutriggerScreen(ctx) {
   });
 
   const groundMeta = el("div", { class: "ground-meta" });
+  const tableValueOut = el("div", { class: "readout-value", text: "—" });
+  const tableValueField = el(
+    "div",
+    { class: "field readout-field" },
+    el("span", { text: "Published table value" }),
+    tableValueOut,
+    el("span", { class: "hint", text: "BS 8004 Table 1" }),
+  );
+
   const vInput = numberInput({
     value: 0,
     onInput: (value) => set({ bearing_kpa: value ?? 0 }),
   });
-
   const vField = field({
     label: "Max permissible SBC (V)",
     unit: "kPa",
@@ -72,7 +79,10 @@ export function createOutriggerScreen(ctx) {
     value: 0,
     onInput: (value) => set({ lift_load_kn: value ?? 0, lift_load_linked: false }),
   });
-  const overallHint = el("span", { class: "faint small" });
+  const overallHint = el("p", {
+    class: "faint small",
+    style: { margin: "2px 2px 0" },
+  });
   const useCrane = el(
     "button",
     {
@@ -116,51 +126,19 @@ export function createOutriggerScreen(ctx) {
       { key: "rectangular", label: "Rectangular" },
     ],
     value: "square",
-    onChange: (value) => {
-      if (value === "square") {
-        const side = store.state.outrigger.pad_length_m || store.state.outrigger.pad_width_m || 0;
-        set({ pad_shape: "square", pad_length_m: side, pad_width_m: side });
-      } else {
-        set({ pad_shape: "rectangular" });
-      }
-    },
-  });
-
-  const sideInput = numberInput({
-    value: 0,
-    onInput: (value) => set({ pad_length_m: value ?? 0, pad_width_m: value ?? 0 }),
-  });
-  const lengthInput = numberInput({
-    value: 0,
-    onInput: (value) => set({ pad_length_m: value ?? 0 }),
+    onChange: (value) => set({ pad_shape: value }),
   });
   const widthInput = numberInput({
     value: 0,
     onInput: (value) => set({ pad_width_m: value ?? 0 }),
   });
-  const squareField = field({ label: "Pad side", unit: "m", input: sideInput });
-  const rectFields = el(
-    "div",
-    { class: "fields" },
-    field({ label: "Pad length", unit: "m", input: lengthInput }),
-    field({ label: "Pad width", unit: "m", input: widthInput }),
-  );
-  const useRecommendation = el(
-    "button",
-    {
-      class: "btn ghost small",
-      onClick: () => {
-        const result = store.solved?.outrigger?.result;
-        if (!result || !(result.recommended_square_rounded_m > 0)) {
-          ctx.toast("Enter the ground and the loads first.", "error");
-          return;
-        }
-        const side = result.recommended_square_rounded_m;
-        set({ pad_shape: "square", pad_length_m: side, pad_width_m: side });
-      },
-    },
-    "Use recommended square",
-  );
+  const padWidthField = field({
+    label: "Available pad width",
+    unit: "m",
+    input: widthInput,
+    hint: "The minimum length is calculated for this width.",
+  });
+  padWidthField.classList.add("pad-width-field");
 
   const badge = el("div", {});
   const resultRows = el("div", {});
@@ -189,11 +167,7 @@ export function createOutriggerScreen(ctx) {
               field({ label: "Ground category", input: categorySelect }),
               field({ label: "Soil / rock description", input: groundSelect }),
             ),
-            el(
-              "div",
-              { class: "fields mt12" },
-              vField,
-            ),
+            el("div", { class: "fields mt12" }, vField, tableValueField),
             groundMeta,
             note(
               "V is the presumed allowable bearing value. For a range, the lower bound is loaded for preliminary sizing; confirm a site-specific value before the lift.",
@@ -222,32 +196,20 @@ export function createOutriggerScreen(ctx) {
                 hint: "Defaults to the Overall Weight gross load until edited.",
               }),
             ),
-            el(
-              "div",
-              { class: "row wrap" },
-              useCrane,
-              useOverall,
-              overallHint,
-            ),
+            el("div", { class: "row wrap" }, useCrane, useOverall),
+            overallHint,
           ),
         }),
         card({
           title: "Pad",
-          note: "Bearing area only; thickness is a separate check",
+          note: "The formula gives the minimum bearing size",
           body: el(
             "div",
             { class: "stack-8" },
             el("div", { class: "fields" }, field({ label: "Pad shape", input: shapeSelect })),
-            squareField,
-            rectFields,
-            el(
-              "div",
-              { class: "row wrap" },
-              useRecommendation,
-              el("span", {
-                class: "faint small",
-                text: "Sizes are rounded up to 50 mm increments.",
-              }),
+            padWidthField,
+            note(
+              "A square pad uses the calculated square side. For a rectangular pad, enter the width you have and the minimum length is calculated. Sizes are rounded up to 50 mm.",
             ),
             note(
               "This sizes the pad's bearing area. Pad thickness, steel plate design, timber grade and the crane manufacturer's outrigger reaction are separate checks.",
@@ -258,7 +220,10 @@ export function createOutriggerScreen(ctx) {
       el(
         "div",
         { class: "stack sticky pane" },
-        card({ title: "Pad size result", body: el("div", {}, badge, resultRows, formulaBox, padDiagram) }),
+        card({
+          title: "Minimum pad size",
+          body: el("div", {}, badge, resultRows, formulaBox, padDiagram),
+        }),
         card({ title: "Ground reference", body: groundReference }),
         card({
           title: "Actions",
@@ -285,7 +250,6 @@ export function createOutriggerScreen(ctx) {
                   crane_mass_linked: true,
                   lift_load_linked: true,
                   pad_shape: "square",
-                  pad_length_m: 0,
                   pad_width_m: 0,
                 };
               }),
@@ -326,6 +290,7 @@ export function createOutriggerScreen(ctx) {
   function renderGroundMeta(state) {
     const ground = groundFor(state);
     if (!ground) {
+      tableValueOut.textContent = "—";
       groundMeta.replaceChildren(
         el("p", {
           class: "faint small",
@@ -335,13 +300,10 @@ export function createOutriggerScreen(ctx) {
       );
       return;
     }
-    const items = [
-      el("div", {
-        class: "ground-value",
-        text: `Table value: ${ground.value_label}${ground.suitable ? " kPa" : ""}`,
-      }),
-      el("p", { class: "ground-note", text: ground.notes }),
-    ];
+    tableValueOut.textContent = ground.suitable
+      ? `${ground.value_label} kPa`
+      : "Not applicable";
+    const items = [el("p", { class: "ground-note", text: ground.notes })];
     if (!ground.suitable) {
       items.push(
         el("p", {
@@ -409,38 +371,40 @@ export function createOutriggerScreen(ctx) {
     if (document.activeElement !== cmInput) cmInput.value = String(state.outrigger.crane_mass_kn ?? 0);
     if (document.activeElement !== liftInput) liftInput.value = String(state.outrigger.lift_load_kn ?? 0);
     if (document.activeElement !== shapeSelect) shapeSelect.value = state.outrigger.pad_shape || "square";
-    if (document.activeElement !== sideInput) sideInput.value = String(state.outrigger.pad_length_m ?? 0);
-    if (document.activeElement !== lengthInput) lengthInput.value = String(state.outrigger.pad_length_m ?? 0);
     if (document.activeElement !== widthInput) widthInput.value = String(state.outrigger.pad_width_m ?? 0);
 
-    const square = (state.outrigger.pad_shape || "square") === "square";
-    squareField.style.display = square ? "" : "none";
-    rectFields.style.display = square ? "none" : "";
+    const rectangular = (state.outrigger.pad_shape || "square") === "rectangular";
+    padWidthField.style.display = rectangular ? "" : "none";
 
     const gross = store.solved?.totals?.gross ?? 0;
     overallHint.textContent = gross > 0
       ? `Overall weight: ${fmt(gross, 2, "kg")} (${fmt(gross * catalog.kg_to_kn, 2, "kN")}).`
       : "No overall weight entered yet.";
     useOverall.disabled = gross <= 0;
-  }
-
-  function bandClass(band) {
-    return band === "ok" ? "ok" : band === "caution" ? "caution" : "over";
+    useCrane.disabled = (store.state.crane?.capacity_t ?? 0) <= 0;
   }
 
   function padPlan(result) {
-    if (!result.pad_length_m || !result.pad_width_m) {
+    const rectangular = result.pad_shape === "rectangular";
+    const padLength = rectangular
+      ? result.minimum_length_m
+      : result.recommended_square_rounded_m;
+    const padWidth = rectangular
+      ? result.pad_width_m
+      : result.recommended_square_rounded_m;
+    if (!padLength || !padWidth) {
       return el("p", {
         class: "faint small",
         style: { margin: "10px 2px 0" },
-        text: "Enter a pad size to draw the plan.",
+        text: "Enter a pad width to draw the rectangular pad.",
       });
     }
+
     const width = 340;
     const height = 214;
     const maxW = 220;
     const maxH = 96;
-    const ratio = result.pad_length_m / result.pad_width_m;
+    const ratio = padLength / padWidth;
     let padW;
     let padH;
     if (ratio >= 1) {
@@ -454,15 +418,15 @@ export function createOutriggerScreen(ctx) {
     const y = 58;
     const dimY = y + padH + 20;
     const dimX = x + padW + 20;
-    const svg = `<svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}" role="img" aria-label="Outrigger pad plan">
+    const svg = `<svg viewBox="0 0 ${width} ${height}" width="100%" height="${height}" role="img" aria-label="Minimum outrigger pad plan">
       <rect x="${x}" y="${y}" width="${padW}" height="${padH}" rx="6" fill="#1c2838" stroke="#5cb3ff" stroke-width="1.5"/>
       <line x1="${x}" y1="${dimY}" x2="${x + padW}" y2="${dimY}" stroke="#e2a558" stroke-width="1" stroke-dasharray="4 3"/>
-      <text x="${x + padW / 2}" y="${dimY + 14}" fill="#e2a558" font-size="10.5" text-anchor="middle">${fmt(result.pad_length_m, 2, "m")}</text>
+      <text x="${x + padW / 2}" y="${dimY + 14}" fill="#e2a558" font-size="10.5" text-anchor="middle">${fmt(padLength, 2, "m")}</text>
       <line x1="${dimX}" y1="${y}" x2="${dimX}" y2="${y + padH}" stroke="#e2a558" stroke-width="1" stroke-dasharray="4 3"/>
-      <text x="${dimX + 6}" y="${y + padH / 2}" fill="#e2a558" font-size="10.5" dominant-baseline="middle">${fmt(result.pad_width_m, 2, "m")}</text>
+      <text x="${dimX + 6}" y="${y + padH / 2}" fill="#e2a558" font-size="10.5" dominant-baseline="middle">${fmt(padWidth, 2, "m")}</text>
       <circle cx="${x + padW / 2}" cy="${y + padH / 2}" r="4" fill="#e2a558"/>
       <text x="${x + padW / 2}" y="${y + padH / 2 - 10}" fill="#e2a558" font-size="9.5" text-anchor="middle">outrigger</text>
-      <text x="${width / 2}" y="${height - 6}" fill="#64748d" font-size="9.5" text-anchor="middle">Plan view, not to scale</text>
+      <text x="${width / 2}" y="${height - 6}" fill="#64748d" font-size="9.5" text-anchor="middle">Minimum pad, plan view, not to scale</text>
     </svg>`;
     return el("div", { html: svg });
   }
@@ -482,20 +446,12 @@ export function createOutriggerScreen(ctx) {
       padDiagram.style.display = "none";
       return;
     }
+    badge.replaceChildren();
     resultRows.style.display = "";
     formulaBox.style.display = "";
     padDiagram.style.display = "";
     const result = section.result;
-    const band = result.status || "";
-    const statusText =
-      band === "ok"
-        ? "Pad size is adequate"
-        : band === "caution"
-          ? "Pad is close to the limit"
-          : band === "over"
-            ? "Pad is too small"
-            : "Enter a pad size";
-    badge.replaceChildren(statusBadge(band === "size_required" ? "" : band, statusText, result.message));
+    const rectangular = result.pad_shape === "rectangular";
 
     const rows = [
       ["Ground category", result.ground_category],
@@ -507,37 +463,54 @@ export function createOutriggerScreen(ctx) {
           : `${result.ground_value_label} kPa`,
       ],
       ["Design V", fmt(result.bearing_kpa, 2, "kPa")],
-      ["Crane mass CM", fmt(result.crane_mass_kn, 2, "kN")],
-      ["Lift load L", fmt(result.lift_load_kn, 2, "kN")],
+      ["Crane mass (CM)", fmt(result.crane_mass_kn, 2, "kN")],
+      ["Lift load (L)", fmt(result.lift_load_kn, 2, "kN")],
       ["Design load 0.65 × (CM + L)", fmt(result.design_load_kn, 2, "kN")],
       ["Required pad area A", fmt(result.required_area_m2, 3, "m²"), "", "big one-line"],
-      ["Minimum square pad", fmt(result.recommended_square_rounded_m, 2, "m"), "caution", "big one-line"],
     ];
-    if (result.pad_area_m2 !== null) {
+    if (rectangular && result.minimum_length_m !== null) {
       rows.push(
-        ["Selected pad", `${fmt(result.pad_length_m, 2, "m")} × ${fmt(result.pad_width_m, 2, "m")}`],
-        ["Pad area", fmt(result.pad_area_m2, 3, "m²")],
-        ["Applied pressure", fmt(result.applied_pressure_kpa, 2, "kPa")],
-        ["Utilisation", fmt(result.utilisation_percent, 2, "%"), bandClass(band), "big one-line"],
+        ["Available pad width", fmt(result.pad_width_m, 2, "m")],
+        [
+          "Minimum pad",
+          `${fmt(result.minimum_length_m, 2, "")} × ${fmt(result.pad_width_m, 2, "")} m`,
+          "",
+          "big one-line",
+        ],
       );
+    } else {
+      rows.push([
+        "Minimum pad",
+        `${fmt(result.recommended_square_rounded_m, 2, "")} × ${fmt(result.recommended_square_rounded_m, 2, "")} m`,
+        "",
+        "big one-line",
+      ]);
     }
-    const resultNodes = [kvRows(rows)];
-    if (result.utilisation_percent !== null) {
-      resultNodes.push(meter(result.utilisation_percent, band === "size_required" ? "" : band));
-    }
-    resultRows.replaceChildren(...resultNodes);
+    resultRows.replaceChildren(kvRows(rows));
 
-    formulaBox.append(
+    const formulaLines = [
       el("div", { class: "formula-line", text: "A = 0.65 × (CM + L) / V" }),
       el("div", {
         class: "formula-line",
         text: `A = 0.65 × (${fmt(result.crane_mass_kn, 2, "")} + ${fmt(result.lift_load_kn, 2, "")}) / ${fmt(result.bearing_kpa, 2, "")} = ${fmt(result.required_area_m2, 3, "m²")}`,
       }),
-      el("div", {
-        class: "formula-line",
-        text: `Minimum square side = √A = ${fmt(result.recommended_square_m, 3, "m")} → ${fmt(result.recommended_square_rounded_m, 2, "m")}`,
-      }),
-    );
+    ];
+    if (rectangular && result.minimum_length_m !== null) {
+      formulaLines.push(
+        el("div", {
+          class: "formula-line",
+          text: `Minimum length = ceil(A / ${fmt(result.pad_width_m, 2, "")} / 0.05) × 0.05 = ${fmt(result.minimum_length_m, 2, "m")}`,
+        }),
+      );
+    } else {
+      formulaLines.push(
+        el("div", {
+          class: "formula-line",
+          text: `Minimum square side = √A = ${fmt(result.recommended_square_m, 3, "m")} → ${fmt(result.recommended_square_rounded_m, 2, "m")}`,
+        }),
+      );
+    }
+    formulaBox.append(...formulaLines);
     padDiagram.append(padPlan(result));
   }
 

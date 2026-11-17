@@ -41,6 +41,19 @@ choose. Nothing else leaves the machine. Files are written only when you save a
 report, download an installer, or write the small
 `~/.cache/lifting-plan-calculator/ui.log` log used to diagnose startup problems.
 
+## What's new in 2.13.2
+
+Released 18 November 2026. The Outrigger Pad Size tab now reports the minimum pad, not a usage band.
+
+- The formula sets the minimum bearing size. The selected-pad utilisation,
+  applied-pressure and pass/fail bands are gone.
+- A square pad shows the minimum square side; a rectangular pad shows the
+  minimum length for the width you enter.
+- The ground row now pairs **V** with the published table value, and the crane
+  and lift buttons sit on their own line so the form no longer crowds.
+
+The full notes are in [`docs/releases/v2.13.2.md`](docs/releases/v2.13.2.md).
+
 ## What's new in 2.13.1
 
 Released 17 November 2026. The Outrigger Pad Size form is easier to use and
@@ -179,7 +192,7 @@ Six calculation forms over one shared lift, plus a printable report:
 | --- | --- |
 | **Overall Weight** | Load lines and tackle, summed to the gross load at the hook. |
 | **Crane** | The capacity check against a load chart imported from Excel, or a single point typed by hand, read against the same 75% band. |
-| **Outrigger Pad Size** | The bearing area under one outrigger, sized from the BS 8004 Table 1 presumed bearing values and checked against the selected pad. |
+| **Outrigger Pad Size** | The minimum bearing pad under one outrigger, sized from the BS 8004 Table 1 presumed bearing values. |
 | **Uniform Load** | The nineteen 1-leg / 2-leg / nested / bridle arrangements, each checked against the gross load at hook. |
 | **Nonuniform Load** | The 2-leg asymmetric bridle with a shortening grab hook. |
 | **Tandem** | Two independent cranes sharing one load, in the two declared lug configurations. |
@@ -234,9 +247,9 @@ captures.
 | **Nonuniform Load** | **Tandem** |
 | ![Nonuniform Load](docs/screenshots/05-nonuniform.png) | ![Tandem](docs/screenshots/06-tandem.png) |
 
-**Outrigger Pad Size** — linked to a 90 t crane rating (882.60 kN) and a
-4,350 kg overall lift (42.66 kN), with firm clay at 75 kPa. The 8.019 m²
-required area rounds up to a 2.85 m square, checked at 98.72% utilisation:
+**Outrigger Pad Size** — a 400 kN crane mass, a 50 kN lift and stiff clay at
+150 kPa. The 1.950 m² required area gives a 1.40 m minimum square pad. The
+formula sets the minimum size; there is no separate pass/fail band:
 
 ![Outrigger Pad Size](docs/screenshots/11-outrigger.png)
 
@@ -293,7 +306,7 @@ cd src-tauri
 cargo test
 ```
 
-241 tests, including the Kotlin unit suite's own expected values (`CalcTest`,
+239 tests, including the Kotlin unit suite's own expected values (`CalcTest`,
 `CraneTest`, `CraneManualEntryTest`, `SlingTest`, `NonuniformTest`,
 `ExcelImportTest`, `ReportTest`, `ReportUniformTest`, `ReportCapacityTest`,
 `ReportNonuniformTest`), plus tests of the Rust port itself (load figures, model

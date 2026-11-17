@@ -173,21 +173,18 @@ The **Ground reference** card keeps the category, description, table value and f
 - **Use crane tab** reconnects CM to the crane rated capacity. **Use overall weight** reconnects L to the overall weight.
 - The app shows the design load: **0.65 × (CM + L)**.
 
-### Size and check the pad
+### Read the minimum pad size
 
 - **Required pad area A** is the formula result.
-- **Minimum square pad** is `√A`, rounded up to the next 50 mm.
-- **Use recommended square** fills the pad with that minimum square size.
-- For a rectangular pad, choose **Rectangular** and enter the length and width. The app checks the selected area against the required area.
-- **Applied pressure** is the design load divided by the selected pad area.
-- **Utilisation** is the applied pressure divided by **V**. Green is up to 90%, amber is 90% to 100%, and red is over 100%.
-
-The plan view shows the pad and the outrigger point. It is a plan view only, not a thickness design.
+- For a square pad, the **minimum pad** is `√A`, rounded up to the next 50 mm.
+- For a rectangular pad, choose **Rectangular**, enter the width you have, and the app calculates the minimum length from `A / width`, rounded up to 50 mm.
+- A larger pad is acceptable. The app gives the minimum bearing size; it does not apply a second utilisation band.
+- The plan view shows the minimum pad and the outrigger point. It is a plan view only, not a thickness design.
 
 ### What to check before the lift
 
 - The **V** value comes from the right ground row, and is confirmed by the geotechnical assessment.
-- **CM** is the crane's operating mass, not just the counterweight.
+- **CM** is the crane mass used by the formula; the default is the Crane tab's rated capacity.
 - **L** is the load lifted. If you use the overall weight, remember it includes the lifting tackle.
 - The pad is fully supported, the ground is drained, and the crane manufacturer's outrigger reaction has been checked separately.
 
@@ -344,9 +341,9 @@ The report has no sections selected, or the preview has not drawn yet. Tick at l
 
 Peat, organic soils and uncontrolled fill are marked **Not applicable** in the BS 8004 table. They are too compressible for a shallow pad, so the app refuses the calculation. Use piling or ground improvement, or obtain a site-specific bearing value and a designed foundation.
 
-### Why is my pad too small?
+### How do I size a rectangular pad?
 
-The selected pad area is below the required area, so the applied pressure is above **V**. Increase the length or width, use a square pad, or recheck the ground value. The **Use recommended square** button fills the minimum square size.
+Choose **Rectangular** and enter the width you have. The app calculates the minimum length from `A / width`, rounded up to 50 mm. A larger pad is acceptable.
 
 ### Where did my plan go?
 

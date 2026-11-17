@@ -125,7 +125,6 @@ function defaultOutrigger() {
     crane_mass_linked: true,
     lift_load_linked: true,
     pad_shape: "square",
-    pad_length_m: 0,
     pad_width_m: 0,
   };
 }

@@ -2,6 +2,18 @@
 
 Nothing yet.
 
+## [2.13.2] - 2026-11-18
+
+### Changed
+
+- **The outrigger result is the minimum pad, not a usage band.** The formula
+  already decides the minimum bearing area, so the selected-pad applied
+  pressure, utilisation and 90/100% bands are removed. A square pad reports the
+  minimum square side; a rectangular pad reports the minimum length for the
+  chosen width. A larger pad is acceptable.
+- The outrigger form is reflowed: the bearing value and the published table
+  value share a row, and the crane/lift actions sit on their own line.
+
 ## [2.13.1] - 2026-11-17
 
 ### Fixed

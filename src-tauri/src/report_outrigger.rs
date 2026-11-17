@@ -1,29 +1,11 @@
 //! The outrigger pad section of the printable plan.
 //!
 //! The formula is printed in full so a reviewer can follow the area from the
-//! ground value, the crane mass and the lift load. The selected pad is then
-//! checked against that area, not merely restated.
+//! ground value, the crane mass and the lift load. The result is the minimum
+//! pad, not a pass/fail check of one already chosen.
 
 use crate::outrigger::OutriggerResult;
 use crate::report::{equation, escape, fmt, heading, p, subheading, tex_num};
-
-fn status_word(status: &str) -> &'static str {
-    match status {
-        "ok" => "Within limit",
-        "caution" => "Caution",
-        "over" => "Warning",
-        _ => "Pad size not entered",
-    }
-}
-
-fn status_colour(status: &str) -> &'static str {
-    match status {
-        "ok" => "color:#2e7d52;font-weight:bold;",
-        "caution" => "color:#b06a1e;font-weight:bold;",
-        "over" => "color:#b23b3b;font-weight:bold;",
-        _ => "color:#64748d;font-weight:bold;",
-    }
-}
 
 /// Build the outrigger section for the report.
 pub fn outrigger_section(result: &OutriggerResult) -> String {
@@ -67,56 +49,44 @@ pub fn outrigger_section(result: &OutriggerResult) -> String {
         tex_num(Some(result.bearing_kpa), 2),
         tex_num(Some(result.required_area_m2), 3)
     )));
-    out.push(equation(&format!(
-        "\\text{{Minimum square side}} = \\sqrt{{A}} = \
-         {}\\ \\text{{m}}",
-        tex_num(Some(result.recommended_square_m), 3)
-    )));
-    out.push(p(
-        &format!(
-            "Round up to <b>{}</b> at 50 mm increments.",
-            fmt(Some(result.recommended_square_rounded_m), 2, "m")
-        ),
-        "",
-    ));
 
-    if let Some(pad_area) = result.pad_area_m2 {
-        out.push(subheading("Selected pad"));
+    if let (Some(width), Some(length)) = (result.pad_width_m, result.minimum_length_m) {
+        out.push(subheading("Minimum rectangular pad"));
         out.push(equation(&format!(
-            "\\text{{Pad area}} = {} \\times {} = {}\\ \\text{{m}}^2",
-            tex_num(Some(result.pad_length_m), 2),
-            tex_num(Some(result.pad_width_m), 2),
-            tex_num(Some(pad_area), 3)
+            "L_{{\\text{{min}}}} = \\left\\lceil \\frac{{A}}{{W \\times 0.05}} \
+             \\right\\rceil \\times 0.05 = {}\\ \\text{{m}}",
+            tex_num(Some(length), 2)
         )));
-        if let Some(pressure) = result.applied_pressure_kpa {
-            out.push(equation(&format!(
-                "p_{{\\text{{applied}}}} = \\frac{{P}}{{A_{{\\text{{pad}}}}}} = \
-                 \\frac{{{}}}{{{}}} = {}\\ \\text{{kPa}}",
-                tex_num(Some(result.design_load_kn), 2),
-                tex_num(Some(pad_area), 3),
-                tex_num(Some(pressure), 2)
-            )));
-        }
-        if let Some(use_percent) = result.utilisation_percent {
-            out.push(equation(&format!(
-                "\\text{{Utilisation}} = \\frac{{p_{{\\text{{applied}}}}}}{{V}} \\times 100\\% = \
-                 {}\\%",
-                tex_num(Some(use_percent), 2)
-            )));
-        }
+        out.push(p(
+            &format!(
+                "<b>Minimum pad:</b> {} × {} m at the chosen {} m width.",
+                fmt(Some(length), 2, ""),
+                fmt(Some(width), 2, ""),
+                fmt(Some(width), 2, "")
+            ),
+            "",
+        ));
+    } else {
+        out.push(subheading("Minimum square pad"));
+        out.push(equation(&format!(
+            "\\text{{Side}} = \\sqrt{{A}} = {}\\ \\text{{m}}",
+            tex_num(Some(result.recommended_square_m), 3)
+        )));
+        out.push(p(
+            &format!(
+                "<b>Minimum pad:</b> {} × {} m, rounded up from {} m at 50 mm increments.",
+                fmt(Some(result.recommended_square_rounded_m), 2, ""),
+                fmt(Some(result.recommended_square_rounded_m), 2, ""),
+                fmt(Some(result.recommended_square_m), 3, "")
+            ),
+            "",
+        ));
     }
 
     out.push(p(
-        &format!(
-            "<b>{}:</b> {}",
-            status_word(&result.status),
-            escape(&result.message)
-        ),
-        status_colour(&result.status),
-    ));
-    out.push(p(
-        "The pad is sized for the vertical design load. Confirm the crane's outrigger reaction, \
-         the pad build-up and the ground profile before the lift.",
+        "A larger pad is acceptable; this is the minimum bearing area for the design load. \
+         Confirm the crane's outrigger reaction, the pad build-up and the ground profile before \
+         the lift.",
         "color:#64748d;font-size:8.5pt;",
     ));
 
@@ -129,24 +99,25 @@ mod tests {
     use crate::outrigger::{example_outrigger_inputs, solve_outrigger};
 
     #[test]
-    fn the_pad_section_prints_the_formula_and_the_selected_check() {
+    fn the_pad_section_prints_the_formula_and_the_minimum_square() {
         let result = solve_outrigger(&example_outrigger_inputs()).unwrap();
         let html = outrigger_section(&result);
         assert!(html.contains("OUTRIGGER PAD SIZE"));
         assert!(html.contains("0.65 \\times (CM + L)"));
         assert!(html.contains("1.950"));
-        assert!(html.contains("2.00 \\times 2.00"));
-        assert!(html.contains("Within limit"));
+        assert!(html.contains("1.40 × 1.40 m"));
+        assert!(!html.contains("Utilisation"));
     }
 
     #[test]
-    fn a_missing_pad_size_is_reported_without_failing_the_section() {
+    fn a_rectangular_pad_prints_its_minimum_length() {
         let mut input = example_outrigger_inputs();
-        input.pad_length_m = 0.0;
-        input.pad_width_m = 0.0;
+        input.pad_shape = "rectangular".to_string();
+        input.pad_width_m = 2.0;
         let result = solve_outrigger(&input).unwrap();
         let html = outrigger_section(&result);
-        assert!(html.contains("Pad size not entered"));
-        assert!(html.contains("1.40")); // the 1.396 m square rounds to 1.40 m
+        assert!(html.contains("Minimum rectangular pad"));
+        assert!(html.contains("1.00 × 2.00 m"));
+        assert!(!html.contains("Utilisation"));
     }
 }

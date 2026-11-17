@@ -1283,5 +1283,13 @@ table.grid td.num { text-align: right; }
 .pad-diagram { margin-top: 10px; }
 .pad-diagram svg { display: block; width: 100%; }
 
-.v-field { max-width: 260px; }
 .v-field .unit { font-size: 10.5px; }
+.readout-field .readout-value {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-weight: 600;
+  color: var(--text);
+}
+.pad-width-field { max-width: 260px; }

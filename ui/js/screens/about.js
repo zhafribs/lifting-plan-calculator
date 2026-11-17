@@ -34,6 +34,11 @@ export function createAboutScreen(ctx) {
           el("button", { class: "btn primary small", onClick: () => runInstaller(info) }, "Download & install"),
         );
       }
+      if (ctx.platform === "linux" && info.appimage) {
+        buttons.unshift(
+          el("button", { class: "btn primary small", onClick: () => runAppImageUpdate(info) }, "Download & update"),
+        );
+      }
     }
     updateButtons.replaceChildren(...buttons);
   }
@@ -57,6 +62,17 @@ export function createAboutScreen(ctx) {
     try {
       await api.installUpdate(info.installer);
       updateStatus.textContent = "The installer has started \u2014 the app will close so it can update.";
+      setTimeout(() => api.quitApp(), 1500);
+    } catch (error) {
+      updateStatus.textContent = errorText(error);
+    }
+  }
+
+  async function runAppImageUpdate(info) {
+    updateStatus.textContent = "Downloading the new AppImage\u2026";
+    try {
+      await api.installUpdate(info.appimage);
+      updateStatus.textContent = "The new AppImage is ready \u2014 the app will close, replace the old file and restart.";
       setTimeout(() => api.quitApp(), 1500);
     } catch (error) {
       updateStatus.textContent = errorText(error);
@@ -108,8 +124,8 @@ export function createAboutScreen(ctx) {
           style: { margin: "0 0 10px" },
           text:
             "The app checks GitHub for a newer release at launch, and on demand here. " +
-            "On Windows it can fetch and start the release's installer; the AppImage " +
-            "is only reminded — its release page carries the new file.",
+            "On Windows it can fetch and start the release's installer. On Linux it can " +
+            "download the new AppImage, replace the running file and restart.",
         }),
         updateButtons,
         updateStatus,

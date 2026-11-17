@@ -120,6 +120,14 @@ async function main() {
       );
       buttons.push(install);
     }
+    if (info.appimage && ctx.platform === "linux") {
+      const update = el(
+        "button",
+        { class: "btn primary small", onClick: () => runAppImageUpdate(info, update) },
+        "Download & update",
+      );
+      buttons.push(update);
+    }
     updateBar.replaceChildren(
       el("span", {
         class: "msg",
@@ -144,8 +152,7 @@ async function main() {
   }
 
   // Windows: fetch the release's installer and start it, then quit so the
-  // installer can replace the running files. Elsewhere the reminder is all
-  // there is; the release page carries the file.
+  // installer can replace the running files.
   async function runInstaller(info, button) {
     button.disabled = true;
     const label = button.textContent;
@@ -153,6 +160,23 @@ async function main() {
     try {
       await api.installUpdate(info.installer);
       toast("The installer has started - the app will close so it can update.", "ok");
+      setTimeout(() => api.quitApp(), 1500);
+    } catch (error) {
+      button.disabled = false;
+      button.textContent = label;
+      toast(errorText(error), "error");
+    }
+  }
+
+  // Linux AppImage: fetch the new AppImage, then quit so the helper can replace
+  // the running file and start the new one.
+  async function runAppImageUpdate(info, button) {
+    button.disabled = true;
+    const label = button.textContent;
+    button.textContent = "Downloading\u2026";
+    try {
+      await api.installUpdate(info.appimage);
+      toast("The new AppImage is ready. The app will close, replace the old file and restart.", "ok");
       setTimeout(() => api.quitApp(), 1500);
     } catch (error) {
       button.disabled = false;

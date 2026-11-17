@@ -311,7 +311,7 @@ The About tab shows the app version, what the calculator does, the developer con
 
 - **Check for updates** asks GitHub whether a newer release exists.
 - **Visit repository** opens the project on GitHub.
-- On Windows, when a newer release is available, the update card can download and start the installer. The Linux AppImage is updated from its release page.
+- On Windows, when a newer release is available, the update card can download and start the installer. On Linux, it downloads the new AppImage, replaces the running file and restarts the app.
 
 The app needs no sign-in, and all calculations run on your machine.
 

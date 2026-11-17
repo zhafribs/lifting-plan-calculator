@@ -7,25 +7,19 @@
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
-#[cfg(any(target_os = "windows", test))]
 use sha2::{Digest, Sha256};
 
 /// The Ed25519 public key that signs each release's `SHA256SUMS.txt`, as 64 hex
 /// characters. Empty until the maintainer runs `scripts/update-signing-key.sh`;
 /// once set, an installer without a valid signature is never run. See
 /// `docs/releases/README.md` for the ceremony.
-#[cfg(any(target_os = "windows", test))]
 const UPDATE_PUBLIC_KEY: &str = include_str!("../update-public-key.txt");
 
 /// The repository every check and download is kept to.
 pub const REPO_URL: &str = "https://github.com/zhafribs/lifting-plan-calculator";
 const RELEASES_API: &str = "https://api.github.com/repos/zhafribs/lifting-plan-calculator/releases/latest";
-#[cfg(target_os = "windows")]
-const DOWNLOAD_PREFIX: &str =
-    "https://github.com/zhafribs/lifting-plan-calculator/releases/download/";
 const USER_AGENT: &str = "lifting-plan-calculator";
 const CHECK_TIMEOUT: Duration = Duration::from_secs(12);
-#[cfg(target_os = "windows")]
 const DOWNLOAD_TIMEOUT: Duration = Duration::from_secs(300);
 
 /// What the app tells the operator about the newest release.
@@ -42,6 +36,8 @@ pub struct UpdateInfo {
     pub repo_url: String,
     /// The Windows installer the app can fetch, when the release carries one.
     pub installer: Option<InstallerAsset>,
+    /// The Linux AppImage the app can fetch and swap in, when present.
+    pub appimage: Option<InstallerAsset>,
 }
 
 /// One downloadable installer from the release.
@@ -125,6 +121,26 @@ pub fn check(current: &str) -> Result<UpdateInfo, String> {
         };
         pick(|name| name.ends_with("-setup.exe")).or_else(|| pick(|name| name.ends_with(".msi")))
     };
+    let appimage = if cfg!(target_os = "linux") && std::env::var_os("APPIMAGE").is_some() {
+        let assets: Vec<&serde_json::Value> = json
+            .get("assets")
+            .and_then(|value| value.as_array())
+            .map(|assets| assets.iter().collect())
+            .unwrap_or_default();
+        assets.iter().find_map(|asset| {
+            let name = asset.get("name")?.as_str()?;
+            if !name.ends_with("-linux-x86_64.AppImage") {
+                return None;
+            }
+            let url = asset.get("browser_download_url")?.as_str()?;
+            Some(InstallerAsset {
+                name: name.to_string(),
+                url: url.to_string(),
+            })
+        })
+    } else {
+        None
+    };
 
     Ok(UpdateInfo {
         current: current.to_string(),
@@ -133,10 +149,10 @@ pub fn check(current: &str) -> Result<UpdateInfo, String> {
         release_url,
         repo_url: REPO_URL.to_string(),
         installer,
+        appimage,
     })
 }
 
-#[cfg(any(target_os = "windows", test))]
 /// The SHA-256 of some bytes, lowercase hex.
 fn digest(bytes: &[u8]) -> String {
     let mut hasher = Sha256::new();
@@ -148,7 +164,6 @@ fn digest(bytes: &[u8]) -> String {
         .collect()
 }
 
-#[cfg(any(target_os = "windows", test))]
 /// The digest a release's `SHA256SUMS.txt` records for `name`.
 ///
 /// The file is `sha256sum ./*` output, so the name may carry a `./` prefix.
@@ -160,15 +175,12 @@ fn expected_digest(manifest: &str, name: &str) -> Option<String> {
     })
 }
 
-#[cfg(any(target_os = "windows", test))]
 /// Whether this build requires a signed checksum manifest.
-#[cfg(any(target_os = "windows", test))]
 fn signing_required() -> bool {
     !UPDATE_PUBLIC_KEY.trim().is_empty()
 }
 
 /// Verify a 64-byte Ed25519 signature (hex) over the manifest's bytes.
-#[cfg(any(target_os = "windows", test))]
 fn verify_signature(manifest: &[u8], signature_hex: &str) -> Result<(), String> {
     if !signing_required() {
         return Ok(());
@@ -178,7 +190,6 @@ fn verify_signature(manifest: &[u8], signature_hex: &str) -> Result<(), String> 
 
 /// The verification itself, against a given key, so it can be tested with a
 /// keypair the test owns.
-#[cfg(any(target_os = "windows", test))]
 fn verify_with(public_hex: &str, manifest: &[u8], signature_hex: &str) -> Result<(), String> {
     use ed25519_compact::{PublicKey, Signature};
 
@@ -212,7 +223,6 @@ fn verify_with(public_hex: &str, manifest: &[u8], signature_hex: &str) -> Result
 ///
 /// The signature is checked before any digest is read, so an unsigned or
 /// wrongly signed manifest cannot vouch for anything.
-#[cfg(any(target_os = "windows", test))]
 fn verified_manifest(
     asset_url: &str,
     name: &str,
@@ -237,7 +247,6 @@ fn verified_manifest(
 }
 
 /// Whether a URL is one of this repository's release assets.
-#[cfg(any(target_os = "windows", test))]
 fn is_release_asset_url(url: &str) -> bool {
     url::Url::parse(url)
         .map(|parsed| {
@@ -251,7 +260,6 @@ fn is_release_asset_url(url: &str) -> bool {
 }
 
 /// The tag an asset URL belongs to, e.g. `v2.10.0`.
-#[cfg(any(target_os = "windows", test))]
 fn tag_of_asset(url: &str) -> Option<String> {
     let parsed = url::Url::parse(url).ok()?;
     let rest = parsed.path().split("/releases/download/").nth(1)?;
@@ -260,11 +268,126 @@ fn tag_of_asset(url: &str) -> Option<String> {
 }
 
 /// The release's checksum manifest, next to the asset itself.
-#[cfg(any(target_os = "windows", test))]
 fn manifest_url(asset_url: &str) -> Option<String> {
     let (base, _) = asset_url.rsplit_once('/')?;
     Some(format!("{base}/SHA256SUMS.txt"))
 }
+
+/// Fetch a small release file (the manifest or its signature).
+fn fetch_bytes(url: &str, timeout: Duration) -> Result<Vec<u8>, String> {
+    use std::io::Read;
+
+    let mut bytes = Vec::new();
+    ureq::get(url)
+        .set("User-Agent", USER_AGENT)
+        .timeout(timeout)
+        .call()
+        .map_err(|error| format!("The release file could not be read: {error}"))?
+        .into_reader()
+        .read_to_end(&mut bytes)
+        .map_err(|error| format!("The release file could not be read: {error}"))?;
+    Ok(bytes)
+}
+
+/// Download an asset into `target`, proving the release manifest and digest
+/// first. This is shared by the Windows installer and the Linux AppImage.
+fn verified_download(asset: &InstallerAsset, target: &std::path::Path) -> Result<(), String> {
+    if !is_release_asset_url(&asset.url) {
+        return Err("That download is not from this project's releases.".to_string());
+    }
+    let name = std::path::Path::new(&asset.name)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .filter(|name| *name == asset.name)
+        .ok_or_else(|| "That update names a file outside its release.".to_string())?
+        .to_string();
+    let tag = tag_of_asset(&asset.url)
+        .ok_or_else(|| "That download has no release tag.".to_string())?;
+    if !is_newer(env!("CARGO_PKG_VERSION"), tag.trim_start_matches(['v', 'V'])) {
+        return Err(format!(
+            "That release ({tag}) is not newer than this build ({}).",
+            env!("CARGO_PKG_VERSION")
+        ));
+    }
+
+    let manifest = verified_manifest(&asset.url, &name, |url| fetch_bytes(url, CHECK_TIMEOUT))?;
+    let expected = expected_digest(&manifest, &name)
+        .ok_or_else(|| "That file is not listed in its release's checksums.".to_string())?;
+
+    let mut reader = ureq::get(&asset.url)
+        .set("User-Agent", USER_AGENT)
+        .timeout(DOWNLOAD_TIMEOUT)
+        .call()
+        .map_err(|error| format!("The update could not be downloaded: {error}"))?
+        .into_reader();
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(target)
+        .map_err(|error| format!("The update could not be saved: {error}"))?;
+    let copied = std::io::copy(&mut reader, &mut file);
+    drop(file);
+    copied.map_err(|error| {
+        let _ = std::fs::remove_file(target);
+        format!("The update could not be saved: {error}")
+    })?;
+
+    let bytes = std::fs::read(target).map_err(|error| {
+        let _ = std::fs::remove_file(target);
+        format!("The downloaded update could not be read back: {error}")
+    })?;
+    if digest(&bytes) != expected {
+        let _ = std::fs::remove_file(target);
+        return Err("The downloaded update does not match its release checksum. \
+                    It was not installed."
+            .to_string());
+    }
+    Ok(())
+}
+
+/// Replace the running AppImage after the app exits, then start the new one.
+///
+/// The old file is moved aside while the new one is put in place; only after the
+/// new AppImage has stayed alive for a few seconds is the old file deleted. If
+/// the new file does not start, the old one is put back.
+const APPIMAGE_UPDATE_SCRIPT: &str = r#"#!/bin/sh
+set -u
+pid="$1"
+target="$2"
+replacement="$3"
+log="${TMPDIR:-/tmp}/lifting-plan-calculator-update.log"
+exec >>"$log" 2>&1
+echo "--- $(date) updating $target"
+while kill -0 "$pid" 2>/dev/null; do
+  sleep 0.2
+done
+sleep 0.5
+chmod +x "$replacement" || exit 1
+backup="${target}.old"
+rm -f "$backup"
+mv "$target" "$backup" || exit 1
+if ! mv "$replacement" "$target"; then
+  mv "$backup" "$target"
+  exit 1
+fi
+"$target" >/dev/null 2>&1 &
+newpid=$!
+sleep 3
+state=$(ps -p "$newpid" -o stat= 2>/dev/null || true)
+case "$state" in
+  Z*|"")
+    echo "new AppImage did not start; restoring the old file"
+    rm -f "$target"
+    mv "$backup" "$target"
+    "$target" >/dev/null 2>&1 &
+    ;;
+  *)
+    rm -f "$backup"
+    echo "update ok"
+    ;;
+esac
+rm -f "$0"
+"#;
 
 /// Fetch the installer and start it, on Windows. Returns the saved path; the
 /// caller then quits so the installer can replace the running files.
@@ -284,66 +407,13 @@ pub fn install(asset: &InstallerAsset) -> Result<String, String> {
     if !(name.ends_with("-setup.exe") || name.ends_with(".msi")) {
         return Err("That file is not a Windows installer.".to_string());
     }
-    // A replay of an older signed release is still a downgrade.
-    let tag = tag_of_asset(&asset.url)
-        .ok_or_else(|| "That download has no release tag.".to_string())?;
-    if !is_newer(env!("CARGO_PKG_VERSION"), tag.trim_start_matches(['v', 'V'])) {
-        return Err(format!(
-            "That release ({tag}) is not newer than this build ({}).",
-            env!("CARGO_PKG_VERSION")
-        ));
-    }
-    // The release publishes SHA256SUMS.txt beside its assets; an installer that
-    // is not in it, or does not match it, is not executed. This catches a
-    // corrupted or substituted download; it does not prove who built it.
-    // Bytes, not `into_string`: a lossy decode could change what is verified.
-    let fetch = |url: &str| -> Result<Vec<u8>, String> {
-        use std::io::Read;
-        let mut bytes = Vec::new();
-        ureq::get(url)
-            .set("User-Agent", USER_AGENT)
-            .timeout(CHECK_TIMEOUT)
-            .call()
-            .map_err(|error| format!("The release checksums could not be read: {error}"))?
-            .into_reader()
-            .read_to_end(&mut bytes)
-            .map_err(|error| format!("The release checksums could not be read: {error}"))?;
-        Ok(bytes)
-    };
-    let manifest = verified_manifest(&asset.url, &asset.name, fetch)?;
-    let expected = expected_digest(&manifest, &name).ok_or_else(|| {
-        "That installer is not listed in its release's checksums.".to_string()
-    })?;
 
     let directory = std::env::temp_dir().join("lifting-plan-calculator-update");
     std::fs::create_dir_all(&directory)
         .map_err(|error| format!("The installer could not be saved: {error}"))?;
     let target = directory.join(&name);
-    let mut reader = ureq::get(&asset.url)
-        .set("User-Agent", USER_AGENT)
-        .timeout(DOWNLOAD_TIMEOUT)
-        .call()
-        .map_err(|error| format!("The installer could not be downloaded: {error}"))?
-        .into_reader();
-    let mut file = std::fs::File::create(&target)
-        .map_err(|error| format!("The installer could not be saved: {error}"))?;
-    let copied = std::io::copy(&mut reader, &mut file);
-    drop(file);
-    copied.map_err(|error| {
-        let _ = std::fs::remove_file(&target);
-        format!("The installer could not be saved: {error}")
-    })?;
-
-    let bytes = std::fs::read(&target).map_err(|error| {
-        let _ = std::fs::remove_file(&target);
-        format!("The installer could not be read back: {error}")
-    })?;
-    if digest(&bytes) != expected {
-        let _ = std::fs::remove_file(&target);
-        return Err("The downloaded installer does not match its release checksum. \
-                    It was not run."
-            .to_string());
-    }
+    let _ = std::fs::remove_file(&target);
+    verified_download(asset, &target)?;
 
     let mut command = if asset.name.ends_with(".msi") {
         let mut command = std::process::Command::new("msiexec");
@@ -358,10 +428,83 @@ pub fn install(asset: &InstallerAsset) -> Result<String, String> {
     Ok(target.to_string_lossy().to_string())
 }
 
-/// Not Windows: the reminder is the whole feature.
-#[cfg(not(target_os = "windows"))]
+/// Linux AppImage: download the new file, replace the running AppImage after
+/// this process exits, and start the new one. Returns the AppImage path.
+#[cfg(target_os = "linux")]
+pub fn install(asset: &InstallerAsset) -> Result<String, String> {
+    use std::process::Stdio;
+
+    if !asset.name.ends_with("-linux-x86_64.AppImage") {
+        return Err("That release file is not a Linux AppImage.".to_string());
+    }
+    let path = std::env::var("APPIMAGE").map_err(|_| {
+        "This copy is not running as an AppImage. Download the new file from the release page."
+            .to_string()
+    })?;
+    let target = std::fs::canonicalize(&path).map_err(|_| {
+        "The running AppImage path could not be resolved. Download the new file from the release page."
+            .to_string()
+    })?;
+    if !target.is_file() {
+        return Err("The running AppImage is not a regular file.".to_string());
+    }
+    let parent = target
+        .parent()
+        .ok_or_else(|| "The running AppImage has no parent folder.".to_string())?;
+    let file_name = target
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| "The running AppImage has no file name.".to_string())?;
+    let staged = parent.join(format!(".{file_name}.new"));
+    let _ = std::fs::remove_file(&staged);
+    verified_download(asset, &staged)?;
+
+    let script = std::env::temp_dir().join(format!(
+        "lifting-plan-calculator-update-{}.sh",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_file(&script);
+    let script_result = (|| -> Result<(), String> {
+        use std::io::Write;
+        use std::os::unix::fs::OpenOptionsExt;
+
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o700)
+            .open(&script)
+            .map_err(|error| format!("The update helper could not be created: {error}"))?;
+        file.write_all(APPIMAGE_UPDATE_SCRIPT.as_bytes())
+            .map_err(|error| format!("The update helper could not be written: {error}"))?;
+        Ok(())
+    })();
+    if let Err(error) = script_result {
+        let _ = std::fs::remove_file(&staged);
+        return Err(error);
+    }
+
+    let child = std::process::Command::new("nohup")
+        .arg("sh")
+        .arg(&script)
+        .arg(std::process::id().to_string())
+        .arg(&target)
+        .arg(&staged)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn();
+    if let Err(error) = child {
+        let _ = std::fs::remove_file(&staged);
+        let _ = std::fs::remove_file(&script);
+        return Err(format!("The update helper could not be started: {error}"));
+    }
+    Ok(target.to_string_lossy().to_string())
+}
+
+/// Other platforms: the release page is the update path.
+#[cfg(not(any(target_os = "windows", target_os = "linux")))]
 pub fn install(_asset: &InstallerAsset) -> Result<String, String> {
-    Err("The in-app installer is only for Windows — use the release page.".to_string())
+    Err("In-app updating is only available on Windows and the Linux AppImage.".to_string())
 }
 
 // ---------------------------------------------------------------------------
@@ -509,6 +652,36 @@ mod tests {
         assert_eq!(expected_digest(manifest, "other-setup.exe"), None);
         // A malformed line is not a checksum.
         assert_eq!(expected_digest("abc  ./x-setup.exe", "x-setup.exe"), None);
+    }
+
+    #[test]
+    fn an_update_download_must_come_from_this_projects_releases() {
+        let asset = InstallerAsset {
+            name: "Lifting-Plan-Calculator-9.9.9-linux-x86_64.AppImage".to_string(),
+            url: "https://evil.example/releases/download/v9.9.9/app.AppImage".to_string(),
+        };
+        let target = std::env::temp_dir().join("lpc-should-not-exist.AppImage");
+        let error = verified_download(&asset, &target).unwrap_err();
+        assert!(error.contains("not from this project's releases"));
+        assert!(!target.exists());
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn the_appimage_updater_refuses_a_non_appimage() {
+        let asset = InstallerAsset {
+            name: "Lifting-Plan-Calculator-9.9.9-windows-x86_64-setup.exe".to_string(),
+            url: "https://github.com/zhafribs/lifting-plan-calculator/releases/download/v9.9.9/x-setup.exe".to_string(),
+        };
+        let error = install(&asset).unwrap_err();
+        assert!(error.contains("not a Linux AppImage"));
+    }
+
+    #[test]
+    fn the_appimage_helper_keeps_the_old_file_until_the_new_one_starts() {
+        assert!(APPIMAGE_UPDATE_SCRIPT.contains("backup=\"${target}.old\""));
+        assert!(APPIMAGE_UPDATE_SCRIPT.contains("rm -f \"$backup\""));
+        assert!(APPIMAGE_UPDATE_SCRIPT.contains("mv \"$backup\" \"$target\""));
     }
 
     #[test]

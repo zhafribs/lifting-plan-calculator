@@ -51,8 +51,9 @@ itself are unchanged.
 The full notes are in [`docs/releases/v2.12.1.md`](docs/releases/v2.12.1.md).
 
 On main since that release: the Excel workbook table opens collapsed after an
-import, and the new **Outrigger Pad Size** tab carries the BS 8004 Table 1
-ground table.
+import, the new **Outrigger Pad Size** tab carries the BS 8004 Table 1 ground
+table, and the Linux AppImage can download and replace itself from the update
+button.
 
 ## What's new in 2.12.0
 
@@ -129,9 +130,12 @@ for every build is this repository.
   installer, then closes so it can replace the running files. The installer is
   only run if the release's checksum manifest carries a valid signature from the
   app's own key and the download matches its digest.
-- **Linux:** since v2.2.0 the AppImage ships a matching `.AppImage.zsync`
-  sidecar, so `appimageupdatetool` (from AppImageUpdate) downloads only the
-  blocks that changed rather than the whole file:
+- **Linux:** the in-app update button downloads the new AppImage, verifies its
+  signed checksum, replaces the running file and restarts the app. The old
+  AppImage is removed after the new one starts. The release also ships a
+  matching `.AppImage.zsync` sidecar, so `appimageupdatetool` (from
+  AppImageUpdate) remains an alternative that downloads only the blocks that
+  changed:
 
   ```bash
   appimageupdatetool Lifting-Plan-Calculator-<old-version>-linux-x86_64.AppImage \
@@ -263,7 +267,7 @@ cd src-tauri
 cargo test
 ```
 
-238 tests, including the Kotlin unit suite's own expected values (`CalcTest`,
+241 tests, including the Kotlin unit suite's own expected values (`CalcTest`,
 `CraneTest`, `CraneManualEntryTest`, `SlingTest`, `NonuniformTest`,
 `ExcelImportTest`, `ReportTest`, `ReportUniformTest`, `ReportCapacityTest`,
 `ReportNonuniformTest`), plus tests of the Rust port itself (load figures, model

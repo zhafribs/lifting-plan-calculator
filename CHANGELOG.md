@@ -14,6 +14,12 @@
 - The Excel workbook table starts collapsed after an import, so the chart
   controls stay in view. Click the table toggle to read the rows.
 
+### Fixed
+
+- The Linux AppImage update button now downloads the new AppImage, verifies its
+  signed checksum, replaces the running file and restarts the app. The old file
+  is removed after the new one starts, and restored if the new one does not.
+
 ## [2.12.1] - 2026-11-17
 
 ### Fixed

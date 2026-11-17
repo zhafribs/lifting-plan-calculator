@@ -57,15 +57,40 @@ export function createOutriggerScreen(ctx) {
     onInput: (value) => set({ bearing_kpa: value ?? 0 }),
   });
 
+  const vField = field({
+    label: "Max permissible SBC (V)",
+    unit: "kPa",
+    input: vInput,
+  });
+  vField.classList.add("v-field");
+
   const cmInput = numberInput({
     value: 0,
-    onInput: (value) => set({ crane_mass_kn: value ?? 0 }),
+    onInput: (value) => set({ crane_mass_kn: value ?? 0, crane_mass_linked: false }),
   });
   const liftInput = numberInput({
     value: 0,
-    onInput: (value) => set({ lift_load_kn: value ?? 0 }),
+    onInput: (value) => set({ lift_load_kn: value ?? 0, lift_load_linked: false }),
   });
   const overallHint = el("span", { class: "faint small" });
+  const useCrane = el(
+    "button",
+    {
+      class: "btn ghost small",
+      onClick: () => {
+        const capacity = store.state.crane?.capacity_t ?? 0;
+        if (capacity <= 0) {
+          ctx.toast("Enter the crane rated capacity in the Crane tab first.", "error");
+          return;
+        }
+        set({
+          crane_mass_kn: Math.round(capacity * 9.80665 * 100) / 100,
+          crane_mass_linked: true,
+        });
+      },
+    },
+    "Use crane tab",
+  );
   const useOverall = el(
     "button",
     {
@@ -76,7 +101,10 @@ export function createOutriggerScreen(ctx) {
           ctx.toast("Add a load in Overall Weight first.", "error");
           return;
         }
-        set({ lift_load_kn: Math.round(gross * catalog.kg_to_kn * 100) / 100 });
+        set({
+          lift_load_kn: Math.round(gross * catalog.kg_to_kn * 100) / 100,
+          lift_load_linked: true,
+        });
       },
     },
     "Use overall weight",
@@ -161,7 +189,11 @@ export function createOutriggerScreen(ctx) {
               field({ label: "Ground category", input: categorySelect }),
               field({ label: "Soil / rock description", input: groundSelect }),
             ),
-            el("div", { class: "fields" }, field({ label: "Max permissible SBC V", unit: "kPa", input: vInput })),
+            el(
+              "div",
+              { class: "fields mt12" },
+              vField,
+            ),
             groundMeta,
             note(
               "V is the presumed allowable bearing value. For a range, the lower bound is loaded for preliminary sizing; confirm a site-specific value before the lift.",
@@ -178,21 +210,22 @@ export function createOutriggerScreen(ctx) {
               "div",
               { class: "fields" },
               field({
-                label: "Crane mass CM",
+                label: "Crane mass (CM)",
                 unit: "kN",
                 input: cmInput,
-                hint: "Operating mass as a weight: 1 tonne is about 9.81 kN.",
+                hint: "Defaults to the Crane tab's rated capacity until edited.",
               }),
               field({
-                label: "Lift load L",
+                label: "Lift load (L)",
                 unit: "kN",
                 input: liftInput,
-                hint: "The load lifted, in kN. Use the overall weight if it is the same lift.",
+                hint: "Defaults to the Overall Weight gross load until edited.",
               }),
             ),
             el(
               "div",
               { class: "row wrap" },
+              useCrane,
               useOverall,
               overallHint,
             ),
@@ -234,7 +267,11 @@ export function createOutriggerScreen(ctx) {
             { class: "row wrap" },
             exampleButton(() =>
               store.update((s) => {
-                s.outrigger = { ...catalog.example_outrigger };
+                s.outrigger = {
+                  ...catalog.example_outrigger,
+                  crane_mass_linked: false,
+                  lift_load_linked: false,
+                };
               }),
             ),
             reportButton("Show report", () => ctx.showReport(["crane", "outrigger"])),
@@ -245,6 +282,8 @@ export function createOutriggerScreen(ctx) {
                   bearing_kpa: 0,
                   crane_mass_kn: 0,
                   lift_load_kn: 0,
+                  crane_mass_linked: true,
+                  lift_load_linked: true,
                   pad_shape: "square",
                   pad_length_m: 0,
                   pad_width_m: 0,

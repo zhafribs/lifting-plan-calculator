@@ -21,22 +21,22 @@ const NAV = [
     items: [
       { key: "overall", label: "Overall Weight", icon: "weight", shortcut: "1", title: "Overall Weight", subtitle: "The load lines and the tackle, summed to the gross load at hook." },
       { key: "crane", label: "Crane", icon: "crane", shortcut: "2", title: "Crane", subtitle: "The crane and its load chart, checked at the working radius under the 75% rule." },
-      { key: "outrigger", label: "Outrigger Pad Size", icon: "pad", title: "Outrigger Pad Size", subtitle: "The bearing area under the crane's outrigger, from the BS 8004 presumed bearing table." },
-      { key: "graph", label: "Graph", icon: "graph", shortcut: "3", title: "Working Range Diagram", subtitle: "Working range drawn to scale, with radius, heights and clearances read out." },
+      { key: "outrigger", label: "Outrigger Pad Size", icon: "pad", shortcut: "3", title: "Outrigger Pad Size", subtitle: "The bearing area under the crane's outrigger, from the BS 8004 presumed bearing table." },
+      { key: "graph", label: "Graph", icon: "graph", shortcut: "4", title: "Working Range Diagram", subtitle: "Working range drawn to scale, with radius, heights and clearances read out." },
     ],
   },
   {
     group: "Rigging",
     items: [
-      { key: "uniform", label: "Uniform Load", icon: "sling", shortcut: "4", title: "Uniform Load", subtitle: "One continuous sling; every effective leg shares the load equally." },
-      { key: "nonuniform", label: "Nonuniform Load", icon: "nonuniform", shortcut: "5", title: "Nonuniform Load", subtitle: "Two legs sharing one headroom with the centre of gravity off the midpoint." },
-      { key: "tandem", label: "Tandem", icon: "tandem", shortcut: "6", title: "Tandem", subtitle: "Two independent cranes sharing one load, with the declared tilt." },
+      { key: "uniform", label: "Uniform Load", icon: "sling", shortcut: "5", title: "Uniform Load", subtitle: "One continuous sling; every effective leg shares the load equally." },
+      { key: "nonuniform", label: "Nonuniform Load", icon: "nonuniform", shortcut: "6", title: "Nonuniform Load", subtitle: "Two legs sharing one headroom with the centre of gravity off the midpoint." },
+      { key: "tandem", label: "Tandem", icon: "tandem", shortcut: "7", title: "Tandem", subtitle: "Two independent cranes sharing one load, with the declared tilt." },
     ],
   },
   {
     group: "Plan",
     items: [
-      { key: "report", label: "Summary", icon: "report", shortcut: "7", title: "Lifting Plan", subtitle: "The printable report, typeset with its own equations." },
+      { key: "report", label: "Summary", icon: "report", shortcut: "8", title: "Lifting Plan", subtitle: "The printable report, typeset with its own equations." },
     ],
   },
   {

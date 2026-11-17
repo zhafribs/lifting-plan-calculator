@@ -1282,3 +1282,6 @@ table.grid td.num { text-align: right; }
 }
 .pad-diagram { margin-top: 10px; }
 .pad-diagram svg { display: block; width: 100%; }
+
+.v-field { max-width: 260px; }
+.v-field .unit { font-size: 10.5px; }

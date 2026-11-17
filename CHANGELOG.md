@@ -2,6 +2,20 @@
 
 Nothing yet.
 
+## [2.13.1] - 2026-11-17
+
+### Fixed
+
+- **Outrigger Pad Size has a shortcut.** The tab is `Ctrl+3`; Graph, Uniform
+  Load, Nonuniform Load, Tandem and Summary move to `Ctrl+4` through `Ctrl+8`.
+- **The outrigger form reads clearly.** The bearing-value row is separated from
+  the ground selectors, the `V` label names its unit, and the value field no
+  longer stretches across the card.
+- **The two load fields follow the rest of the sheet.** `Crane mass (CM)`
+  defaults to the Crane tab's rated capacity, and `Lift load (L)` defaults to
+  the Overall Weight gross load. Editing either field breaks the link;
+  **Use crane tab** and **Use overall weight** reconnect it.
+
 ## [2.13.0] - 2026-11-17
 
 ### Added

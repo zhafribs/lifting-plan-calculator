@@ -168,8 +168,9 @@ The **Ground reference** card keeps the category, description, table value and f
 
 ### Enter the loads
 
-- **Crane mass CM** is the crane's operating mass as a weight in kN. One tonne is about 9.81 kN.
-- **Lift load L** is the load being lifted, in kN. If it is the same lift as the Overall Weight tab, click **Use overall weight**.
+- **Crane mass (CM)** defaults to the Crane tab's rated capacity, converted from tonnes to kN. One tonne is about 9.81 kN. Edit it to override the link.
+- **Lift load (L)** defaults to the gross load in the Overall Weight tab. Edit it to override the link, or click **Use overall weight** to reconnect it.
+- **Use crane tab** reconnects CM to the crane rated capacity. **Use overall weight** reconnects L to the overall weight.
 - The app shows the design load: **0.65 × (CM + L)**.
 
 ### Size and check the pad
@@ -359,12 +360,12 @@ The app does not store plans between launches. Use **Save as HTML** or **Save as
 | --- | --- |
 | Overall Weight | Ctrl+1 |
 | Crane | Ctrl+2 |
-| Outrigger Pad Size | No shortcut |
-| Graph | Ctrl+3 |
-| Uniform Load | Ctrl+4 |
-| Nonuniform Load | Ctrl+5 |
-| Tandem | Ctrl+6 |
-| Summary | Ctrl+7 |
+| Outrigger Pad Size | Ctrl+3 |
+| Graph | Ctrl+4 |
+| Uniform Load | Ctrl+5 |
+| Nonuniform Load | Ctrl+6 |
+| Tandem | Ctrl+7 |
+| Summary | Ctrl+8 |
 | About | No shortcut |
 
 ---

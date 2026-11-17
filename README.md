@@ -41,6 +41,21 @@ choose. Nothing else leaves the machine. Files are written only when you save a
 report, download an installer, or write the small
 `~/.cache/lifting-plan-calculator/ui.log` log used to diagnose startup problems.
 
+## What's new in 2.13.1
+
+Released 17 November 2026. The Outrigger Pad Size form is easier to use and
+reuses the rest of the sheet.
+
+- **Ctrl+3** opens Outrigger Pad Size. Graph, Uniform Load, Nonuniform Load,
+  Tandem and Summary move to **Ctrl+4** through **Ctrl+8**.
+- **Crane mass (CM)** defaults to the Crane tab's rated capacity, and
+  **Lift load (L)** defaults to the Overall Weight gross load. Editing either
+  field breaks the link; the two buttons reconnect it.
+- The bearing-value row has more space, its field is narrower, and the `kPa`
+  unit is sized with the rest of the form.
+
+The full notes are in [`docs/releases/v2.13.1.md`](docs/releases/v2.13.1.md).
+
 ## What's new in 2.13.0
 
 Released 17 November 2026. The new **Outrigger Pad Size** tab, and the Linux
@@ -219,9 +234,9 @@ captures.
 | **Nonuniform Load** | **Tandem** |
 | ![Nonuniform Load](docs/screenshots/05-nonuniform.png) | ![Tandem](docs/screenshots/06-tandem.png) |
 
-**Outrigger Pad Size** — a 400 kN crane mass and a 50 kN lift on stiff clay. The
-1.95 m² required area rounds up to a 1.40 m square, and the 2.00 m pad checks at
-48.75% utilisation:
+**Outrigger Pad Size** — linked to a 90 t crane rating (882.60 kN) and a
+4,350 kg overall lift (42.66 kN), with firm clay at 75 kPa. The 8.019 m²
+required area rounds up to a 2.85 m square, checked at 98.72% utilisation:
 
 ![Outrigger Pad Size](docs/screenshots/11-outrigger.png)
 

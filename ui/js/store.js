@@ -11,6 +11,11 @@ import { jibAvailability, jibLengthFor } from "./jib.js";
 
 let idCounter = Date.now() % 1000000;
 
+// The outrigger tab's two load fields follow the rest of the sheet until the
+// operator types into them. One tonne is 9.80665 kN; the overall weight is in kg.
+const KG_TO_KN = 9.80665 / 1000;
+const T_TO_KN = 9.80665;
+
 export function newId() {
   idCounter += 1;
   return idCounter;
@@ -117,6 +122,8 @@ function defaultOutrigger() {
     bearing_kpa: 0,
     crane_mass_kn: 0,
     lift_load_kn: 0,
+    crane_mass_linked: true,
+    lift_load_linked: true,
     pad_shape: "square",
     pad_length_m: 0,
     pad_width_m: 0,
@@ -152,6 +159,18 @@ export function createStore({ onError } = {}) {
     for (const listener of listeners) listener();
   }
 
+  function applyLinkedOutrigger() {
+    const out = state.outrigger;
+    if (!out) return;
+    const round2 = (value) => Math.round(value * 100) / 100;
+    if (out.crane_mass_linked) {
+      out.crane_mass_kn = round2((state.crane?.capacity_t ?? 0) * T_TO_KN);
+    }
+    if (out.lift_load_linked) {
+      out.lift_load_kn = round2((solved?.totals?.gross ?? 0) * KG_TO_KN);
+    }
+  }
+
   async function solveNow() {
     if (solving) {
       solveAgain = true;
@@ -159,7 +178,18 @@ export function createStore({ onError } = {}) {
     }
     solving = true;
     try {
+      applyLinkedOutrigger();
       solved = await api.solveAll(state);
+      // The gross load is known only after the solve. If the lift field follows
+      // it, use that figure and solve once more; the second pass is skipped
+      // once the value has settled.
+      if (state.outrigger?.lift_load_linked) {
+        const wanted = Math.round((solved.totals?.gross ?? 0) * KG_TO_KN * 100) / 100;
+        if (Math.abs(wanted - state.outrigger.lift_load_kn) > 1e-9) {
+          state.outrigger.lift_load_kn = wanted;
+          solved = await api.solveAll(state);
+        }
+      }
       emit();
     } catch (error) {
       if (onError) onError(error);

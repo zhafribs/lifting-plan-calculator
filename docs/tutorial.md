@@ -4,25 +4,27 @@ Welcome to the Lifting Plan Calculator. This guide walks through every tab in th
 
 Think of it as the walkthrough I would give you at a demo table: no jargon, just the fields to fill and the checks that matter. You can read it from start to finish, or jump to the tab you need.
 
-**Prefer to watch?** The [52-second walkthrough](video/tutorial.mp4) follows a 4,000 kg round load on a 2-Leg Round Choke from Overall Weight through to a saved PDF. The screenshots below use the larger 20,350 kg example so the 75% warning is visible. Both are from version 2.12.0.
+**Prefer to watch?** The [52-second walkthrough](video/tutorial.mp4) follows a 4,000 kg round load on a 2-Leg Round Choke from Overall Weight through to a saved PDF. It predates the Outrigger Pad Size tab, which is covered in section 3 below. The screenshots use the larger 20,350 kg example so the 75% warning is visible. Both are from the 2.12.x line.
 
 ## Contents
 
 1. [Before you start](#before-you-start)
 2. [Overall Weight](#1-overall-weight)
 3. [Crane](#2-crane)
-4. [Graph](#3-graph)
-5. [Uniform Load](#4-uniform-load)
-6. [Nonuniform Load](#5-nonuniform-load)
-7. [Tandem](#6-tandem)
-8. [Summary](#7-summary)
-9. [About](#8-about)
-10. [Common questions](#common-questions)
+4. [Outrigger Pad Size](#3-outrigger-pad-size)
+5. [Graph](#4-graph)
+6. [Uniform Load](#5-uniform-load)
+7. [Nonuniform Load](#6-nonuniform-load)
+8. [Tandem](#7-tandem)
+9. [Summary](#8-summary)
+10. [About](#9-about)
+11. [Common questions](#common-questions)
 
 ## Before you start
 
-- The app works in **kilograms and metres**. Convert the site figures before you type them in.
+- The lift tabs work in **kilograms and metres**. The Outrigger Pad Size tab uses **kN and kPa**; one tonne is about 9.81 kN.
 - Have the crane's own load chart ready. The app imports `.xlsx` workbooks and also accepts a single chart point typed by hand.
+- For the outrigger pad, have the ground information ready. The tab uses the BS 8004 Table 1 presumed bearing values; the same table is in `docs/examples/Presumed Allowable Bearing Values (BS 8004 Table 1).xlsx`.
 - The **75% rule** is the safety band used throughout: the required chart capacity is the gross load at the hook divided by 0.75. A 20,350 kg lift therefore needs at least **27,133.33 kg** of charted capacity.
 - Nothing is stored between launches. Save the report if you want to keep a plan.
 - This is a calculation aid. Check every input and every chart against the source before the lift, and have the finished plan approved by the competent person on site.
@@ -32,8 +34,9 @@ Think of it as the walkthrough I would give you at a demo table: no jargon, just
 1. Add the load and the lifting tackle in **Overall Weight**.
 2. Open the crane's Excel chart in **Crane**, or type a manual chart point.
 3. Check the capacity band. Green is within 75%, amber is between 75% and 100%, red is over 100%.
-4. Choose the sling arrangement in **Uniform Load**, **Nonuniform Load** or **Tandem**.
-5. Review the **Summary** and save or print the plan.
+4. Size the outrigger pad in **Outrigger Pad Size**.
+5. Choose the sling arrangement in **Uniform Load**, **Nonuniform Load** or **Tandem**.
+6. Review the **Summary** and save or print the plan.
 
 ---
 
@@ -139,7 +142,55 @@ The chart is the rating that matters. The **Crane rated capacity** field is prin
 
 ---
 
-## 3. Graph
+## 3. Outrigger Pad Size
+
+![Outrigger Pad Size tab with a stiff clay example](screenshots/11-outrigger.png)
+
+This tab sizes the bearing area under one outrigger. It uses the BS 8004 Table 1 presumed allowable bearing values adapted for Malaysian practice. The formula is:
+
+**A = 0.65 × (CM + L) / V**
+
+- **0.65** is the published constant.
+- **CM** is the total mass of the crane, as a weight in kN.
+- **L** is the load being lifted, in kN.
+- **V** is the maximum permissible safe bearing capacity, in kPa.
+
+The result is the bearing **area**. Pad thickness, steel plate design, timber grade and the crane manufacturer's outrigger reaction are separate checks.
+
+### Choose the ground
+
+1. Pick a **Ground category**.
+2. Pick the **Soil / rock description**. The table value loads into **V**, and the field note appears below it.
+3. If the row is a range, the lower bound is loaded for preliminary sizing. Change **V** if the geotechnical report gives a site-specific value.
+4. Rows marked **Not applicable** are refused. Peat, organic soils and uncontrolled fill need piling, ground improvement or a site-specific assessment.
+
+The **Ground reference** card keeps the category, description, table value and field note beside the result.
+
+### Enter the loads
+
+- **Crane mass CM** is the crane's operating mass as a weight in kN. One tonne is about 9.81 kN.
+- **Lift load L** is the load being lifted, in kN. If it is the same lift as the Overall Weight tab, click **Use overall weight**.
+- The app shows the design load: **0.65 × (CM + L)**.
+
+### Size and check the pad
+
+- **Required pad area A** is the formula result.
+- **Minimum square pad** is `√A`, rounded up to the next 50 mm.
+- **Use recommended square** fills the pad with that minimum square size.
+- For a rectangular pad, choose **Rectangular** and enter the length and width. The app checks the selected area against the required area.
+- **Applied pressure** is the design load divided by the selected pad area.
+- **Utilisation** is the applied pressure divided by **V**. Green is up to 90%, amber is 90% to 100%, and red is over 100%.
+
+The plan view shows the pad and the outrigger point. It is a plan view only, not a thickness design.
+
+### What to check before the lift
+
+- The **V** value comes from the right ground row, and is confirmed by the geotechnical assessment.
+- **CM** is the crane's operating mass, not just the counterweight.
+- **L** is the load lifted. If you use the overall weight, remember it includes the lifting tackle.
+- The pad is fully supported, the ground is drained, and the crane manufacturer's outrigger reaction has been checked separately.
+
+## 4. Graph
 
 ![Working range diagram](screenshots/03-graph.png)
 
@@ -156,7 +207,7 @@ To put the diagram in the report, tick **Working range diagram** in the Summary 
 
 ---
 
-## 4. Uniform Load
+## 5. Uniform Load
 
 ![Uniform Load tab with a sling result](screenshots/04-uniform.png)
 
@@ -176,7 +227,7 @@ If no tag rating is entered, the app still shows the required WLL and reports th
 
 ---
 
-## 5. Nonuniform Load
+## 6. Nonuniform Load
 
 ![Nonuniform Load tab with the asymmetric bridle result](screenshots/05-nonuniform.png)
 
@@ -192,7 +243,7 @@ The solver works out which leg is long and shortens the other with the grab hook
 
 ---
 
-## 6. Tandem
+## 7. Tandem
 
 ![Tandem tab with the two-crane check](screenshots/06-tandem.png)
 
@@ -211,7 +262,7 @@ The method note under the dropdown explains the second crane's projection rule a
 
 ---
 
-## 7. Summary
+## 8. Summary
 
 ![Summary tab with the printable report preview](screenshots/07-summary.png)
 
@@ -222,10 +273,11 @@ Summary turns the inputs into a printable plan. Every figure is shown with the f
 Tick the sections you want:
 
 - **Crane**
+- **Working range diagram**
+- **Outrigger Pad Size**
 - **Uniform Load**
 - **Nonuniform Load**
 - **Tandem**
-- **Working range diagram**
 
 The preview follows the other tabs live.
 
@@ -251,7 +303,7 @@ The [walkthrough video](video/tutorial.mp4) shows the full Summary flow: tick th
 
 ---
 
-## 8. About
+## 9. About
 
 ![About tab](screenshots/08-about.png)
 
@@ -287,6 +339,14 @@ The installed tag's rating is below the required WLL for the arrangement. Use a 
 
 The report has no sections selected, or the preview has not drawn yet. Tick at least one section and give the app a moment to redraw. The page view waits until typing stops.
 
+### Why can't I calculate a pad for peat or fill?
+
+Peat, organic soils and uncontrolled fill are marked **Not applicable** in the BS 8004 table. They are too compressible for a shallow pad, so the app refuses the calculation. Use piling or ground improvement, or obtain a site-specific bearing value and a designed foundation.
+
+### Why is my pad too small?
+
+The selected pad area is below the required area, so the applied pressure is above **V**. Increase the length or width, use a square pad, or recheck the ground value. The **Use recommended square** button fills the minimum square size.
+
 ### Where did my plan go?
 
 The app does not store plans between launches. Use **Save as HTML** or **Save as PDF** in Summary to keep a copy.
@@ -299,6 +359,7 @@ The app does not store plans between launches. Use **Save as HTML** or **Save as
 | --- | --- |
 | Overall Weight | Ctrl+1 |
 | Crane | Ctrl+2 |
+| Outrigger Pad Size | No shortcut |
 | Graph | Ctrl+3 |
 | Uniform Load | Ctrl+4 |
 | Nonuniform Load | Ctrl+5 |
@@ -313,8 +374,9 @@ The app does not store plans between launches. Use **Save as HTML** or **Save as
 1. Enter the load and all lifting tackle in Overall Weight.
 2. Import the crane's current load chart, or type the chart point from the company's data.
 3. Check the working radius and the 75% band.
-4. Choose the rigging arrangement and check the required WLL against the tags.
-5. Open Summary, fill in the plan details and include the sections you need.
-6. Save the PDF or HTML, print it, and check the finished plan against the source chart before it is approved.
+4. Size the outrigger pad and check the ground value.
+5. Choose the rigging arrangement and check the required WLL against the tags.
+6. Open Summary, fill in the plan details and include the sections you need.
+7. Save the PDF or HTML, print it, and check the finished plan against the source chart before it is approved.
 
 That is the whole app. If you get stuck, the message on screen usually names the field or the limit that needs attention.

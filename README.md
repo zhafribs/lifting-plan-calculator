@@ -41,6 +41,19 @@ choose. Nothing else leaves the machine. Files are written only when you save a
 report, download an installer, or write the small
 `~/.cache/lifting-plan-calculator/ui.log` log used to diagnose startup problems.
 
+## What's new in 2.12.1
+
+Released 17 November 2026. The Windows Summary page view no longer flashes a
+white print window when it refreshes. The print path now uses headless Edge,
+with the app's own hidden WebView2 printer as the fallback. Linux and the report
+itself are unchanged.
+
+The full notes are in [`docs/releases/v2.12.1.md`](docs/releases/v2.12.1.md).
+
+On main since that release: the Excel workbook table opens collapsed after an
+import, and the new **Outrigger Pad Size** tab carries the BS 8004 Table 1
+ground table.
+
 ## What's new in 2.12.0
 
 Released 17 November 2026. The window now runs under a Content-Security-Policy,
@@ -58,8 +71,6 @@ and the crane tab's jib rules use the chart's own basis.
   higher one.
 
 The full notes are in [`docs/releases/v2.12.0.md`](docs/releases/v2.12.0.md).
-Since that release, the Excel workbook table opens collapsed after an import,
-so the chart controls stay in view.
 
 ## Scope of use
 
@@ -132,22 +143,23 @@ for every build is this repository.
 
 ## What it does
 
-Five calculation forms over one shared lift, plus a printable report:
+Six calculation forms over one shared lift, plus a printable report:
 
 | Tab | What it does |
 | --- | --- |
 | **Overall Weight** | Load lines and tackle, summed to the gross load at the hook. |
 | **Crane** | The capacity check against a load chart imported from Excel, or a single point typed by hand, read against the same 75% band. |
+| **Outrigger Pad Size** | The bearing area under one outrigger, sized from the BS 8004 Table 1 presumed bearing values and checked against the selected pad. |
 | **Uniform Load** | The nineteen 1-leg / 2-leg / nested / bridle arrangements, each checked against the gross load at hook. |
 | **Nonuniform Load** | The 2-leg asymmetric bridle with a shortening grab hook. |
 | **Tandem** | Two independent cranes sharing one load, in the two declared lug configurations. |
 | **Summary** | An HTML report with KaTeX-typeset formulas, ready to save or print. Saved reports keep a copy of the KaTeX assets beside them, so they print with the equations typeset anywhere. |
 
 The **Graph** tab is the working-range diagram, drawn to scale. In **Summary**,
-check **Working range diagram** — between the Crane and Uniform Load sections —
-to include the current diagram at the bottom of Plan details; it refreshes with
-the plan, and clearing the tick removes it. The report inverts it to a light
-background so it prints without a black block.
+check **Working range diagram** — under the Crane section, before Outrigger Pad
+Size — to include the current diagram at the bottom of Plan details; it
+refreshes with the plan, and clearing the tick removes it. The report inverts it
+to a light background so it prints without a black block.
 
 The chart check is a band, not a cap: at or under 75% of the charted capacity
 the plan reads **WITHIN LIMIT**, between 75% and 100% **CAUTION**, and above
@@ -169,6 +181,7 @@ The written guide covers:
 
 - **Overall Weight**: load lines, lifting tackle and the 75% crane rating.
 - **Crane**: Excel load charts, the collapsed workbook table, manual entry and the capacity bands.
+- **Outrigger Pad Size**: the BS 8004 ground table, the pad formula and the selected-pad check.
 - **Graph**: the working-range diagram.
 - **Uniform Load**, **Nonuniform Load** and **Tandem**: the three rigging checks.
 - **Summary**: the printable report, page margins and PDF export.
@@ -176,11 +189,12 @@ The written guide covers:
 
 ## Screenshots
 
-These captures are from version 2.12.0. They use a 20,000 kg load plus 350 kg of
-lifting tackle, giving a 20,350 kg gross load and a 27,133.33 kg required
+These captures are from the 2.12.x line. They use a 20,000 kg load plus 350 kg
+of lifting tackle, giving a 20,350 kg gross load and a 27,133.33 kg required
 capacity at the 75% rule. The crane check in the screenshot uses a 28,000 kg
 chart point at 10 m, so it shows the green **WITHIN LIMIT** band at 72.68%. The
-tutorial adds the Excel import, workbook table and About captures.
+tutorial adds the Excel import, workbook table, Outrigger Pad Size and About
+captures.
 
 | Overall Weight | Crane capacity check |
 | --- | --- |
@@ -190,10 +204,13 @@ tutorial adds the Excel import, workbook table and About captures.
 | **Nonuniform Load** | **Tandem** |
 | ![Nonuniform Load](docs/screenshots/05-nonuniform.png) | ![Tandem](docs/screenshots/06-tandem.png) |
 
-**Summary report** — the printable plan, with each figure shown as its formula.
-This capture predates 2.5.0, which added the *Plan details* card, and 2.5.1,
-which packed the plan's head into the top third of the sheet; it also predates
-the scope line now printed at the foot of the plan and the summary-card head:
+**Outrigger Pad Size** — a 400 kN crane mass and a 50 kN lift on stiff clay. The
+1.95 m² required area rounds up to a 1.40 m square, and the 2.00 m pad checks at
+48.75% utilisation:
+
+![Outrigger Pad Size](docs/screenshots/11-outrigger.png)
+
+**Summary report** — the printable plan, with each figure shown as its formula:
 
 ![Summary report](docs/screenshots/07-summary.png)
 
@@ -246,12 +263,13 @@ cd src-tauri
 cargo test
 ```
 
-226 tests, including the Kotlin unit suite's own expected values (`CalcTest`,
+238 tests, including the Kotlin unit suite's own expected values (`CalcTest`,
 `CraneTest`, `CraneManualEntryTest`, `SlingTest`, `NonuniformTest`,
 `ExcelImportTest`, `ReportTest`, `ReportUniformTest`, `ReportCapacityTest`,
 `ReportNonuniformTest`), plus tests of the Rust port itself (load figures, model
-totals, PDF export and the update check). The expected figures are the Kotlin
-tests' own literals, so a drift in the arithmetic fails the build.
+totals, the outrigger pad, PDF export and the update check). The expected
+figures are the Kotlin tests' own literals, so a drift in the arithmetic fails
+the build.
 
 The same suite runs on every push and pull request, with `cargo clippy
 --all-targets -- -D warnings`, a syntax check of every frontend module, and the
@@ -267,6 +285,7 @@ src-tauri/          the Rust crate
     calc.rs         engine primitives (the 75% rule, chart lookup, bands)
     model.rs        load lines, tackle, totals
     crane.rs        the crane form and its capacity check
+    outrigger.rs    BS 8004 ground table and the outrigger pad formula
     sling.rs        the nineteen uniform-load arrangements
     nonuniform.rs   the asymmetric bridle and the two tandem methods
     excel.rs        xlsx load-chart reading and the import rules
@@ -281,6 +300,7 @@ ui/                 the frontend (plain ES modules; no build step)
 docs/releases/      one release note file per tag; the tag's file is published
 docs/tutorial.md    the step-by-step guide; screenshots are in docs/screenshots/
 docs/video/         the short walkthrough video
+docs/examples/      example charts and the BS 8004 ground table workbook
 docs/adr/           architecture decisions, one file per decision
 docs/council/       the review charter, the seats, and the decision records
 build-appimage.sh            host AppImage build (+ .zsync sidecar)

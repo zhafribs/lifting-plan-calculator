@@ -124,6 +124,11 @@ function defaultOutrigger() {
     lift_load_kn: 0,
     crane_mass_linked: true,
     lift_load_linked: true,
+    crane_capacity_linked: true,
+    thickness_material: "steel",
+    crane_capacity_t: 0,
+    foot_length_m: 0,
+    foot_width_m: 0,
     pad_shape: "square",
     pad_width_m: 0,
   };
@@ -167,6 +172,9 @@ export function createStore({ onError } = {}) {
     }
     if (out.lift_load_linked) {
       out.lift_load_kn = round2((solved?.totals?.gross ?? 0) * KG_TO_KN);
+    }
+    if (out.crane_capacity_linked) {
+      out.crane_capacity_t = round2(state.crane?.capacity_t ?? 0);
     }
   }
 

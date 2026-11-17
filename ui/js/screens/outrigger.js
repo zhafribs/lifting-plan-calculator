@@ -96,6 +96,8 @@ export function createOutriggerScreen(ctx) {
         set({
           crane_mass_kn: Math.round(capacity * 9.80665 * 100) / 100,
           crane_mass_linked: true,
+          crane_capacity_t: Math.round(capacity * 100) / 100,
+          crane_capacity_linked: true,
         });
       },
     },
@@ -140,10 +142,52 @@ export function createOutriggerScreen(ctx) {
   });
   padWidthField.classList.add("pad-width-field");
 
+  const materialSelect = selectInput({
+    options: [
+      { key: "steel", label: "Steel plate" },
+      { key: "timber", label: "Hardwood timber" },
+    ],
+    value: "steel",
+    onChange: (value) => set({ thickness_material: value }),
+  });
+  const footLengthInput = numberInput({
+    value: 0,
+    onInput: (value) => set({ foot_length_m: value ?? 0 }),
+  });
+  const footWidthInput = numberInput({
+    value: 0,
+    onInput: (value) => set({ foot_width_m: value ?? 0 }),
+  });
+  const footFields = el(
+    "div",
+    { class: "fields" },
+    field({
+      label: "Outrigger foot length",
+      unit: "m",
+      input: footLengthInput,
+      hint: "Optional; used for the 45° timber rule.",
+    }),
+    field({
+      label: "Outrigger foot width",
+      unit: "m",
+      input: footWidthInput,
+    }),
+  );
+
   const badge = el("div", {});
   const resultRows = el("div", {});
   const formulaBox = el("div", { class: "formula-block" });
   const padDiagram = el("div", { class: "pad-diagram" });
+  const thicknessRows = el("div", {});
+  const thicknessNotes = el("p", {
+    class: "faint small",
+    style: { margin: "10px 2px 0" },
+  });
+  const thicknessCard = card({
+    title: "Pad thickness",
+    note: "Steel plate or hardwood timber",
+    body: el("div", {}, thicknessRows, thicknessNotes),
+  });
   const groundReference = el("div", {});
 
   const root = el(
@@ -206,10 +250,16 @@ export function createOutriggerScreen(ctx) {
           body: el(
             "div",
             { class: "stack-8" },
-            el("div", { class: "fields" }, field({ label: "Pad shape", input: shapeSelect })),
+            el(
+              "div",
+              { class: "fields" },
+              field({ label: "Pad shape", input: shapeSelect }),
+              field({ label: "Pad material", input: materialSelect }),
+            ),
             padWidthField,
+            footFields,
             note(
-              "A square pad uses the calculated square side. For a rectangular pad, enter the width you have and the minimum length is calculated. Sizes are rounded up to 50 mm.",
+              "A square pad uses the calculated square side. For a rectangular pad, enter the width you have and the minimum length is calculated.",
             ),
             note(
               "This sizes the pad's bearing area. Pad thickness, steel plate design, timber grade and the crane manufacturer's outrigger reaction are separate checks.",
@@ -224,6 +274,7 @@ export function createOutriggerScreen(ctx) {
           title: "Minimum pad size",
           body: el("div", {}, badge, resultRows, formulaBox, padDiagram),
         }),
+        thicknessCard,
         card({ title: "Ground reference", body: groundReference }),
         card({
           title: "Actions",
@@ -236,6 +287,7 @@ export function createOutriggerScreen(ctx) {
                   ...catalog.example_outrigger,
                   crane_mass_linked: false,
                   lift_load_linked: false,
+                  crane_capacity_linked: false,
                 };
               }),
             ),
@@ -249,6 +301,11 @@ export function createOutriggerScreen(ctx) {
                   lift_load_kn: 0,
                   crane_mass_linked: true,
                   lift_load_linked: true,
+                  crane_capacity_linked: true,
+                  thickness_material: "steel",
+                  crane_capacity_t: 0,
+                  foot_length_m: 0,
+                  foot_width_m: 0,
                   pad_shape: "square",
                   pad_width_m: 0,
                 };
@@ -372,9 +429,14 @@ export function createOutriggerScreen(ctx) {
     if (document.activeElement !== liftInput) liftInput.value = String(state.outrigger.lift_load_kn ?? 0);
     if (document.activeElement !== shapeSelect) shapeSelect.value = state.outrigger.pad_shape || "square";
     if (document.activeElement !== widthInput) widthInput.value = String(state.outrigger.pad_width_m ?? 0);
+    if (document.activeElement !== materialSelect) materialSelect.value = state.outrigger.thickness_material || "steel";
+    if (document.activeElement !== footLengthInput) footLengthInput.value = String(state.outrigger.foot_length_m ?? 0);
+    if (document.activeElement !== footWidthInput) footWidthInput.value = String(state.outrigger.foot_width_m ?? 0);
 
     const rectangular = (state.outrigger.pad_shape || "square") === "rectangular";
+    const timber = (state.outrigger.thickness_material || "steel") === "timber";
     padWidthField.style.display = rectangular ? "" : "none";
+    footFields.style.display = timber ? "" : "none";
 
     const gross = store.solved?.totals?.gross ?? 0;
     overallHint.textContent = gross > 0
@@ -444,12 +506,14 @@ export function createOutriggerScreen(ctx) {
       resultRows.style.display = "none";
       formulaBox.style.display = "none";
       padDiagram.style.display = "none";
+      thicknessCard.style.display = "none";
       return;
     }
     badge.replaceChildren();
     resultRows.style.display = "";
     formulaBox.style.display = "";
     padDiagram.style.display = "";
+    thicknessCard.style.display = "";
     const result = section.result;
     const rectangular = result.pad_shape === "rectangular";
 
@@ -512,6 +576,27 @@ export function createOutriggerScreen(ctx) {
     }
     formulaBox.append(...formulaLines);
     padDiagram.append(padPlan(result));
+
+    const thickness = result.thickness;
+    const recommended = thickness.recommended_max_mm > thickness.recommended_min_mm
+      ? `${fmt(thickness.recommended_min_mm, 0, "mm")} – ${fmt(thickness.recommended_max_mm, 0, "mm")}`
+      : fmt(thickness.recommended_min_mm, 0, "mm");
+    const thicknessRowsList = [
+      ["Material", thickness.material === "timber" ? "Hardwood timber" : "Steel plate"],
+      ["Crane class", thickness.crane_class],
+      ["Steel plate range", thickness.steel_range_mm],
+      ["Timber range", thickness.timber_range_mm],
+      ["Recommended thickness", recommended, "", "big one-line"],
+      ["Governing check", thickness.governing],
+    ];
+    if (thickness.cross_layer) {
+      thicknessRowsList.push(["Cross-layering", "Required"]);
+    }
+    if (thickness.stiffeners) {
+      thicknessRowsList.push(["Stiffeners", "Required or 40–50 mm plate"]);
+    }
+    thicknessRows.replaceChildren(kvRows(thicknessRowsList));
+    thicknessNotes.textContent = thickness.notes;
   }
 
   return { root, sync, render };

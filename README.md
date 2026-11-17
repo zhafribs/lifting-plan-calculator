@@ -41,6 +41,22 @@ choose. Nothing else leaves the machine. Files are written only when you save a
 report, download an installer, or write the small
 `~/.cache/lifting-plan-calculator/ui.log` log used to diagnose startup problems.
 
+## What's new in 2.13.3
+
+Released 18 November 2026. Outrigger Pad Size now gives thickness guidance, and the report is cleaner.
+
+- Add **steel plate** or **hardwood timber** thickness guidance by crane class,
+  with the 45° timber overhang check, cross-layering, steel stiffener and
+  material warnings.
+- The same guidance is on the new **Thickness** sheet of
+  `docs/examples/Presumed Allowable Bearing Values (BS 8004 Table 1).xlsx`.
+- The outrigger report drops the introductory and closing paragraphs, moves the
+  ground note below the result, and removes the “at 50 mm increments” wording.
+- The update check falls back to GitHub’s releases Atom feed when the API is
+  rate-limited, so a 403 no longer disables the update button.
+
+The full notes are in [`docs/releases/v2.13.3.md`](docs/releases/v2.13.3.md).
+
 ## What's new in 2.13.2
 
 Released 18 November 2026. The Outrigger Pad Size tab now reports the minimum pad, not a usage band.
@@ -169,6 +185,9 @@ for every build is this repository.
   installer, then closes so it can replace the running files. The installer is
   only run if the release's checksum manifest carries a valid signature from the
   app's own key and the download matches its digest.
+- **Update check:** the app asks the GitHub API first and falls back to the
+  releases Atom feed if GitHub rate-limits the API. The download itself still
+  verifies the signed checksums before it is used.
 - **Linux:** the in-app update button downloads the new AppImage, verifies its
   signed checksum, replaces the running file and restarts the app. The old
   AppImage is removed after the new one starts. The release also ships a
@@ -192,7 +211,7 @@ Six calculation forms over one shared lift, plus a printable report:
 | --- | --- |
 | **Overall Weight** | Load lines and tackle, summed to the gross load at the hook. |
 | **Crane** | The capacity check against a load chart imported from Excel, or a single point typed by hand, read against the same 75% band. |
-| **Outrigger Pad Size** | The minimum bearing pad under one outrigger, sized from the BS 8004 Table 1 presumed bearing values. |
+| **Outrigger Pad Size** | The minimum bearing pad and steel/timber thickness guidance under one outrigger, from the BS 8004 Table 1 values and the pad material research. |
 | **Uniform Load** | The nineteen 1-leg / 2-leg / nested / bridle arrangements, each checked against the gross load at hook. |
 | **Nonuniform Load** | The 2-leg asymmetric bridle with a shortening grab hook. |
 | **Tandem** | Two independent cranes sharing one load, in the two declared lug configurations. |
@@ -236,7 +255,7 @@ These captures are from the 2.12.x/2.13.x line. They use a 20,000 kg load plus 3
 of lifting tackle, giving a 20,350 kg gross load and a 27,133.33 kg required
 capacity at the 75% rule. The crane check in the screenshot uses a 28,000 kg
 chart point at 10 m, so it shows the green **WITHIN LIMIT** band at 72.68%. The
-tutorial adds the Excel import, workbook table, Outrigger Pad Size and About
+tutorial adds the Excel import, workbook table, Outrigger Pad Size, pad thickness and About
 captures.
 
 | Overall Weight | Crane capacity check |
@@ -248,8 +267,8 @@ captures.
 | ![Nonuniform Load](docs/screenshots/05-nonuniform.png) | ![Tandem](docs/screenshots/06-tandem.png) |
 
 **Outrigger Pad Size** — a 400 kN crane mass, a 50 kN lift and stiff clay at
-150 kPa. The 1.950 m² required area gives a 1.40 m minimum square pad. The
-formula sets the minimum size; there is no separate pass/fail band:
+150 kPa. The 1.950 m² required area gives a 1.40 m minimum square pad, with a
+40–50 mm steel plate recommendation for the medium crane class:
 
 ![Outrigger Pad Size](docs/screenshots/11-outrigger.png)
 
@@ -306,7 +325,7 @@ cd src-tauri
 cargo test
 ```
 
-239 tests, including the Kotlin unit suite's own expected values (`CalcTest`,
+246 tests, including the Kotlin unit suite's own expected values (`CalcTest`,
 `CraneTest`, `CraneManualEntryTest`, `SlingTest`, `NonuniformTest`,
 `ExcelImportTest`, `ReportTest`, `ReportUniformTest`, `ReportCapacityTest`,
 `ReportNonuniformTest`), plus tests of the Rust port itself (load figures, model

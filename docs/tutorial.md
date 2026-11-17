@@ -24,7 +24,7 @@ Think of it as the walkthrough I would give you at a demo table: no jargon, just
 
 - The lift tabs work in **kilograms and metres**. The Outrigger Pad Size tab uses **kN and kPa**; one tonne is about 9.81 kN.
 - Have the crane's own load chart ready. The app imports `.xlsx` workbooks and also accepts a single chart point typed by hand.
-- For the outrigger pad, have the ground information ready. The tab uses the BS 8004 Table 1 presumed bearing values; the same table is in `docs/examples/Presumed Allowable Bearing Values (BS 8004 Table 1).xlsx`.
+- For the outrigger pad, have the ground information ready. The tab uses the BS 8004 Table 1 presumed bearing values; the same table is in `docs/examples/Presumed Allowable Bearing Values (BS 8004 Table 1).xlsx`, with the thickness guidance on its **Thickness** sheet.
 - The **75% rule** is the safety band used throughout: the required chart capacity is the gross load at the hook divided by 0.75. A 20,350 kg lift therefore needs at least **27,133.33 kg** of charted capacity.
 - Nothing is stored between launches. Save the report if you want to keep a plan.
 - This is a calculation aid. Check every input and every chart against the source before the lift, and have the finished plan approved by the competent person on site.
@@ -177,9 +177,26 @@ The **Ground reference** card keeps the category, description, table value and f
 
 - **Required pad area A** is the formula result.
 - For a square pad, the **minimum pad** is `√A`, rounded up to the next 50 mm.
-- For a rectangular pad, choose **Rectangular**, enter the width you have, and the app calculates the minimum length from `A / width`, rounded up to 50 mm.
+- For a rectangular pad, choose **Rectangular**, enter the width you have, and the app calculates the minimum length from `A / width`, rounded up.
 - A larger pad is acceptable. The app gives the minimum bearing size; it does not apply a second utilisation band.
-- The plan view shows the minimum pad and the outrigger point. It is a plan view only, not a thickness design.
+- The plan view shows the minimum pad and the outrigger point.
+
+### Choose the pad material and thickness
+
+The **Pad** card also chooses the material:
+
+- **Steel plate**: 25–32 mm for light cranes, 35–50 mm for medium, and 50–75 mm+ or structural I-beam mats for heavy.
+- **Hardwood timber**: 75–100 mm for light cranes, 150–200 mm for medium, and 200–300 mm bolted crane mats for heavy.
+
+The crane class comes from the Crane tab's rated capacity. If the manufacturer gives a higher outrigger leg load, use the next class.
+
+For timber, entering the **outrigger foot length** and **width** checks the 45° load-spread rule: the timber thickness should roughly equal the overhang from the foot to the pad edge. A timber pad wider than 1.2 m should be cross-layered, with two or more 100–150 mm hardwood layers at 90° and a steel plate on top.
+
+A steel plate wider than 1.2 m × 1.2 m needs at least 40–50 mm, or welded stiffening ribs. Never use plywood, OSB, hollow blocks or softwoods.
+
+![Outrigger pad thickness card](screenshots/12-outrigger-thickness.png)
+
+The **Pad thickness** card shows the class, both material ranges, the recommended thickness, the governing check and any cross-layering or stiffener note. The same guidance is on the **Thickness** sheet of `Presumed Allowable Bearing Values (BS 8004 Table 1).xlsx`.
 
 ### What to check before the lift
 
@@ -307,7 +324,7 @@ The [walkthrough video](video/tutorial.mp4) shows the full Summary flow: tick th
 
 The About tab shows the app version, what the calculator does, the developer contact details and the update controls.
 
-- **Check for updates** asks GitHub whether a newer release exists.
+- **Check for updates** asks GitHub whether a newer release exists. If the GitHub API is rate-limited, it reads the release feed instead.
 - **Visit repository** opens the project on GitHub.
 - On Windows, when a newer release is available, the update card can download and start the installer. On Linux, it downloads the new AppImage, replaces the running file and restarts the app.
 

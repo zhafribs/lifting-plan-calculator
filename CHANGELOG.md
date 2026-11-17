@@ -2,6 +2,29 @@
 
 Nothing yet.
 
+## [2.13.3] - 2026-11-18
+
+### Added
+
+- **Outrigger pad thickness guidance.** The Outrigger Pad Size tab now selects
+  steel plate or hardwood timber and shows the recommended thickness by crane
+  class, the 45° timber overhang check, cross-layering for pads wider than
+  1.2 m, steel stiffener limits and the materials to avoid. The same guidance
+  is structured on the **Thickness** sheet of
+  `docs/examples/Presumed Allowable Bearing Values (BS 8004 Table 1).xlsx`.
+
+### Changed
+
+- The outrigger report drops the introductory and closing paragraphs, moves the
+  ground note below the result and removes the “at 50 mm increments” wording.
+  The minimum-pad sentence keeps its normal size.
+
+### Fixed
+
+- **A GitHub API rate limit no longer disables the update check.** The app falls
+  back to the repository's releases Atom feed when the API returns 403, then
+  builds the same release asset names for the download.
+
 ## [2.13.2] - 2026-11-18
 
 ### Changed

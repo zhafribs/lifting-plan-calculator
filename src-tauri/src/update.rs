@@ -18,6 +18,7 @@ const UPDATE_PUBLIC_KEY: &str = include_str!("../update-public-key.txt");
 /// The repository every check and download is kept to.
 pub const REPO_URL: &str = "https://github.com/zhafribs/lifting-plan-calculator";
 const RELEASES_API: &str = "https://api.github.com/repos/zhafribs/lifting-plan-calculator/releases/latest";
+const RELEASES_FEED: &str = "https://github.com/zhafribs/lifting-plan-calculator/releases.atom";
 const USER_AGENT: &str = "lifting-plan-calculator";
 const CHECK_TIMEOUT: Duration = Duration::from_secs(12);
 const DOWNLOAD_TIMEOUT: Duration = Duration::from_secs(300);
@@ -74,8 +75,8 @@ pub fn is_newer(current: &str, latest: &str) -> bool {
     latest > current
 }
 
-/// Ask GitHub for the newest release and compare it with `current`.
-pub fn check(current: &str) -> Result<UpdateInfo, String> {
+/// Ask GitHub's API for the newest release and compare it with `current`.
+fn check_api(current: &str) -> Result<UpdateInfo, String> {
     let body = ureq::get(RELEASES_API)
         .set("User-Agent", USER_AGENT)
         .set("Accept", "application/vnd.github+json")
@@ -151,6 +152,85 @@ pub fn check(current: &str) -> Result<UpdateInfo, String> {
         installer,
         appimage,
     })
+}
+
+/// The first stable release tag in GitHub's releases Atom feed.
+fn latest_tag_from_atom(xml: &str) -> Option<String> {
+    for entry in xml.split("<entry>").skip(1) {
+        let Some(index) = entry.find("/releases/tag/") else {
+            continue;
+        };
+        let rest = &entry[index + "/releases/tag/".len()..];
+        let tag: String = rest
+            .chars()
+            .take_while(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '.' | '-' | '_'))
+            .collect();
+        if tag.starts_with('v') && !tag.contains('-') && version_numbers(&tag).is_some() {
+            return Some(tag);
+        }
+    }
+    None
+}
+
+/// Build the update answer from a tag when the API is rate-limited.
+fn update_from_tag(current: &str, tag: &str) -> UpdateInfo {
+    let latest = tag.trim_start_matches(['v', 'V']).to_string();
+    let base = format!(
+        "https://github.com/zhafribs/lifting-plan-calculator/releases/download/{tag}"
+    );
+    let installer = Some(InstallerAsset {
+        name: format!("Lifting-Plan-Calculator-{latest}-windows-x86_64-setup.exe"),
+        url: format!("{base}/Lifting-Plan-Calculator-{latest}-windows-x86_64-setup.exe"),
+    });
+    let appimage = if cfg!(target_os = "linux") && std::env::var_os("APPIMAGE").is_some() {
+        Some(InstallerAsset {
+            name: format!("Lifting-Plan-Calculator-{latest}-linux-x86_64.AppImage"),
+            url: format!("{base}/Lifting-Plan-Calculator-{latest}-linux-x86_64.AppImage"),
+        })
+    } else {
+        None
+    };
+    UpdateInfo {
+        current: current.to_string(),
+        newer: is_newer(current, &latest),
+        latest,
+        release_url: format!(
+            "https://github.com/zhafribs/lifting-plan-calculator/releases/tag/{tag}"
+        ),
+        repo_url: REPO_URL.to_string(),
+        installer,
+        appimage,
+    }
+}
+
+/// The Atom fallback: read the latest stable tag without the API, so a
+/// rate-limited GitHub API does not disable the update button.
+fn check_feed(current: &str) -> Result<UpdateInfo, String> {
+    let body = ureq::get(RELEASES_FEED)
+        .set("User-Agent", USER_AGENT)
+        .timeout(CHECK_TIMEOUT)
+        .call()
+        .map_err(|error| format!("the release feed could not be read: {error}"))?
+        .into_string()
+        .map_err(|error| format!("the release feed could not be read: {error}"))?;
+    let tag = latest_tag_from_atom(&body)
+        .ok_or_else(|| "the release feed carried no stable release tag".to_string())?;
+    Ok(update_from_tag(current, &tag))
+}
+
+/// Ask GitHub for the newest release. The API is tried first; its Atom feed is
+/// the fallback when the API is rate-limited or blocked.
+pub fn check(current: &str) -> Result<UpdateInfo, String> {
+    match check_api(current) {
+        Ok(info) => Ok(info),
+        Err(api_error) => match check_feed(current) {
+            Ok(info) => Ok(info),
+            Err(feed_error) => Err(format!(
+                "GitHub could not be reached: {api_error}. {feed_error}. \
+                 If the API is rate-limited, open the release page instead."
+            )),
+        },
+    }
 }
 
 /// The SHA-256 of some bytes, lowercase hex.
@@ -546,6 +626,29 @@ pub fn quit_app(app: tauri::AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_atom_feed_skips_a_prerelease_and_finds_the_stable_tag() {
+        let xml = r#"<feed>
+          <entry><link href="https://github.com/zhafribs/lifting-plan-calculator/releases/tag/v2.14.0-rc.1"/></entry>
+          <entry><link href="https://github.com/zhafribs/lifting-plan-calculator/releases/tag/v2.13.3"/></entry>
+        </feed>"#;
+        assert_eq!(latest_tag_from_atom(xml).as_deref(), Some("v2.13.3"));
+    }
+
+    #[test]
+    fn the_atom_fallback_builds_the_release_assets() {
+        let info = update_from_tag("2.13.2", "v2.13.3");
+        assert!(info.newer);
+        assert_eq!(info.latest, "2.13.3");
+        assert!(info.installer.is_some());
+        assert!(info
+            .installer
+            .as_ref()
+            .unwrap()
+            .url
+            .ends_with("/v2.13.3/Lifting-Plan-Calculator-2.13.3-windows-x86_64-setup.exe"));
+    }
 
     #[test]
     fn only_this_projects_release_urls_are_accepted() {

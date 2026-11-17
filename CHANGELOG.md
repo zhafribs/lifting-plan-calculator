@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+Nothing yet.
+
+## [2.13.0] - 2026-11-17
+
 ### Added
 
 - **Outrigger Pad Size.** A new tab sizes the bearing area under one outrigger

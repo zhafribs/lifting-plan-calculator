@@ -41,6 +41,22 @@ choose. Nothing else leaves the machine. Files are written only when you save a
 report, download an installer, or write the small
 `~/.cache/lifting-plan-calculator/ui.log` log used to diagnose startup problems.
 
+## What's new in 2.13.0
+
+Released 17 November 2026. The new **Outrigger Pad Size** tab, and the Linux
+AppImage can now update itself.
+
+- The new tab sizes the bearing area under one outrigger from the BS 8004
+  Table 1 presumed allowable bearing values, with a selectable ground row, the
+  `A = 0.65 x (CM + L) / V` formula and a selected-pad check.
+- The Linux update button downloads the new AppImage, verifies its signed
+  checksum, replaces the running file and restarts. The old file is removed
+  after the new one starts.
+- The Excel workbook table opens collapsed after an import, so the boom and
+  radius controls stay in view.
+
+The full notes are in [`docs/releases/v2.13.0.md`](docs/releases/v2.13.0.md).
+
 ## What's new in 2.12.1
 
 Released 17 November 2026. The Windows Summary page view no longer flashes a
@@ -49,11 +65,6 @@ with the app's own hidden WebView2 printer as the fallback. Linux and the report
 itself are unchanged.
 
 The full notes are in [`docs/releases/v2.12.1.md`](docs/releases/v2.12.1.md).
-
-On main since that release: the Excel workbook table opens collapsed after an
-import, the new **Outrigger Pad Size** tab carries the BS 8004 Table 1 ground
-table, and the Linux AppImage can download and replace itself from the update
-button.
 
 ## What's new in 2.12.0
 
@@ -193,7 +204,7 @@ The written guide covers:
 
 ## Screenshots
 
-These captures are from the 2.12.x line. They use a 20,000 kg load plus 350 kg
+These captures are from the 2.12.x/2.13.x line. They use a 20,000 kg load plus 350 kg
 of lifting tackle, giving a 20,350 kg gross load and a 27,133.33 kg required
 capacity at the 75% rule. The crane check in the screenshot uses a 28,000 kg
 chart point at 10 m, so it shows the green **WITHIN LIMIT** band at 72.68%. The

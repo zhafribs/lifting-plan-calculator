@@ -1,0 +1,577 @@
+/* Windows 11 Fluent layer.
+   Loaded after the base theme. Every rule is scoped to the Windows platform,
+   so Linux and macOS keep the original stylesheet untouched. */
+
+:root[data-platform="windows"] {
+  --font-ui: "Segoe UI Variable Text", "Segoe UI", "Noto Sans", sans-serif;
+  --font-display: "Segoe UI Variable Display", "Segoe UI", "Noto Sans", sans-serif;
+  --bg: #f3f3f3;
+  --bg-rail: #ebebeb;
+  --surface: #ffffff;
+  --surface-2: #f9f9f9;
+  --surface-3: #f0f0f0;
+  --surface-hi: #e8e8e8;
+  --border: #e5e5e5;
+  --border-soft: #ededed;
+  --border-strong: #d1d1d1;
+  --text: #1b1b1b;
+  --muted: #5c5c5c;
+  --faint: #707070;
+  --accent: #0067c0;
+  --accent-soft: rgba(0, 103, 192, 0.12);
+  --accent-line: #0067c0;
+  --accent-strong: #005a9e;
+  --accent-contrast: #ffffff;
+  --ok: #0f7b0f;
+  --ok-text: #0f7b0f;
+  --ok-soft: rgba(15, 123, 15, 0.10);
+  --caution: #9d5d00;
+  --caution-text: #9d5d00;
+  --caution-soft: rgba(157, 93, 0, 0.10);
+  --over: #c42b1c;
+  --over-text: #c42b1c;
+  --over-soft: rgba(196, 43, 28, 0.10);
+  --danger: #c42b1c;
+  --add: #0f7b0f;
+  --radius: 8px;
+  --radius-sm: 4px;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --rail-w: 240px;
+  --topbar-h: 60px;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-platform="windows"] {
+    --bg: #202020;
+    --bg-rail: #272727;
+    --surface: #2b2b2b;
+    --surface-2: #323232;
+    --surface-3: #3a3a3a;
+    --surface-hi: #424242;
+    --border: #3a3a3a;
+    --border-soft: #343434;
+    --border-strong: #4a4a4a;
+    --text: #ffffff;
+    --muted: #c7c7c7;
+    --faint: #9a9a9a;
+    --accent: #60cdff;
+    --accent-soft: rgba(96, 205, 255, 0.14);
+    --accent-line: #60cdff;
+    --accent-strong: #99ebff;
+    --accent-contrast: #000000;
+    --ok: #6ccb5f;
+    --ok-text: #6ccb5f;
+    --ok-soft: rgba(108, 203, 95, 0.12);
+    --caution: #fce100;
+    --caution-text: #fce100;
+    --caution-soft: rgba(252, 225, 0, 0.10);
+    --over: #ff99a4;
+    --over-text: #ff99a4;
+    --over-soft: rgba(255, 153, 164, 0.10);
+    --danger: #ff99a4;
+    --add: #6ccb5f;
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.28);
+    color-scheme: dark;
+  }
+}
+
+:root[data-platform="windows"][data-nav="compact"] {
+  --rail-w: 56px;
+}
+
+:root[data-platform="windows"] body {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+:root[data-platform="windows"] ::selection {
+  background: var(--accent-soft);
+}
+
+/* ---------- shell ------------------------------------------------------- */
+
+/* The NavigationView header only exists in the Windows layer. Keeping it
+   hidden by default means the base Linux and macOS rail is untouched. */
+.rail-header {
+  display: none;
+}
+
+:root[data-platform="windows"] .rail {
+  background: var(--bg-rail);
+  border-right: 1px solid var(--border-soft);
+  padding: 10px 8px 10px;
+  gap: 4px;
+}
+
+:root[data-platform="windows"] .rail-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 4px 8px;
+}
+
+:root[data-platform="windows"] .rail-toggle {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+:root[data-platform="windows"] .rail-toggle:hover {
+  background: var(--surface-2);
+}
+
+:root[data-platform="windows"] .rail-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+:root[data-platform="windows"] .rail-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+:root[data-platform="windows"] .rail-nav {
+  gap: 2px;
+}
+
+:root[data-platform="windows"] .nav-group {
+  margin-top: 2px;
+  padding: 12px 10px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+:root[data-platform="windows"] .nav-item {
+  position: relative;
+  min-height: 40px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 400;
+  gap: 10px;
+}
+
+:root[data-platform="windows"] .nav-item svg {
+  width: 18px;
+  height: 18px;
+  opacity: 0.9;
+}
+
+:root[data-platform="windows"] .nav-item:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+:root[data-platform="windows"] .nav-item.active {
+  background: var(--surface-2);
+  border-color: transparent;
+  color: var(--text);
+  font-weight: 600;
+}
+
+:root[data-platform="windows"] .nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+:root[data-platform="windows"] .nav-item.active svg {
+  color: var(--accent);
+}
+
+:root[data-platform="windows"] .nav-item .key {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  font-size: 10.5px;
+  color: var(--faint);
+}
+
+:root[data-platform="windows"] .rail-foot {
+  border-top: 1px solid var(--border-soft);
+  padding: 10px 8px 2px;
+  color: var(--faint);
+  font-size: 11px;
+}
+
+:root[data-platform="windows"] .rail-foot .brand {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+:root[data-platform="windows"][data-nav="compact"] .rail {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+:root[data-platform="windows"][data-nav="compact"] .rail-title,
+:root[data-platform="windows"][data-nav="compact"] .nav-group,
+:root[data-platform="windows"][data-nav="compact"] .nav-item > span:not(.key),
+:root[data-platform="windows"][data-nav="compact"] .nav-item .key,
+:root[data-platform="windows"][data-nav="compact"] .rail-foot {
+  display: none;
+}
+
+:root[data-platform="windows"][data-nav="compact"] .rail-header {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+:root[data-platform="windows"][data-nav="compact"] .nav-item {
+  justify-content: center;
+  padding: 8px;
+}
+
+:root[data-platform="windows"][data-nav="compact"] .nav-item.active::before {
+  left: -6px;
+}
+
+/* ---------- topbar ------------------------------------------------------ */
+
+:root[data-platform="windows"] .topbar {
+  padding: 0 20px;
+  gap: 12px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+:root[data-platform="windows"] .topbar-titles h1 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+:root[data-platform="windows"] .topbar-titles p {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+:root[data-platform="windows"] .chips {
+  gap: 8px;
+}
+
+:root[data-platform="windows"] .chip {
+  min-width: 122px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+:root[data-platform="windows"] .chip .k {
+  font-size: 10px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+}
+
+:root[data-platform="windows"] .chip .v {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+:root[data-platform="windows"] .update-bar {
+  padding: 8px 20px;
+  background: var(--accent-soft);
+  border-bottom: 1px solid var(--accent-line);
+  color: var(--text);
+}
+
+:root[data-platform="windows"] .update-bar .msg {
+  font-weight: 600;
+}
+
+/* ---------- cards ------------------------------------------------------- */
+
+:root[data-platform="windows"] .screen {
+  padding: 20px 24px 48px;
+}
+
+:root[data-platform="windows"] .card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+:root[data-platform="windows"] .card-head {
+  padding: 14px 16px 0;
+  background: none;
+}
+
+:root[data-platform="windows"] .card-head h2 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+:root[data-platform="windows"] .card-head .note {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+:root[data-platform="windows"] .card-body {
+  padding: 12px 16px 16px;
+}
+
+:root[data-platform="windows"] .card-foot {
+  border-top: 1px solid var(--border-soft);
+  color: var(--faint);
+}
+
+/* ---------- controls ---------------------------------------------------- */
+
+:root[data-platform="windows"] .btn {
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+:root[data-platform="windows"] .btn:hover {
+  background: var(--surface-2);
+}
+
+:root[data-platform="windows"] .btn:active {
+  transform: none;
+  background: var(--surface-3);
+}
+
+:root[data-platform="windows"] .btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+:root[data-platform="windows"] .btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+:root[data-platform="windows"] .btn.primary:hover {
+  background: var(--accent-hover, var(--accent-strong));
+  border-color: var(--accent-hover, var(--accent-strong));
+}
+
+:root[data-platform="windows"] .btn.ghost {
+  background: transparent;
+  border-color: transparent;
+}
+
+:root[data-platform="windows"] .btn.ghost:hover {
+  background: var(--surface-2);
+}
+
+:root[data-platform="windows"] .btn.small {
+  min-height: 28px;
+  padding: 4px 9px;
+  font-size: 12px;
+}
+
+:root[data-platform="windows"] .btn.add {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+
+:root[data-platform="windows"] .btn.add:hover {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+:root[data-platform="windows"] .btn.danger {
+  background: var(--over-soft);
+  border-color: var(--over);
+  color: var(--over-text);
+}
+
+:root[data-platform="windows"] input[type="text"],
+:root[data-platform="windows"] input[type="number"],
+:root[data-platform="windows"] select {
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  border-bottom: 2px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: none;
+}
+
+/* Fluent number fields have no native spinner; it also used to sit on top of
+   the unit suffix at the right edge of the field. */
+:root[data-platform="windows"] input[type="number"]::-webkit-inner-spin-button,
+:root[data-platform="windows"] input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+:root[data-platform="windows"] input[type="text"]:focus,
+:root[data-platform="windows"] input[type="number"]:focus,
+:root[data-platform="windows"] select:focus {
+  border-color: var(--accent);
+  border-bottom-color: var(--accent);
+  box-shadow: none;
+  outline: none;
+}
+
+:root[data-platform="windows"] input::placeholder {
+  color: var(--faint);
+}
+
+/* The unit suffix is drawn over the field; give it the room the base 34px
+   rule does not have for three-letter units such as "ton". */
+:root[data-platform="windows"] .field .input-wrap input.num {
+  padding-right: 42px;
+}
+
+:root[data-platform="windows"] .field > label,
+:root[data-platform="windows"] .field > span:first-child {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+}
+
+:root[data-platform="windows"] .field .hint {
+  font-size: 11.5px;
+  color: var(--faint);
+}
+
+:root[data-platform="windows"] .rows-head {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+}
+
+:root[data-platform="windows"] .row-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+:root[data-platform="windows"] .row-card:hover {
+  border-color: var(--border-strong);
+}
+
+:root[data-platform="windows"] .kv-row {
+  min-height: 36px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+:root[data-platform="windows"] .kv-row:last-child {
+  border-bottom: 0;
+}
+
+:root[data-platform="windows"] .badge {
+  border-radius: var(--radius-sm);
+}
+
+:root[data-platform="windows"] .line-total,
+:root[data-platform="windows"] .kv-row.mega .v {
+  color: var(--text);
+}
+
+:root[data-platform="windows"] .icon-btn.remove:hover {
+  background: var(--over-soft);
+  color: var(--over-text);
+}
+
+:root[data-platform="windows"] .preview-bar .seg.on {
+  color: var(--accent-contrast);
+}
+
+:root[data-platform="windows"] .report-frame {
+  background: var(--surface-3);
+}
+
+:root[data-platform="windows"] .rail-nav,
+:root[data-platform="windows"] .screen,
+:root[data-platform="windows"] .split-pane {
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+:root[data-platform="windows"] ::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-color: var(--bg);
+}
+
+:root[data-platform="windows"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--faint);
+}
+
+:root[data-platform="windows"] .meter-track {
+  height: 8px;
+  border-radius: 4px;
+}
+
+:root[data-platform="windows"] .toast {
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow);
+}
+
+/* ---------- accessibility ----------------------------------------------- */
+
+:root[data-platform="windows"] :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  :root[data-platform="windows"] .nav-item.active::before,
+  :root[data-platform="windows"] .btn,
+  :root[data-platform="windows"] .card,
+  :root[data-platform="windows"] .rail-toggle {
+    forced-color-adjust: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-platform="windows"] * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

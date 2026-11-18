@@ -280,6 +280,9 @@ jobs:
             chown -R build /work
             su build -c "cd /work && ./packaging/make-arch-package.sh"
           '
+          # The container took the workspace; give it back, or later steps
+          # cannot write to dist/.
+          sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE"
 
       - name: Install Flatpak tooling
         run: |

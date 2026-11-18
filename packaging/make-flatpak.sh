@@ -48,10 +48,6 @@ echo "==> Building the Flatpak for ${VERSION}"
 "${BUILDER[@]}" --force-clean --state-dir="$WORK/state" --repo="$WORK/repo" \
   "$WORK/build" "$WORK/io.github.zhafribs.LiftingPlanCalculator.yml"
 
-# The bundle is written beside the temporary repo and then moved: build-bundle
-# creates the file with O_TMPFILE in the destination directory, which some
-# filesystems (the CI workspace among them) refuse.
-flatpak build-bundle "$WORK/repo" "$WORK/bundle.flatpak" "$APP_ID" --arch=x86_64
 mkdir -p "$ROOT/dist"
-mv "$WORK/bundle.flatpak" "$OUT"
+flatpak build-bundle "$WORK/repo" "$OUT" "$APP_ID" --arch=x86_64
 echo "==> Built $OUT"

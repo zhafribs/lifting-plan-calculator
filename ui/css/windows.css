@@ -177,8 +177,8 @@
 }
 
 :root[data-platform="windows"] .nav-item svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   opacity: 0.9;
 }
 
@@ -355,6 +355,11 @@
   color: var(--text);
 }
 
+:root[data-platform="windows"] .card-head svg {
+  width: 16px;
+  height: 16px;
+}
+
 :root[data-platform="windows"] .card-head .note {
   font-size: 11.5px;
   color: var(--muted);
@@ -513,7 +518,7 @@
 }
 
 :root[data-platform="windows"] .kv-row {
-  min-height: 36px;
+  min-height: 40px;
   border-bottom: 1px solid var(--border-soft);
 }
 
@@ -567,6 +572,11 @@
   border-radius: var(--radius);
   background: var(--surface);
   border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow);
+}
+
+:root[data-platform="windows"] .margin-panel {
+  border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
 

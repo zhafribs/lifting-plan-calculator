@@ -430,6 +430,7 @@ fn verified_download(asset: &InstallerAsset, target: &std::path::Path) -> Result
 /// The old file is moved aside while the new one is put in place; only after the
 /// new AppImage has stayed alive for a few seconds is the old file deleted. If
 /// the new file does not start, the old one is put back.
+#[cfg(target_os = "linux")]
 const APPIMAGE_UPDATE_SCRIPT: &str = r#"#!/bin/sh
 set -u
 pid="$1"
@@ -780,6 +781,7 @@ mod tests {
         assert!(error.contains("not a Linux AppImage"));
     }
 
+    #[cfg(target_os = "linux")]
     #[test]
     fn the_appimage_helper_keeps_the_old_file_until_the_new_one_starts() {
         assert!(APPIMAGE_UPDATE_SCRIPT.contains("backup=\"${target}.old\""));

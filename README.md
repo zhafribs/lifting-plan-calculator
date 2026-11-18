@@ -41,105 +41,6 @@ choose. Nothing else leaves the machine. Files are written only when you save a
 report, download an installer, or write the small
 `~/.cache/lifting-plan-calculator/ui.log` log used to diagnose startup problems.
 
-## What's new in 2.13.4
-
-Released 18 November 2026. Smaller outrigger report and form fixes.
-
-- The printed bearing-area formula is now one equation line.
-- Outrigger labels mark the variable: **Design (V)**, **Design load (P)** and
-  **Required pad area (A)**.
-- The rectangular pad width and timber 45° foot fields are separated under
-  their own headings, and the two load buttons sit under their matching fields.
-
-The full notes are in [`docs/releases/v2.13.4.md`](docs/releases/v2.13.4.md).
-
-## What's new in 2.13.3
-
-Released 18 November 2026. Outrigger Pad Size now gives thickness guidance, and the report is cleaner.
-
-- Add **steel plate** or **hardwood timber** thickness guidance by crane class,
-  with the 45° timber overhang check, cross-layering, steel stiffener and
-  material warnings.
-- The same guidance is on the new **Thickness** sheet of
-  `docs/examples/Presumed Allowable Bearing Values (BS 8004 Table 1).xlsx`.
-- The outrigger report drops the introductory and closing paragraphs, moves the
-  ground note below the result, and removes the “at 50 mm increments” wording.
-- The update check falls back to GitHub’s releases Atom feed when the API is
-  rate-limited, so a 403 no longer disables the update button.
-
-The full notes are in [`docs/releases/v2.13.3.md`](docs/releases/v2.13.3.md).
-
-## What's new in 2.13.2
-
-Released 18 November 2026. The Outrigger Pad Size tab now reports the minimum pad, not a usage band.
-
-- The formula sets the minimum bearing size. The selected-pad utilisation,
-  applied-pressure and pass/fail bands are gone.
-- A square pad shows the minimum square side; a rectangular pad shows the
-  minimum length for the width you enter.
-- The ground row now pairs **V** with the published table value, and the crane
-  and lift buttons sit on their own line so the form no longer crowds.
-
-The full notes are in [`docs/releases/v2.13.2.md`](docs/releases/v2.13.2.md).
-
-## What's new in 2.13.1
-
-Released 17 November 2026. The Outrigger Pad Size form is easier to use and
-reuses the rest of the sheet.
-
-- **Ctrl+3** opens Outrigger Pad Size. Graph, Uniform Load, Nonuniform Load,
-  Tandem and Summary move to **Ctrl+4** through **Ctrl+8**.
-- **Crane mass (CM)** defaults to the Crane tab's rated capacity, and
-  **Lift load (L)** defaults to the Overall Weight gross load. Editing either
-  field breaks the link; the two buttons reconnect it.
-- The bearing-value row has more space, its field is narrower, and the `kPa`
-  unit is sized with the rest of the form.
-
-The full notes are in [`docs/releases/v2.13.1.md`](docs/releases/v2.13.1.md).
-
-## What's new in 2.13.0
-
-Released 17 November 2026. The new **Outrigger Pad Size** tab, and the Linux
-AppImage can now update itself.
-
-- The new tab sizes the bearing area under one outrigger from the BS 8004
-  Table 1 presumed allowable bearing values, with a selectable ground row, the
-  `A = 0.65 x (CM + L) / V` formula and a selected-pad check.
-- The Linux update button downloads the new AppImage, verifies its signed
-  checksum, replaces the running file and restarts. The old file is removed
-  after the new one starts.
-- The Excel workbook table opens collapsed after an import, so the boom and
-  radius controls stay in view.
-
-The full notes are in [`docs/releases/v2.13.0.md`](docs/releases/v2.13.0.md).
-
-## What's new in 2.12.1
-
-Released 17 November 2026. The Windows Summary page view no longer flashes a
-white print window when it refreshes. The print path now uses headless Edge,
-with the app's own hidden WebView2 printer as the fallback. Linux and the report
-itself are unchanged.
-
-The full notes are in [`docs/releases/v2.12.1.md`](docs/releases/v2.12.1.md).
-
-## What's new in 2.12.0
-
-Released 17 November 2026. The window now runs under a Content-Security-Policy,
-and the crane tab's jib rules use the chart's own basis.
-
-- Scripts load only from the app's own origin, and the report's KaTeX pass is a
-  bundled file rather than an inline script.
-- Going back to **Boom length** restores the main boom instead of keeping the
-  jib's reach.
-- A crane with no extended jib no longer offers that configuration on the Crane
-  or Graph tab.
-- The Graph tab's boom angle now drives the Crane tab, with or without a
-  workbook.
-- A jib boom angle between chart rows is checked at the lower row, never the
-  higher one.
-
-The full notes are in [`docs/releases/v2.12.0.md`](docs/releases/v2.12.0.md).
-
 ## Scope of use
 
 This is a calculation aid for a competent person planning a lift. It does not
@@ -155,8 +56,8 @@ of the person who approves it.
 | Platform | File | Runs on |
 | --- | --- | --- |
 | **Linux** (recommended) | `Lifting-Plan-Calculator-<version>-linux-x86_64.AppImage` | Ubuntu 22.04+, Fedora 36+, Arch (glibc 2.35 floor) |
-| **Windows** 10/11 x64 | `Lifting-Plan-Calculator-<version>-windows-x86_64.msi` | WebView2 runtime (the installer ships the bootstrapper) |
-| **Windows** 10/11 x64 | `Lifting-Plan-Calculator-<version>-windows-x86_64-setup.exe` | NSIS installer, same build |
+| **Windows** 10/11 x64 | `Lifting-Plan-Calculator-<version>-windows-x86_64.msi` | Installs for all users in `C:\Program Files` (administrator prompt); WebView2 runtime, bootstrapper included |
+| **Windows** 10/11 x64 | `Lifting-Plan-Calculator-<version>-windows-x86_64-setup.exe` | NSIS installer, per-machine in `C:\Program Files` (administrator prompt) |
 
 All files, their checksums and their release notes are on the
 [**Releases page**](https://github.com/zhafribs/lifting-plan-calculator/releases/latest).

@@ -38,6 +38,11 @@
       "icons/icon.ico",
       "icons/icon.png"
     ],
-    "resources": []
+    "resources": [],
+    "windows": {
+      "nsis": {
+        "installMode": "perMachine"
+      }
+    }
   }
 }

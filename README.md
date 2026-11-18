@@ -59,7 +59,7 @@ of the person who approves it.
 | **Debian / Ubuntu** | `Lifting-Plan-Calculator-<version>-linux-amd64.deb` | `sudo apt install ./<file>.deb`; uses the system GTK 3 and WebKitGTK 4.1 |
 | **Fedora / RHEL** | `Lifting-Plan-Calculator-<version>-linux-x86_64.rpm` | `sudo dnf install ./<file>.rpm`; uses the system GTK 3 and WebKitGTK 4.1 |
 | **Arch Linux** | `Lifting-Plan-Calculator-<version>-linux-x86_64.pkg.tar.zst` | `sudo pacman -U ./<file>`; depends on `webkit2gtk-4.1`, `gtk3`, `librsvg` |
-| **Any Linux (Flatpak)** | `Lifting-Plan-Calculator-<version>-linux-x86_64.flatpak` | `flatpak install ./<file>.flatpak`; runs on the GNOME 48 runtime |
+| **Any Linux (Flatpak)** | `Lifting-Plan-Calculator-<version>-linux-x86_64.flatpak` | `flatpak install ./<file>.flatpak`; runs on the GNOME 50 runtime |
 | **Windows** 10/11 x64 | `Lifting-Plan-Calculator-<version>-windows-x86_64.msi` | Installs for all users in `C:\Program Files` (administrator prompt); WebView2 runtime, bootstrapper included |
 | **Windows** 10/11 x64 | `Lifting-Plan-Calculator-<version>-windows-x86_64-setup.exe` | NSIS installer, per-machine in `C:\Program Files` (administrator prompt) |
 

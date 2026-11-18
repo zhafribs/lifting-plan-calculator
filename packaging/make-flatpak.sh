@@ -4,7 +4,7 @@
 # The Flatpak uses the GNOME runtime, whose GTK 3 and WebKitGTK 4.1 are what the
 # release binary links against, so nothing is compiled here. The runtime and SDK
 # must already be installed (the release workflow installs them; a developer can
-# run `flatpak install flathub org.gnome.Platform//48 org.gnome.Sdk//48`).
+# run `flatpak install flathub org.gnome.Platform//50 org.gnome.Sdk//50`).
 #
 # Usage:  ./packaging/make-flatpak.sh
 # Result: dist/Lifting-Plan-Calculator-<version>-linux-x86_64.flatpak
@@ -17,15 +17,15 @@ BIN="$ROOT/src-tauri/target/release/lifting-plan-calculator"
 APP_ID="io.github.zhafribs.LiftingPlanCalculator"
 OUT="$ROOT/dist/Lifting-Plan-Calculator-${VERSION}-linux-x86_64.flatpak"
 
-# The Builder app carries flatpak-builder and appstream-compose together, so it
-# is preferred: a distribution's flatpak-builder may have no appstream-compose to
-# call (Ubuntu 22.04 ships neither), and the metainfo step then fails.
-if flatpak info org.flatpak.Builder >/dev/null 2>&1; then
-  BUILDER=(flatpak run --filesystem=/tmp org.flatpak.Builder)
-elif command -v flatpak-builder >/dev/null 2>&1; then
+# The host tool first; the Builder app is the fallback for hosts that do not
+# package flatpak-builder (it carries appstream-compose, which the metainfo step
+# calls, so a host flatpak-builder needs that installed too).
+if command -v flatpak-builder >/dev/null 2>&1; then
   BUILDER=(flatpak-builder)
+elif flatpak info org.flatpak.Builder >/dev/null 2>&1; then
+  BUILDER=(flatpak run --filesystem=/tmp org.flatpak.Builder)
 else
-  echo "==> ERROR: install org.flatpak.Builder or flatpak-builder." >&2
+  echo "==> ERROR: install flatpak-builder (with appstream-compose) or org.flatpak.Builder." >&2
   exit 1
 fi
 if [ ! -x "$BIN" ]; then

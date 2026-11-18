@@ -21,7 +21,7 @@ One release now carries every format a user is likely to want:
 - **Linux:** in addition to the AppImage and its `.zsync`, the release ships
   `.deb`, `.rpm`, `x86_64.pkg.tar.zst` and a single-file `.flatpak`. All four
   are built from the same release binary and depend on the distribution's own
-  GTK 3 and WebKitGTK 4.1 (the Flatpak uses the GNOME 48 runtime), so a package
+  GTK 3 and WebKitGTK 4.1 (the Flatpak uses the GNOME 50 runtime), so a package
   manager updates the libraries with the system.
 
 The README's per-release "What's new" block is removed: the Releases page
@@ -35,7 +35,7 @@ already carries each tag's notes, and the file per tag is the single source.
 - The Arch package is built by `makepkg` from the release binary; the local run
   produced `lifting-plan-calculator 2.13.5-1` (4.5 MB) with `.PKGINFO`,
   `.BUILDINFO` and `.MTREE`.
-- The Flatpak is built by `flatpak-builder` against `org.gnome.Platform//48`,
+- The Flatpak is built by `flatpak-builder` against `org.gnome.Platform//50`,
   which provides `libwebkit2gtk-4.1.so.0` and GTK 3; the bundle installs and
   reports its version. It builds without warnings after the icon, desktop entry
   and metainfo were named after the app id.

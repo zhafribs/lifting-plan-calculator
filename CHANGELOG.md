@@ -8,7 +8,7 @@ Nothing yet.
 
 - Linux packages for every common distribution, built from the same release
   binary: `.deb` (Debian/Ubuntu), `.rpm` (Fedora/RHEL), `x86_64.pkg.tar.zst`
-  (Arch) and a single-file `.flatpak` on the GNOME 48 runtime. Each depends on
+  (Arch) and a single-file `.flatpak` on the GNOME 50 runtime. Each depends on
   the distribution's own GTK 3 and WebKitGTK 4.1; none carries its own copy.
 
 ### Fixed

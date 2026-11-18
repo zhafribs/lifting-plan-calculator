@@ -73,7 +73,9 @@ PY
 copy_bundle() {
   local pattern="$1" target="$2"
   local source
-  source="$(find "$REPO_ROOT/src-tauri/target/release/bundle" -name "$pattern" | head -1)"
+  # The bundle directory keeps earlier versions too; take the newest file.
+  source="$(find "$REPO_ROOT/src-tauri/target/release/bundle" -name "$pattern" \
+    -printf '%T@\t%p\n' | sort -n | tail -1 | cut -f2-)"
   if [ -z "$source" ]; then
     echo "==> ERROR: $pattern was not produced." >&2
     exit 1

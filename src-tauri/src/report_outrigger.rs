@@ -5,28 +5,32 @@
 //! pad and the thickness guidance, not a pass/fail check of one already chosen.
 
 use crate::outrigger::OutriggerResult;
-use crate::report::{equation, escape, fmt, heading, p, subheading, tex_num};
+use crate::report::{equation, escape, fmt, heading, p, subheading, tex_num, working_pair};
 
 /// Build the outrigger section for the report.
 pub fn outrigger_section(result: &OutriggerResult) -> String {
     let mut out = vec![heading(2, "Outrigger Pad Size")];
 
-    out.push(subheading("Design load"));
-    out.push(equation(&format!(
-        "P = 0.65 \\times (CM + L) = 0.65 \\times ({} + {}) = {}\\ \\text{{kN}}",
-        tex_num(Some(result.crane_mass_kn), 2),
-        tex_num(Some(result.lift_load_kn), 2),
-        tex_num(Some(result.design_load_kn), 2)
-    )));
-
-    out.push(subheading("Required bearing area"));
-    out.push(equation(&format!(
-        "A = \\frac{{0.65 \\times (CM + L)}}{{V}} = \
-         \\frac{{{}}}{{{}}} = {}\\ \\text{{m}}^2",
-        tex_num(Some(result.design_load_kn), 2),
-        tex_num(Some(result.bearing_kpa), 2),
-        tex_num(Some(result.required_area_m2), 3)
-    )));
+    let design = format!(
+        "<div class=\"work-label\">Design load</div>{}{}",
+        equation("P = 0.65 \\times (CM + L)"),
+        equation(&format!(
+            "P = 0.65 \\times ({} + {}) = {}\\ \\text{{kN}}",
+            tex_num(Some(result.crane_mass_kn), 2),
+            tex_num(Some(result.lift_load_kn), 2),
+            tex_num(Some(result.design_load_kn), 2)
+        ))
+    );
+    let area = format!(
+        "<div class=\"work-label\">Required bearing area</div>{}",
+        equation(&format!(
+            "A = \\frac{{0.65 \\times (CM + L)}}{{V}} = \\frac{{{}}}{{{}}} = {}\\ \\text{{m}}^2",
+            tex_num(Some(result.design_load_kn), 2),
+            tex_num(Some(result.bearing_kpa), 2),
+            tex_num(Some(result.required_area_m2), 3)
+        ))
+    );
+    out.push(working_pair(&design, &area));
 
     if let (Some(width), Some(length)) = (result.pad_width_m, result.minimum_length_m) {
         out.push(subheading("Minimum rectangular pad"));
@@ -70,67 +74,56 @@ pub fn outrigger_section(result: &OutriggerResult) -> String {
     } else {
         fmt(Some(thickness.recommended_min_mm), 0, "mm")
     };
-    out.push(subheading("Pad thickness"));
-    out.push(p(
-        &format!(
-            "<b>Material:</b> {} <span class=\"faint\">| Crane class: {}</span>",
-            if thickness.material == "timber" {
-                "Hardwood timber"
-            } else {
-                "Steel plate"
-            },
-            escape(&thickness.crane_class)
-        ),
-        "",
-    ));
-    out.push(p(
-        &format!(
-            "<b>Recommended thickness:</b> {recommended}. \
-             <span class=\"faint\">Governing check: {}</span>",
-            escape(&thickness.governing)
-        ),
-        "",
-    ));
-    out.push(p(
-        &format!(
-            "Steel plate range: {}. Timber range: {}.",
-            escape(&thickness.steel_range_mm),
-            escape(&thickness.timber_range_mm)
-        ),
-        "",
-    ));
-    if thickness.cross_layer {
-        out.push(p("<b>Cross-layering:</b> required for this pad size.", ""));
-    }
-    if thickness.stiffeners {
-        out.push(p(
-            "<b>Stiffeners:</b> required, or use a 40–50 mm plate.",
-            "",
-        ));
-    }
-    if !thickness.notes.is_empty() {
-        out.push(p(&escape(&thickness.notes), "color:#64748d;font-size:8.5pt;"));
-    }
+    let thickness_cell = format!(
+        "<div class=\"work-label\">Pad thickness</div>\
+         <p><b>Material:</b> {} <span class=\"faint\">| Crane class: {}</span></p>\
+         <p><b>Recommended thickness:</b> {recommended}. \
+         <span class=\"faint\">Governing check: {}</span></p>\
+         <p>Steel plate range: {}. Timber range: {}.</p>{}{}{}",
+        if thickness.material == "timber" {
+            "Hardwood timber"
+        } else {
+            "Steel plate"
+        },
+        escape(&thickness.crane_class),
+        escape(&thickness.governing),
+        escape(&thickness.steel_range_mm),
+        escape(&thickness.timber_range_mm),
+        if thickness.cross_layer {
+            "<p><b>Cross-layering:</b> required for this pad size.</p>"
+        } else {
+            ""
+        },
+        if thickness.stiffeners {
+            "<p><b>Stiffeners:</b> required, or use a 40–50 mm plate.</p>"
+        } else {
+            ""
+        },
+        if thickness.notes.is_empty() {
+            String::new()
+        } else {
+            format!(
+                "<p style=\"color:#64748d;font-size:8.5pt;\">{}</p>",
+                escape(&thickness.notes)
+            )
+        }
+    );
 
-    out.push(subheading("Ground"));
     let table_value = if result.ground_value_label == "Not applicable" {
         "Not applicable".to_string()
     } else {
         format!("{} kPa", result.ground_value_label)
     };
-    out.push(p(
-        &format!(
-            "<b>Ground:</b> {} - {} <span class=\"faint\">(Table value: {})</span>",
-            escape(&result.ground_category),
-            escape(&result.ground_description),
-            escape(&table_value)
-        ),
-        "",
-    ));
-    out.push(p(
-        &format!("<b>Field note:</b> {}", escape(&result.ground_notes)),
-        "",
-    ));
+    let ground_cell = format!(
+        "<div class=\"work-label\">Ground</div>\
+         <p><b>Ground:</b> {} - {} <span class=\"faint\">(Table value: {})</span></p>\
+         <p><b>Field note:</b> {}</p>",
+        escape(&result.ground_category),
+        escape(&result.ground_description),
+        escape(&table_value),
+        escape(&result.ground_notes)
+    );
+    out.push(working_pair(&thickness_cell, &ground_cell));
 
     out.join("")
 }

@@ -122,6 +122,26 @@ export function createOutriggerScreen(ctx) {
     "Use overall weight",
   );
 
+  const cmField = field({ label: "Crane mass (CM)", unit: "kN", input: cmInput });
+  cmField.classList.add("linked-field");
+  cmField.append(
+    useCrane,
+    el("span", {
+      class: "hint",
+      text: "Defaults to the Crane tab's rated capacity until edited.",
+    }),
+  );
+  const liftField = field({ label: "Lift load (L)", unit: "kN", input: liftInput });
+  liftField.classList.add("linked-field");
+  liftField.append(
+    useOverall,
+    overallHint,
+    el("span", {
+      class: "hint",
+      text: "Defaults to the Overall Weight gross load until edited.",
+    }),
+  );
+
   const shapeSelect = selectInput({
     options: [
       { key: "square", label: "Square" },
@@ -141,6 +161,12 @@ export function createOutriggerScreen(ctx) {
     hint: "The minimum length is calculated for this width.",
   });
   padWidthField.classList.add("pad-width-field");
+  const padWidthBlock = el(
+    "div",
+    { class: "pad-extra" },
+    el("span", { class: "pad-extra-title", text: "Rectangular pad" }),
+    padWidthField,
+  );
 
   const materialSelect = selectInput({
     options: [
@@ -165,12 +191,22 @@ export function createOutriggerScreen(ctx) {
       label: "Outrigger foot length",
       unit: "m",
       input: footLengthInput,
-      hint: "Optional; used for the 45° timber rule.",
     }),
     field({
       label: "Outrigger foot width",
       unit: "m",
       input: footWidthInput,
+    }),
+  );
+  const footBlock = el(
+    "div",
+    { class: "pad-extra" },
+    el("span", { class: "pad-extra-title", text: "Timber 45° rule" }),
+    footFields,
+    el("p", {
+      class: "faint small",
+      style: { margin: "6px 2px 0" },
+      text: "Foot length and width are the steel outrigger float that sits on the pad. The timber thickness should roughly equal the overhang from the foot edge to the pad edge.",
     }),
   );
 
@@ -224,24 +260,7 @@ export function createOutriggerScreen(ctx) {
           body: el(
             "div",
             { class: "stack-8" },
-            el(
-              "div",
-              { class: "fields" },
-              field({
-                label: "Crane mass (CM)",
-                unit: "kN",
-                input: cmInput,
-                hint: "Defaults to the Crane tab's rated capacity until edited.",
-              }),
-              field({
-                label: "Lift load (L)",
-                unit: "kN",
-                input: liftInput,
-                hint: "Defaults to the Overall Weight gross load until edited.",
-              }),
-            ),
-            el("div", { class: "row wrap" }, useCrane, useOverall),
-            overallHint,
+            el("div", { class: "fields" }, cmField, liftField),
           ),
         }),
         card({
@@ -256,10 +275,10 @@ export function createOutriggerScreen(ctx) {
               field({ label: "Pad shape", input: shapeSelect }),
               field({ label: "Pad material", input: materialSelect }),
             ),
-            padWidthField,
-            footFields,
+            padWidthBlock,
+            footBlock,
             note(
-              "A square pad uses the calculated square side. For a rectangular pad, enter the width you have and the minimum length is calculated.",
+              "The app calculates the minimum pad for the chosen shape. For a rectangular pad, enter the width you have and the minimum length is calculated.",
             ),
             note(
               "This sizes the pad's bearing area. Pad thickness, steel plate design, timber grade and the crane manufacturer's outrigger reaction are separate checks.",
@@ -402,7 +421,7 @@ export function createOutriggerScreen(ctx) {
         (max !== null && result.bearing_kpa > max);
       if (outside) {
         rows.push([
-          "Design V",
+          "Design (V)",
           fmt(result.bearing_kpa, 2, "kPa"),
           "caution",
           "one-line",
@@ -435,8 +454,8 @@ export function createOutriggerScreen(ctx) {
 
     const rectangular = (state.outrigger.pad_shape || "square") === "rectangular";
     const timber = (state.outrigger.thickness_material || "steel") === "timber";
-    padWidthField.style.display = rectangular ? "" : "none";
-    footFields.style.display = timber ? "" : "none";
+    padWidthBlock.style.display = rectangular ? "" : "none";
+    footBlock.style.display = timber ? "" : "none";
 
     const gross = store.solved?.totals?.gross ?? 0;
     overallHint.textContent = gross > 0
@@ -526,11 +545,11 @@ export function createOutriggerScreen(ctx) {
           ? "Not applicable"
           : `${result.ground_value_label} kPa`,
       ],
-      ["Design V", fmt(result.bearing_kpa, 2, "kPa")],
+      ["Design (V)", fmt(result.bearing_kpa, 2, "kPa")],
       ["Crane mass (CM)", fmt(result.crane_mass_kn, 2, "kN")],
       ["Lift load (L)", fmt(result.lift_load_kn, 2, "kN")],
-      ["Design load 0.65 × (CM + L)", fmt(result.design_load_kn, 2, "kN")],
-      ["Required pad area A", fmt(result.required_area_m2, 3, "m²"), "", "big one-line"],
+      ["Design load (P)", fmt(result.design_load_kn, 2, "kN")],
+      ["Required pad area (A)", fmt(result.required_area_m2, 3, "m²"), "", "big one-line"],
     ];
     if (rectangular && result.minimum_length_m !== null) {
       rows.push(

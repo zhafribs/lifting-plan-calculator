@@ -2,6 +2,19 @@
 
 Nothing yet.
 
+## [2.13.4] - 2026-11-18
+
+### Changed
+
+- **The printed bearing-area formula is one line.** The report now prints
+  `A = 0.65 × (CM + L) / V = ...` as a single equation instead of two.
+- **Outrigger labels mark the variable.** `Design (V)`, `Design load (P)` and
+  `Required pad area (A)` replace the unmarked labels.
+- **The pad card separates its extra fields.** The rectangular pad width and the
+  timber 45° foot fields sit under their own labelled sections, and the
+  **Use crane tab** / **Use overall weight** buttons sit directly under their
+  matching load fields.
+
 ## [2.13.3] - 2026-11-18
 
 ### Added

@@ -175,7 +175,7 @@ The **Ground reference** card keeps the category, description, table value and f
 
 ### Read the minimum pad size
 
-- **Required pad area A** is the formula result.
+- **Required pad area (A)** is the formula result.
 - For a square pad, the **minimum pad** is `√A`, rounded up to the next 50 mm.
 - For a rectangular pad, choose **Rectangular**, enter the width you have, and the app calculates the minimum length from `A / width`, rounded up.
 - A larger pad is acceptable. The app gives the minimum bearing size; it does not apply a second utilisation band.

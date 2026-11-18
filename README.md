@@ -41,6 +41,18 @@ choose. Nothing else leaves the machine. Files are written only when you save a
 report, download an installer, or write the small
 `~/.cache/lifting-plan-calculator/ui.log` log used to diagnose startup problems.
 
+## What's new in 2.13.4
+
+Released 18 November 2026. Smaller outrigger report and form fixes.
+
+- The printed bearing-area formula is now one equation line.
+- Outrigger labels mark the variable: **Design (V)**, **Design load (P)** and
+  **Required pad area (A)**.
+- The rectangular pad width and timber 45° foot fields are separated under
+  their own headings, and the two load buttons sit under their matching fields.
+
+The full notes are in [`docs/releases/v2.13.4.md`](docs/releases/v2.13.4.md).
+
 ## What's new in 2.13.3
 
 Released 18 November 2026. Outrigger Pad Size now gives thickness guidance, and the report is cleaner.

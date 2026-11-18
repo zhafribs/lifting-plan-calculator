@@ -257,6 +257,23 @@
   left: -6px;
 }
 
+/* The base stylesheet collapses the rail below 1100px. In the Windows layer
+   the rail's own state decides instead, so an explicitly expanded rail keeps
+   its labels and left alignment at any window width. */
+:root[data-platform="windows"][data-nav="expanded"] .nav-group {
+  display: block;
+}
+
+:root[data-platform="windows"][data-nav="expanded"] .nav-item {
+  justify-content: flex-start;
+  padding: 8px 10px;
+  gap: 10px;
+}
+
+:root[data-platform="windows"][data-nav="expanded"] .nav-item span {
+  display: inline;
+}
+
 /* ---------- topbar ------------------------------------------------------ */
 
 :root[data-platform="windows"] .topbar {

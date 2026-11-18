@@ -17,14 +17,15 @@ BIN="$ROOT/src-tauri/target/release/lifting-plan-calculator"
 APP_ID="io.github.zhafribs.LiftingPlanCalculator"
 OUT="$ROOT/dist/Lifting-Plan-Calculator-${VERSION}-linux-x86_64.flatpak"
 
-if command -v flatpak-builder >/dev/null 2>&1; then
-  BUILDER=(flatpak-builder)
-elif flatpak info org.flatpak.Builder >/dev/null 2>&1; then
-  # The Builder app carries flatpak-builder itself, for hosts that do not
-  # package it.
+# The Builder app carries flatpak-builder and appstream-compose together, so it
+# is preferred: a distribution's flatpak-builder may have no appstream-compose to
+# call (Ubuntu 22.04 ships neither), and the metainfo step then fails.
+if flatpak info org.flatpak.Builder >/dev/null 2>&1; then
   BUILDER=(flatpak run --filesystem=/tmp org.flatpak.Builder)
+elif command -v flatpak-builder >/dev/null 2>&1; then
+  BUILDER=(flatpak-builder)
 else
-  echo "==> ERROR: flatpak-builder is required (or install org.flatpak.Builder)." >&2
+  echo "==> ERROR: install org.flatpak.Builder or flatpak-builder." >&2
   exit 1
 fi
 if [ ! -x "$BIN" ]; then

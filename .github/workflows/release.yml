@@ -259,11 +259,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
+      # `gh`, not actions/download-artifact: the action's bundled Node emits a
+      # Buffer deprecation warning on the log.
       - name: Download the release binary
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
-        with:
-          name: linux-binary
-          path: src-tauri/target/release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --name linux-binary --dir src-tauri/target/release
 
       - name: Make the binary executable
         run: chmod +x src-tauri/target/release/lifting-plan-calculator
@@ -275,7 +278,10 @@ jobs:
           set -euo pipefail
           docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work archlinux:base-devel bash -lc '
             set -euo pipefail
-            pacman -Syu --noconfirm --needed base-devel zstd
+            # The image already carries base-devel and zstd. The package's own
+            # dependencies are installed so makepkg checks them, instead of
+            # being told to skip the check.
+            pacman -Syu --noconfirm --needed webkit2gtk-4.1 gtk3 librsvg
             useradd -m build
             chown -R build /work
             su build -c "cd /work && ./packaging/make-arch-package.sh"

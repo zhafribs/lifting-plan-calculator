@@ -35,7 +35,7 @@ cp "$ROOT/LICENSE" "$ROOT/THIRD_PARTY_NOTICES.md" "$WORK/"
 sed -i "s/^pkgver=.*/pkgver=${VERSION}/" "$WORK/PKGBUILD"
 
 echo "==> Building the Arch package for ${VERSION}"
-(cd "$WORK" && makepkg -f --nodeps --nocheck)
+(cd "$WORK" && makepkg -f --nocheck)
 
 mkdir -p "$ROOT/dist"
 cp "$WORK/lifting-plan-calculator-${VERSION}-1-x86_64.pkg.tar.zst" "$OUT"

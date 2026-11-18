@@ -48,7 +48,9 @@ impl Default for ChartHolder {
 // which is how the workbook-driven screens are smoke-tested; `chart_radius`
 // lands that workbook on a chosen working radius (`--chart-radius=12`). The
 // update banner has its own QA hook (`--update-check-version=1.0.0`) read by
-// `update::check_update`.
+// `update::check_update`. `platform_preview` forces the Windows Fluent layout
+// on another OS (`--platform-preview=windows`) for layout QA; `accent` is the
+// live Windows accent colour, or `None` where the system value cannot be read.
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct AppInfo {
     pub app_name: String,
@@ -59,6 +61,8 @@ pub struct AppInfo {
     pub start_hitch: Option<String>,
     pub start_chart: Option<String>,
     pub chart_radius: Option<String>,
+    pub platform_preview: Option<String>,
+    pub accent: Option<String>,
 }
 
 #[tauri::command]
@@ -76,6 +80,14 @@ pub fn app_info(holder: tauri::State<'_, ChartHolder>) -> AppInfo {
     }
     let chart_radius = std::env::args()
         .find_map(|argument| argument.strip_prefix("--chart-radius=").map(str::to_string));
+    // A layout-only preview flag: it changes the frontend platform marker and
+    // never feeds the updater, so Linux QA can see the Fluent shell.
+    let platform_preview = std::env::args()
+        .find_map(|argument| argument.strip_prefix("--platform-preview=").map(str::to_string));
+    #[cfg(target_os = "windows")]
+    let accent = crate::theme_windows::system_accent();
+    #[cfg(not(target_os = "windows"))]
+    let accent = None;
     AppInfo {
         app_name: "Lifting Plan Calculator".to_string(),
         version: env!("CARGO_PKG_VERSION").to_string(),
@@ -84,6 +96,8 @@ pub fn app_info(holder: tauri::State<'_, ChartHolder>) -> AppInfo {
         start_hitch,
         start_chart,
         chart_radius,
+        platform_preview,
+        accent,
     }
 }
 

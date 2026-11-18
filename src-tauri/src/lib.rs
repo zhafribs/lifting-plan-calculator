@@ -23,6 +23,8 @@ pub mod report_nonuniform;
 pub mod report_outrigger;
 pub mod report_uniform;
 pub mod sling;
+#[cfg(target_os = "windows")]
+pub mod theme_windows;
 pub mod update;
 
 pub fn run() {

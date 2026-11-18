@@ -5,6 +5,11 @@ import { el, svgIcon } from "./dom.js";
 import { api, errorText } from "./api.js";
 import { createStore } from "./store.js";
 import { fmt } from "./format.js";
+import {
+  platformScope,
+  initialNavMode,
+  accentVars,
+} from "./windows-theme.js";
 import { createOverallScreen } from "./screens/overall.js";
 import { createCraneScreen } from "./screens/crane.js";
 import { createOutriggerScreen } from "./screens/outrigger.js";
@@ -84,6 +89,40 @@ async function main() {
     );
     return;
   }
+
+  // --- windows theme -------------------------------------------------------
+  // The Windows build paints the Fluent layer through a platform marker on
+  // <html>; Linux and macOS keep the base stylesheet untouched. The accent is
+  // re-applied whenever the host flips light/dark, so the contrast pair follows
+  // the surface it sits on.
+  const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  let themeInfo = null;
+
+  function applyAccent(info) {
+    const vars = accentVars(info?.accent, darkQuery.matches);
+    const root = document.documentElement;
+    root.style.setProperty("--accent", vars.accent);
+    root.style.setProperty("--accent-soft", vars.accentSoft);
+    root.style.setProperty("--accent-hover", vars.accentHover);
+    root.style.setProperty("--accent-contrast", vars.accentContrast);
+  }
+
+  function applyTheme(info) {
+    themeInfo = info;
+    const root = document.documentElement;
+    root.dataset.platform = platformScope(info || {});
+    if (root.dataset.platform !== "windows") return;
+    root.dataset.nav = initialNavMode(window.innerWidth);
+    applyAccent(info);
+    window.uilog &&
+      window.uilog(
+        `theme: platform=${root.dataset.platform} nav=${root.dataset.nav} accent=${accentVars(info?.accent, darkQuery.matches).accent}`,
+      );
+  }
+
+  darkQuery.addEventListener("change", () => {
+    if (document.documentElement.dataset.platform === "windows") applyAccent(themeInfo);
+  });
 
   function toast(text, kind = "") {
     const node = el("div", { class: `toast ${kind}`.trim(), text });
@@ -323,6 +362,7 @@ async function main() {
     const info = await api.appInfo();
     window.uilog && window.uilog(`app_info: ${JSON.stringify(info)}`);
     ctx.platform = info.platform;
+    applyTheme(info);
     // A quiet start-of-day reminder: GitHub is asked once per launch, and an
     // offline machine (or a rate-limited one) simply sees no banner.
     api

@@ -2,6 +2,30 @@
 
 Nothing yet.
 
+## [2.15.0] - 2026-11-18
+
+### Added
+
+- A Windows 11 Fluent shell: a native title bar over Mica, a NavigationView rail
+  that folds from 240 px to a 56 px icon strip, Segoe UI Variable, Fluent cards,
+  controls, badges and list rows, and the system light/dark setting and accent
+  colour. Windows 10 gets the same layout on solid surfaces.
+- Fluent light and dark token sets in `ui/css/windows.css`, loaded after the
+  unchanged base theme and scoped to the Windows platform marker.
+- `--platform-preview=windows` to preview the Windows layout on Linux; it swaps
+  the tokens without Mica.
+
+### Fixed
+
+- Unit suffixes no longer overlap a right-aligned number in a field.
+- An expanded Windows rail keeps its labels below 1100 px instead of inheriting
+  the base stylesheet's narrow-window collapse.
+
+### Changed
+
+- The README and tutorial document the Windows 11 shell, the Windows 10 fallback
+  and the unchanged report, with light, dark and compact screenshots.
+
 ## [2.14.0] - 2026-11-18
 
 ### Added

@@ -8,6 +8,8 @@ import { fmt } from "./format.js";
 import {
   platformScope,
   initialNavMode,
+  nextNavMode,
+  navToggleLabel,
   accentVars,
 } from "./windows-theme.js";
 import { createOverallScreen } from "./screens/overall.js";
@@ -103,6 +105,8 @@ async function main() {
     const root = document.documentElement;
     root.style.setProperty("--accent", vars.accent);
     root.style.setProperty("--accent-soft", vars.accentSoft);
+    root.style.setProperty("--accent-line", vars.accent);
+    root.style.setProperty("--accent-strong", vars.accentHover);
     root.style.setProperty("--accent-hover", vars.accentHover);
     root.style.setProperty("--accent-contrast", vars.accentContrast);
   }
@@ -112,7 +116,7 @@ async function main() {
     const root = document.documentElement;
     root.dataset.platform = platformScope(info || {});
     if (root.dataset.platform !== "windows") return;
-    root.dataset.nav = initialNavMode(window.innerWidth);
+    setNavMode(initialNavMode(window.innerWidth));
     applyAccent(info);
     window.uilog &&
       window.uilog(
@@ -242,6 +246,36 @@ async function main() {
   // --- rail ----------------------------------------------------------------
   // The nav list scrolls on its own so the footer (name, version, contact)
   // stays pinned and visible even in the smallest window.
+  //
+  // The header is the Fluent NavigationView's: a hamburger that folds the rail
+  // to its icon strip. It is hidden outside the Windows layer, so the base
+  // layout keeps its original shape.
+  const railToggle = el("button", {
+    class: "rail-toggle",
+    type: "button",
+    title: navToggleLabel("expanded"),
+    "aria-label": navToggleLabel("expanded"),
+    "aria-expanded": "true",
+    onClick: () => setNavMode(nextNavMode(document.documentElement.dataset.nav)),
+  });
+  railToggle.append(svgIcon("menu", 18));
+  const railHeader = el(
+    "div",
+    { class: "rail-header" },
+    railToggle,
+    el("span", { class: "rail-title", text: catalog.app_name }),
+  );
+
+  function setNavMode(mode) {
+    const root = document.documentElement;
+    const next = mode === "compact" ? "compact" : "expanded";
+    root.dataset.nav = next;
+    const label = navToggleLabel(next);
+    railToggle.title = label;
+    railToggle.setAttribute("aria-label", label);
+    railToggle.setAttribute("aria-expanded", next === "expanded" ? "true" : "false");
+  }
+
   const railNav = el("nav", { class: "rail-nav" });
   const navButtons = {};
   for (const group of NAV) {
@@ -265,6 +299,7 @@ async function main() {
   }
 
   rail.append(
+    railHeader,
     railNav,
     el(
       "div",
@@ -303,6 +338,8 @@ async function main() {
     current = screens[key];
     for (const [name, button] of Object.entries(navButtons)) {
       button.classList.toggle("active", name === key);
+      if (name === key) button.setAttribute("aria-current", "page");
+      else button.removeAttribute("aria-current");
     }
     const meta = NAV.flatMap((group) => group.items).find((item) => item.key === key);
     title.textContent = meta.title;

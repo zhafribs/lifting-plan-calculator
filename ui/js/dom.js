@@ -73,6 +73,8 @@ const ICONS = {
   about:
     '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r="0.9" fill="currentColor" stroke="none"/>',
   plus: '<path d="M12 5.5v13M5.5 12h13"/>',
+  menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  chevron: '<path d="M14 6l-6 6 6 6"/>',
   close: '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
   file: '<path d="M7 3.5h7.5L19 8v12.5H7z"/><path d="M14.5 3.5V8H19"/>',
   print:

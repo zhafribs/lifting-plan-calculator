@@ -234,6 +234,69 @@ jobs:
           path: |
             dist/*.AppImage
             dist/*.AppImage.zsync
+            dist/*.deb
+            dist/*.rpm
+          if-no-files-found: error
+
+      # The Arch package and the Flatpak are built from this same binary.
+      - name: Upload the release binary
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: linux-binary
+          path: src-tauri/target/release/lifting-plan-calculator
+          if-no-files-found: error
+
+  # The same binary, packaged for Arch and for Flatpak. Neither compiles the
+  # app: they wrap the release binary in the distribution's own conventions.
+  linux-distro-packages:
+    name: Arch package and Flatpak
+    needs: [linux-appimage]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Download the release binary
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: linux-binary
+          path: src-tauri/target/release
+
+      - name: Make the binary executable
+        run: chmod +x src-tauri/target/release/lifting-plan-calculator
+
+      # makepkg refuses to run as root, so the package is built as a user inside
+      # the Arch container.
+      - name: Build the Arch package
+        run: |
+          set -euo pipefail
+          docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work archlinux:base-devel bash -lc '
+            set -euo pipefail
+            pacman -Syu --noconfirm --needed base-devel zstd
+            useradd -m build
+            chown -R build /work
+            su build -c "cd /work && ./packaging/make-arch-package.sh"
+          '
+
+      - name: Install Flatpak tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends flatpak flatpak-builder
+          sudo flatpak remote-add --if-not-exists flathub \
+            https://flathub.org/repo/flathub.flatpakrepo
+          sudo flatpak install -y --noninteractive flathub \
+            org.gnome.Platform//48 org.gnome.Sdk//48
+
+      - name: Build the Flatpak
+        run: ./packaging/make-flatpak.sh
+
+      - name: Upload the distribution packages
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: distro
+          path: |
+            dist/*.pkg.tar.zst
+            dist/*.flatpak
           if-no-files-found: error
 
   windows-installers:
@@ -336,7 +399,7 @@ jobs:
 
   publish:
     name: Publish the release
-    needs: [verify-notes, linux-appimage, windows-installers]
+    needs: [verify-notes, linux-appimage, linux-distro-packages, windows-installers]
     # Only a tag push publishes; a manual run stops after the artifacts upload.
     if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-22.04
@@ -361,21 +424,25 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          for artifact in linux windows; do
+          for artifact in linux distro windows; do
             gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" \
               --name "$artifact" --dir dist
           done
           ls -l dist
 
-      # `if-no-files-found` cannot see a silently skipped .zsync, so the four
-      # assets are named and required here.
-      - name: Check that all four assets exist
+      # `if-no-files-found` cannot see a silently skipped .zsync, so every
+      # asset is named and required here.
+      - name: Check that all eight assets exist
         run: |
           set -euo pipefail
           version="$(sed -n 's/.*"version": "\([^"]*\)".*/\1/p' src-tauri/tauri.conf.json | head -1)"
           for file in \
             "Lifting-Plan-Calculator-${version}-linux-x86_64.AppImage" \
             "Lifting-Plan-Calculator-${version}-linux-x86_64.AppImage.zsync" \
+            "Lifting-Plan-Calculator-${version}-linux-amd64.deb" \
+            "Lifting-Plan-Calculator-${version}-linux-x86_64.rpm" \
+            "Lifting-Plan-Calculator-${version}-linux-x86_64.pkg.tar.zst" \
+            "Lifting-Plan-Calculator-${version}-linux-x86_64.flatpak" \
             "Lifting-Plan-Calculator-${version}-windows-x86_64.msi" \
             "Lifting-Plan-Calculator-${version}-windows-x86_64-setup.exe"; do
             if [ ! -s "dist/$file" ]; then

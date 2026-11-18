@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build the Lifting Plan Calculator AppImage on this machine.
+# Build the Linux packages on this machine: AppImage, .deb and .rpm.
 #
 # NOTE: this links against the host's glibc and bundles the host's GTK/WebKitGTK
 # stack, so the result runs on distributions at least as new as the host. For a
@@ -10,6 +10,11 @@
 # Usage:  ./build-appimage.sh
 # Result: dist/Lifting-Plan-Calculator-<version>-linux-x86_64.AppImage
 #         dist/Lifting-Plan-Calculator-<version>-linux-x86_64.AppImage.zsync
+#         dist/Lifting-Plan-Calculator-<version>-linux-amd64.deb
+#         dist/Lifting-Plan-Calculator-<version>-linux-x86_64.rpm
+#
+# The Arch package and the Flatpak are built from the same release binary by
+# `packaging/make-arch-package.sh` and `packaging/make-flatpak.sh`.
 
 set -euo pipefail
 
@@ -30,10 +35,10 @@ fi
 # The PDF export prints with the app's own WebKitGTK view, so the bundle carries
 # no browser and needs none installed on the target machine.
 
-echo "==> Building the AppImage (release)"
+echo "==> Building the AppImage, .deb and .rpm (release)"
 # linuxdeploy is an AppImage itself; FUSE is not present on every machine.
 export APPIMAGE_EXTRACT_AND_RUN=1
-cargo tauri build --bundles appimage
+cargo tauri build --bundles appimage,deb,rpm
 
 VERSION="$(python3 -c "import json; print(json.load(open('tauri.conf.json'))['version'])")"
 BUNDLE_DIR="target/release/bundle/appimage"
@@ -62,3 +67,19 @@ PY
 
 # Delta-update sidecar (used by AppImageUpdate / appimageupdatetool).
 "$REPO_ROOT/packaging/make-zsync.sh" "$OUT" "$VERSION"
+
+# The distribution packages, with the project's own naming: the bundler names
+# them after the product ("Lifting Plan Calculator_x.y.z_amd64.deb").
+copy_bundle() {
+  local pattern="$1" target="$2"
+  local source
+  source="$(find "$REPO_ROOT/src-tauri/target/release/bundle" -name "$pattern" | head -1)"
+  if [ -z "$source" ]; then
+    echo "==> ERROR: $pattern was not produced." >&2
+    exit 1
+  fi
+  cp "$source" "$OUT_DIR/$target"
+  echo "==> Built $OUT_DIR/$target"
+}
+copy_bundle '*.deb' "Lifting-Plan-Calculator-${VERSION}-linux-amd64.deb"
+copy_bundle '*.rpm' "Lifting-Plan-Calculator-${VERSION}-linux-x86_64.rpm"

@@ -1,0 +1,27 @@
+# Maintainer: Zhafri Syazwi <zhafribs@gmail.com>
+# Packages the release binary the project already built; it does not compile.
+# `packaging/make-arch-package.sh` stages the files beside this PKGBUILD and
+# sets pkgver from tauri.conf.json before running makepkg.
+pkgname=lifting-plan-calculator
+pkgver=0.0.0
+pkgrel=1
+pkgdesc="Plan a crane lift, check the load chart and print the working"
+arch=('x86_64')
+url="https://github.com/zhafribs/lifting-plan-calculator"
+license=('GPL-3.0-or-later')
+depends=('webkit2gtk-4.1' 'gtk3' 'librsvg')
+source=()
+sha256sums=()
+
+package() {
+  install -Dm755 "$startdir/lifting-plan-calculator" \
+    "$pkgdir/usr/bin/lifting-plan-calculator"
+  install -Dm644 "$startdir/lifting-plan-calculator.desktop" \
+    "$pkgdir/usr/share/applications/lifting-plan-calculator.desktop"
+  install -Dm644 "$startdir/lifting-plan-calculator.png" \
+    "$pkgdir/usr/share/icons/hicolor/128x128/apps/lifting-plan-calculator.png"
+  install -Dm644 "$startdir/LICENSE" \
+    "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 "$startdir/THIRD_PARTY_NOTICES.md" \
+    "$pkgdir/usr/share/licenses/$pkgname/THIRD_PARTY_NOTICES.md"
+}

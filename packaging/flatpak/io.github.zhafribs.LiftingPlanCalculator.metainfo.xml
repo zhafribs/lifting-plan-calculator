@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.zhafribs.LiftingPlanCalculator</id>
+  <name>Lifting Plan Calculator</name>
+  <summary>Plan a crane lift and print the working</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <description>
+    <p>
+      Adds up the load at the hook, checks the crane against its own load chart,
+      sizes the slings, and builds a printable report that shows every formula
+      and the values behind it.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.zhafribs.LiftingPlanCalculator.desktop</launchable>
+  <url type="homepage">https://github.com/zhafribs/lifting-plan-calculator</url>
+  <developer id="io.github.zhafribs">
+    <name>Zhafri Syazwi</name>
+  </developer>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="2.13.5" date="2026-11-18"/>
+  </releases>
+</component>

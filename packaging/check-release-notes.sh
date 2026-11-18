@@ -19,7 +19,7 @@ DECISIONS_DIR="docs/council/decisions"
 # vX.Y.Z, or a vX.Y.Z-alpha/beta/rc pre-release. Deliberately strict: the tag is
 # used as a file name and as a GitHub release input.
 TAG_RE='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)(\.[0-9A-Za-z]+)*)?$'
-ASSET_RE='\.(AppImage|appimage|msi|exe)'
+ASSET_RE='\.(AppImage|appimage|msi|exe|deb|rpm|flatpak|pkg\.tar\.zst)'
 # A version as it appears in a file name, including a pre-release suffix, so
 # `2.5.2-alpha.1` is one token rather than a mismatch against `2.5.2`.
 VERSION_TOKEN='(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-(alpha|beta|rc)(\.[0-9A-Za-z]+)*)?'

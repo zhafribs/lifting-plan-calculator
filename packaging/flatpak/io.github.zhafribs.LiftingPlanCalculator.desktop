@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Lifting Plan Calculator
+GenericName=Crane lift planner
+Comment=Plan a crane lift, check the load chart and print the working
+Exec=lifting-plan-calculator
+Icon=io.github.zhafribs.LiftingPlanCalculator
+Terminal=false
+Categories=Utility;
+Keywords=crane;lifting;rigging;sling;load chart;
+StartupNotify=true

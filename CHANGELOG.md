@@ -2,6 +2,30 @@
 
 Nothing yet.
 
+## [2.14.0] - 2026-11-18
+
+### Added
+
+- Linux packages for every common distribution, built from the same release
+  binary: `.deb` (Debian/Ubuntu), `.rpm` (Fedora/RHEL), `x86_64.pkg.tar.zst`
+  (Arch) and a single-file `.flatpak` on the GNOME 48 runtime. Each depends on
+  the distribution's own GTK 3 and WebKitGTK 4.1; none carries its own copy.
+
+### Fixed
+
+- The Windows installers are per-machine: the NSIS setup installed per-user,
+  which put the app in one profile instead of `C:\Program Files`. Both the MSI
+  and the setup now install for all users, with the administrator prompt that
+  implies.
+- The Windows build no longer warns that the AppImage update helper is unused;
+  the helper is compiled only on Linux, where it is written.
+
+### Changed
+
+- The README's per-release "What's new" block is gone. Those summaries belong on
+  the Releases page, which already carries them; the README keeps the download
+  table and the scope of use.
+
 ## [2.13.5] - 2026-11-18
 
 ### Fixed

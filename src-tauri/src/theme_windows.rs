@@ -5,12 +5,13 @@
 //! conversion and keeps the FFI in one place.
 
 use windows::Win32::Graphics::Dwm::DwmGetColorizationColor;
+use windows_core::BOOL;
 
 /// The current Windows accent colour as `#rrggbb`, or `None` when DWM cannot
 /// answer (composition disabled, a locked-down session, or an API failure).
 pub fn system_accent() -> Option<String> {
     let mut argb = 0u32;
-    let mut opaque = 0;
+    let mut opaque = BOOL(0);
     // SAFETY: both pointers refer to live, correctly typed locals for the
     // duration of the call.
     unsafe { DwmGetColorizationColor(&mut argb, &mut opaque) }.ok()?;

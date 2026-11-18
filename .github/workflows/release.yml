@@ -278,7 +278,7 @@ jobs:
           set -euo pipefail
           docker run --rm -v "$GITHUB_WORKSPACE:/work" -w /work archlinux:base-devel bash -lc '
             set -euo pipefail
-            # The image already carries base-devel and zstd. The package's own
+            # The image already carries base-devel and zstd. The package
             # dependencies are installed so makepkg checks them, instead of
             # being told to skip the check.
             pacman -Syu --noconfirm --needed webkit2gtk-4.1 gtk3 librsvg

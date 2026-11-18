@@ -165,12 +165,11 @@ pub const REPORT_CSS: &str = r#"
 .report .working-diagram { margin-top: 6pt; text-align: center; }
 .report .diagram-title { font-size: 6pt; font-weight: bold; letter-spacing: 0.3pt;
     text-transform: uppercase; color: #6d7a88; margin-bottom: 2pt; }
-/* The diagram is captured at 3x and printed across the text width: at the old
-   78 mm height cap it was a third of the page and its labels were unreadable. */
+/* The diagram keeps the height it always had; the capture is what makes it
+   sharp (3x, with its palette turned over, so no CSS filter softens it). */
 .report .working-diagram img { display: block; margin: 0 auto;
-    width: auto; height: auto; max-width: 100%; max-height: 175mm;
-    border: 0.5pt solid #d9e1e9; border-radius: 3pt; background: #fff;
-    filter: invert(1) hue-rotate(180deg) brightness(1.08); }
+    width: auto; height: auto; max-width: 100%; max-height: 78mm;
+    border: 0.5pt solid #d9e1e9; border-radius: 3pt; background: #fff; }
 .report .metric-k { display: block; font-size: 5.5pt; letter-spacing: 0.3pt;
     text-transform: uppercase; color: #6d7a88; }
 .report .metric-v { display: block; font-size: 10pt; font-weight: bold;

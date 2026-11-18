@@ -11,6 +11,7 @@ import { el } from "../dom.js";
 import { card, field, kvRows, numberInput } from "../components.js";
 import * as geo from "../graph/geometry.js";
 import { registerGraphCapture } from "../graph/snapshot.js";
+import { printify } from "../graph/print-palette.js";
 import { jibAvailability } from "../jib.js";
 
 const DEG = "\u00b0";
@@ -1149,6 +1150,12 @@ export function createGraphScreen(ctx) {
       if (!g) return null;
       g.setTransform(scale, 0, 0, scale, 0, 0);
       paint(g);
+      // The report prints on white, so the palette is turned over here. A CSS
+      // filter would look the same, but the print pipeline rasterises a filtered
+      // image again and the diagram comes out soft.
+      const shot = g.getImageData(0, 0, off.width, off.height);
+      printify(shot.data);
+      g.putImageData(shot, 0, 0);
       return off.toDataURL("image/png");
     } finally {
       box.w = savedBox.w;

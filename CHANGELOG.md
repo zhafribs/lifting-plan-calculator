@@ -13,6 +13,11 @@ Nothing yet.
 
 ### Fixed
 
+- The printed working-range diagram keeps its original height (78 mm) and is
+  sharp: the report no longer filters the image, which made the print pipeline
+  rasterise the capture again at 300 dpi. The colours are turned over in the
+  bitmap instead, so the diagram is embedded at its full 2700 px (about
+  684 ppi at this size).
 - The Windows installers are per-machine: the NSIS setup installed per-user,
   which put the app in one profile instead of `C:\Program Files`. Both the MSI
   and the setup now install for all users, with the administrator prompt that

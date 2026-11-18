@@ -62,11 +62,13 @@ jobs:
         run: |
           set -e
           work="$(mktemp -d)"
-          cp ui/js/pdf-math.js ui/js/pdf-math.test.mjs ui/js/jib.js ui/js/jib.test.mjs "$work/"
+          cp ui/js/pdf-math.js ui/js/pdf-math.test.mjs ui/js/jib.js ui/js/jib.test.mjs \
+            ui/js/graph/print-palette.js ui/js/graph/print-palette.test.mjs "$work/"
           printf '{"type":"module"}' > "$work/package.json"
           # The file, not the directory: directory discovery differs between the
           # Node versions the runners carry.
-          node --test "$work/pdf-math.test.mjs" "$work/jib.test.mjs"
+          node --test "$work/pdf-math.test.mjs" "$work/jib.test.mjs" \
+            "$work/print-palette.test.mjs"
 
       # The vendored PDF parser is pinned by hash: a different file is a
       # deliberate change, not an update.

@@ -38,6 +38,10 @@ Think of it as the walkthrough I would give you at a demo table: no jargon, just
 5. Choose the sling arrangement in **Uniform Load**, **Nonuniform Load** or **Tandem**.
 6. Review the **Summary** and save or print the plan.
 
+### On Windows 11
+
+The Windows build uses the Windows 11 Fluent shell: a native title bar over Mica, Segoe UI Variable, and a NavigationView rail that folds to an icon strip with the hamburger at the top of the rail. It follows the Windows light/dark setting and the system accent colour while it runs. Windows 10 shows the same layout on solid surfaces because Mica is not available there; the report and the PDF are identical on every platform.
+
 ---
 
 ## 1. Overall Weight

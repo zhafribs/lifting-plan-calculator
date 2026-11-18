@@ -436,8 +436,8 @@
   box-shadow: none;
 }
 
-/* Fluent number fields have no native spinner; it also used to sit on top of
-   the unit suffix at the right edge of the field. */
+/* Fluent number fields carry no native spinner; hiding it also keeps the
+   control clean next to the unit suffix. */
 :root[data-platform="windows"] input[type="number"]::-webkit-inner-spin-button,
 :root[data-platform="windows"] input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;

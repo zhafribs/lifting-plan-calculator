@@ -193,6 +193,31 @@ captures.
 
 ![Summary report](docs/screenshots/07-summary.png)
 
+## Windows 11
+
+The Windows build wears Windows 11's own clothes:
+
+- a native Windows 11 title bar over **Mica**, with the Fluent NavigationView
+  beside it;
+- the rail folds to a 56px icon strip with the hamburger in its header;
+- system light/dark and the Windows accent colour are followed live;
+- **Windows 10** keeps the same Fluent layout on solid surfaces, because Mica is
+  not available there; if the accent cannot be read, the Windows 11 blue is used;
+- the calculation engine, the printable report and the PDF are unchanged.
+
+| Light | Dark |
+| --- | --- |
+| ![Windows 11 light layout](docs/screenshots/windows-11-light.png) | ![Windows 11 dark layout](docs/screenshots/windows-11-dark.png) |
+
+**Compact rail at the minimum window size** — labels fold away, the icons keep
+their tooltips and shortcuts:
+
+![Windows 11 compact rail](docs/screenshots/windows-11-compact.png)
+
+These three are layout previews captured on Linux with
+`cargo run -- --platform-preview=windows`; the flag swaps in the Windows tokens
+without Mica. The Windows build adds Mica behind the native title bar.
+
 ## From source
 
 ```bash

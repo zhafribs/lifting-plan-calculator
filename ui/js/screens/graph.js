@@ -141,8 +141,16 @@ export function createGraphScreen(ctx) {
 
   // --- drawing ---------------------------------------------------------------
 
+  // The report prints the diagram at page width. Its labels are sized for the
+  // screen; the capture enlarges them so they read at 159 mm across.
+  let labelScale = 1;
+
+  function setFont(g, weight, size) {
+    g.font = `${weight} ${(size * labelScale).toFixed(2)}px${FONT}`;
+  }
+
   function pill(g, cx, cy, text, colour, size) {
-    g.font = `700 ${size}px${FONT}`;
+    setFont(g, 700, size);
     const tw = g.measureText(text).width;
     const th = size + 2;
     let x = cx - tw / 2 - 6;
@@ -190,7 +198,7 @@ export function createGraphScreen(ctx) {
   function drawAxesGround(g) {
     const step = gridStep();
     const [x0, x1, y0, y1] = visibleWorld();
-    g.font = `10px${FONT}`;
+    setFont(g, 400, 10);
     g.strokeStyle = COL_AXIS;
     g.lineWidth = 1;
     const gy = w2s(0, 0)[1];
@@ -300,7 +308,7 @@ export function createGraphScreen(ctx) {
     }
 
     // envelope angle labels at the arc ends
-    g.font = `10px${FONT}`;
+    setFont(g, 400, 10);
     g.fillStyle = COL_JIB;
     g.textAlign = "left";
     g.textBaseline = "alphabetic";
@@ -382,7 +390,7 @@ export function createGraphScreen(ctx) {
       else g.lineTo(x, y);
     }
     g.stroke();
-    g.font = `700 9px${FONT}`;
+    setFont(g, 700, 9);
     g.fillStyle = COL_TEXT;
     const mid = (angle / 2.0) * (Math.PI / 180);
     g.textAlign = "left";
@@ -491,7 +499,7 @@ export function createGraphScreen(ctx) {
     g.fill();
     g.stroke();
     if (hot) {
-      g.font = `700 9px${FONT}`;
+      setFont(g, 700, 9);
       g.fillStyle = COL_TEXT;
       g.textAlign = "left";
       g.textBaseline = "alphabetic";
@@ -1120,12 +1128,20 @@ export function createGraphScreen(ctx) {
     const savedBox = { ...box };
     const savedView = { ...view };
     const savedDims = showDims;
+    // Declared outside the try: the finally has to restore it, and a const
+    // inside the try would not be in scope there.
+    const savedLabelScale = labelScale;
     try {
       box.w = width;
       box.h = height;
       fitViewFor(width, height);
       showDims = true;
-      const scale = 2;
+      // Three pixels per CSS pixel: the diagram prints about 159 mm wide,
+      // which is 1878 px at 300 dpi, so 2700 px has headroom and stays sharp.
+      const scale = 3;
+      // The screen sizes are small at page width; 1.25 lifts them to the
+      // report's own label size (about 6 pt) without changing the on-screen view.
+      labelScale = 1.25;
       const off = document.createElement("canvas");
       off.width = Math.round(width * scale);
       off.height = Math.round(height * scale);
@@ -1141,6 +1157,7 @@ export function createGraphScreen(ctx) {
       view.cx = savedView.cx;
       view.cy = savedView.cy;
       showDims = savedDims;
+      labelScale = savedLabelScale;
       redraw();
     }
   }

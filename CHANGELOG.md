@@ -2,6 +2,15 @@
 
 Nothing yet.
 
+## [2.13.5] - 2026-11-18
+
+### Fixed
+
+- The working-range diagram prints legibly: it now spans the report's full text
+  width instead of being capped at 78 mm of height, its labels are drawn 25 %
+  larger for the page, and the capture is three times the screen size so the
+  lines and figures stay sharp at print resolution.
+
 ## [2.13.4] - 2026-11-18
 
 ### Changed

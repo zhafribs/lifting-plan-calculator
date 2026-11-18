@@ -466,6 +466,19 @@
   margin: 0;
 }
 
+/* The shared input rule above resets the base select chevron and its right
+   padding, which left a dropdown looking exactly like a text field. Put the
+   chevron back so the two controls read differently. */
+:root[data-platform="windows"] select {
+  padding-right: 30px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 17px) 55%, calc(100% - 12px) 55%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
 :root[data-platform="windows"] input[type="text"]:focus,
 :root[data-platform="windows"] input[type="number"]:focus,
 :root[data-platform="windows"] select:focus {
@@ -505,6 +518,16 @@
   letter-spacing: 0;
   text-transform: none;
   color: var(--muted);
+}
+
+/* Narrow two-line load row: the Qty field is a fixed 62px, but the base grid
+   lets its column shrink below that, so the field used to spill under the
+   Measured-by select. Keep the Qty column at 62px and let the select take the
+   rest. */
+@container (max-width: 620px) {
+  :root[data-platform="windows"] .load-row {
+    grid-template-columns: 62px minmax(0, 1fr) var(--wbox) 96px;
+  }
 }
 
 :root[data-platform="windows"] .row-card {

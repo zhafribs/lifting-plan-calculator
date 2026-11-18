@@ -2,6 +2,17 @@
 
 Nothing yet.
 
+## [2.15.1] - 2026-11-19
+
+### Fixed
+
+- Dropdowns read as dropdowns again. The Windows Fluent layer had reset the
+  base select chevron and its right padding, so a dropdown looked exactly like
+  a text field. The chevron is restored in the Windows layer.
+- The Qty field no longer spills under the Measured-by select in the narrow
+  two-line load row when the rail is expanded in a small window. The Qty column
+  keeps its 62 px width and the select takes the remaining space.
+
 ## [2.15.0] - 2026-11-18
 
 ### Added

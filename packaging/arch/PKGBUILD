@@ -12,6 +12,8 @@ license=('GPL-3.0-or-later')
 depends=('webkit2gtk-4.1' 'gtk3' 'librsvg')
 source=()
 sha256sums=()
+# A release binary has no debug symbols to split out.
+options=(!debug)
 
 package() {
   install -Dm755 "$startdir/lifting-plan-calculator" \

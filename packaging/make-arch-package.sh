@@ -38,5 +38,5 @@ echo "==> Building the Arch package for ${VERSION}"
 (cd "$WORK" && makepkg -f --nodeps --nocheck)
 
 mkdir -p "$ROOT/dist"
-cp "$WORK"/*.pkg.tar.zst "$OUT"
+cp "$WORK/lifting-plan-calculator-${VERSION}-1-x86_64.pkg.tar.zst" "$OUT"
 echo "==> Built $OUT"

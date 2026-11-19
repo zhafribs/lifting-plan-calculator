@@ -2,6 +2,19 @@
 
 Nothing yet.
 
+## [2.16.4] - 2026-11-19
+
+### Fixed
+
+- A Noctalia desktop was not recognised, although it recolours the terminals and
+  the GTK applications from the wallpaper. The app now reads Noctalia's own
+  palette — the kitty theme it writes — and its light/dark choice, so a
+  wallpaper-themed Hyprland session needs no configuration at all. The generated
+  `gtk.css` (`@define-color accent_color`) is read as a fallback, which also
+  covers matugen-style setups.
+- The desktop's published scheme now wins over the webview's guess, so the
+  palette follows Noctalia's mode even when GTK does not advertise it.
+
 ## [2.16.3] - 2026-11-19
 
 ### Added

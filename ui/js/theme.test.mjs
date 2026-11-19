@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 
 import {
   THEME_PREFERENCES,
+  desktopIsDark,
   normalisePreference,
   resolveScheme,
   themeAccent,
@@ -95,4 +96,11 @@ test("a hue-less accent still produces a usable palette", () => {
   const palette = tintedPalette("#808080", "dark");
   assert.match(palette["--bg"], /^#[0-9a-f]{6}$/);
   assert.ok(contrast(palette["--text"], palette["--bg"]) >= 7);
+});
+
+test("the desktop's own scheme wins over the webview's guess", () => {
+  assert.equal(desktopIsDark("dark", false), true);
+  assert.equal(desktopIsDark("light", true), false);
+  assert.equal(desktopIsDark(null, true), true);
+  assert.equal(desktopIsDark(undefined, false), false);
 });

@@ -117,7 +117,7 @@ export function createAboutScreen(ctx) {
   function accentSummary() {
     const source = ctx.accentSource ? ctx.accentSource() : "default";
     if (source === "wallpaper") {
-      return `Accent: ${ctx.accent ? ctx.accent() : ""} from the wallpaper palette (pywal or wallust); the surfaces are tinted to match.`;
+      return `Accent: ${ctx.accent ? ctx.accent() : ""} from the desktop's palette (Noctalia, pywal or wallust); the surfaces are tinted to match.`;
     }
     if (source === "desktop") {
       return `Accent: ${ctx.accent ? ctx.accent() : ""} from the desktop's own accent setting.`;
@@ -210,7 +210,7 @@ export function createAboutScreen(ctx) {
   function accentSummary() {
     const source = ctx.accentSource ? ctx.accentSource() : "default";
     if (source === "wallpaper") {
-      return `Accent: ${ctx.accent ? ctx.accent() : ""} from the wallpaper palette (pywal or wallust); the surfaces are tinted to match.`;
+      return `Accent: ${ctx.accent ? ctx.accent() : ""} from the desktop's palette (Noctalia, pywal or wallust); the surfaces are tinted to match.`;
     }
     if (source === "desktop") {
       return `Accent: ${ctx.accent ? ctx.accent() : ""} from the desktop's own accent setting.`;

@@ -11,7 +11,7 @@ import {
   nextNavMode,
   navToggleLabel,
 } from "./windows-theme.js";
-import { applyTheme, normalisePreference } from "./theme.js";
+import { applyTheme, desktopIsDark, normalisePreference } from "./theme.js";
 import { createOverallScreen } from "./screens/overall.js";
 import { createCraneScreen } from "./screens/crane.js";
 import { createOutriggerScreen } from "./screens/outrigger.js";
@@ -98,12 +98,17 @@ async function main() {
   // follows the desktop unless the operator chose one in About, and the accent
   // is the desktop's own when it publishes one.
   const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
-  let appearance = { preference: "system", accent: null, accentSource: "default" };
+  let appearance = {
+    preference: "system",
+    accent: null,
+    accentSource: "default",
+    scheme: null,
+  };
 
   function paintAppearance() {
     const applied = applyTheme(document.documentElement, {
       preference: appearance.preference,
-      systemDark: darkQuery.matches,
+      systemDark: desktopIsDark(appearance.scheme, darkQuery.matches),
       accent: appearance.accent,
       accentSource: appearance.accentSource,
     });
@@ -122,6 +127,8 @@ async function main() {
         accent: typeof info?.accent === "string" ? info.accent : null,
         accentSource:
           typeof info?.accent_source === "string" ? info.accent_source : "default",
+        scheme:
+          info?.scheme === "dark" || info?.scheme === "light" ? info.scheme : null,
       };
     } catch (error) {
       // A desktop that cannot answer still gets the fallback palette.

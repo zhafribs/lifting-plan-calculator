@@ -96,6 +96,13 @@ export function normalisePreference(value) {
   return THEME_PREFERENCES.includes(value) ? value : "system";
 }
 
+/** The desktop's own scheme when it publishes one, the webview's otherwise. */
+export function desktopIsDark(hint, mediaDark) {
+  if (hint === "dark") return true;
+  if (hint === "light") return false;
+  return Boolean(mediaDark);
+}
+
 /** "system" resolves against the desktop; an explicit choice always wins. */
 export function resolveScheme(preference, systemDark) {
   const choice = normalisePreference(preference);

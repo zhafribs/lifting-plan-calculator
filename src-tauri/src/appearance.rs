@@ -15,6 +15,8 @@ pub struct Appearance {
     pub accent: Option<String>,
     /// Where the accent came from: "wallpaper", "desktop" or "default".
     pub accent_source: String,
+    /// The desktop's own light/dark choice, when it publishes one.
+    pub scheme: Option<String>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -79,6 +81,7 @@ pub fn current() -> Appearance {
         preference: preference(),
         accent,
         accent_source: accent_source.to_string(),
+        scheme: desktop_scheme(),
     }
 }
 
@@ -96,9 +99,119 @@ pub fn wallpaper_accent() -> Option<String> {
             }
         }
     }
+
+    // Desktop shells that theme every application write the palette into the
+    // application's own theme file. Noctalia (the usual Hyprland shell) does
+    // this for kitty, so the terminal's palette is the desktop's palette.
+    if let Some(config) = config_home() {
+        for relative in ["kitty/themes/noctalia.conf", "kitty/themes/wal.conf"] {
+            if let Ok(text) = std::fs::read_to_string(config.join(relative)) {
+                if let Some(colour) = accent_from_kitty(&text) {
+                    return Some(colour);
+                }
+            }
+        }
+        // Generators that template GTK declare the accent in gtk.css.
+        for relative in ["gtk-3.0/gtk.css", "gtk-4.0/gtk.css"] {
+            if let Ok(text) = std::fs::read_to_string(config.join(relative)) {
+                if let Some(colour) = accent_from_gtk_css(&text) {
+                    return Some(colour);
+                }
+            }
+        }
+    }
+
     std::fs::read_to_string(cache.join("wal/colors"))
         .ok()
         .and_then(|text| accent_from_colour_lines(&text))
+}
+
+#[cfg(not(target_os = "windows"))]
+fn config_home() -> Option<std::path::PathBuf> {
+    let base = std::env::var("XDG_CONFIG_HOME")
+        .ok()
+        .filter(|value| !value.is_empty())
+        .map(std::path::PathBuf::from)
+        .or_else(|| {
+            std::env::var("HOME")
+                .ok()
+                .filter(|value| !value.is_empty())
+                .map(|home| std::path::PathBuf::from(home).join(".config"))
+        })?;
+    Some(base)
+}
+
+/// The desktop's light/dark choice. Noctalia keeps it in its config, and on a
+/// wallpaper-themed desktop it is the authority the other applications follow.
+#[cfg(not(target_os = "windows"))]
+fn desktop_scheme() -> Option<String> {
+    let text = std::fs::read_to_string(config_home()?.join("noctalia/config.toml")).ok()?;
+    mode_from_noctalia(&text)
+}
+
+#[cfg(target_os = "windows")]
+fn desktop_scheme() -> Option<String> {
+    None
+}
+
+fn mode_from_noctalia(text: &str) -> Option<String> {
+    let mut in_theme = false;
+    for line in text.lines() {
+        let line = line.trim();
+        if line.starts_with('[') {
+            in_theme = line == "[theme]";
+            continue;
+        }
+        if !in_theme {
+            continue;
+        }
+        let Some(rest) = line.strip_prefix("mode") else {
+            continue;
+        };
+        let value = rest.trim_start_matches([' ', '=']).trim().trim_matches('"');
+        if value == "dark" || value == "light" {
+            return Some(value.to_string());
+        }
+    }
+    None
+}
+
+/// A kitty theme file: `color1 #rrggbb` per line, background in `color0`.
+fn accent_from_kitty(text: &str) -> Option<String> {
+    let palette: Vec<String> = text
+        .lines()
+        .filter_map(|line| {
+            let mut parts = line.split_whitespace();
+            let key = parts.next()?;
+            if !key.starts_with("color") || key == "color0" {
+                return None;
+            }
+            normalise_hex(parts.next()?)
+        })
+        .collect();
+    pick_accent(palette.into_iter())
+}
+
+/// `@define-color accent_color #rrggbb;` in a generated gtk.css.
+fn accent_from_gtk_css(text: &str) -> Option<String> {
+    for wanted in ["accent_color", "accent_bg_color", "theme_selected_bg_color"] {
+        for line in text.lines() {
+            let Some(rest) = line.trim().strip_prefix("@define-color") else {
+                continue;
+            };
+            let mut parts = rest.split_whitespace();
+            if parts.next() != Some(wanted) {
+                continue;
+            }
+            if let Some(colour) = parts
+                .next()
+                .and_then(|value| normalise_hex(value.trim_end_matches(';')))
+            {
+                return Some(colour);
+            }
+        }
+    }
+    None
 }
 
 #[cfg(target_os = "windows")]
@@ -294,6 +407,36 @@ mod tests {
         assert_eq!(accent_from_name("'blue'\n"), Some("#3584e4".to_string()));
         assert_eq!(accent_from_name("\"teal\""), Some("#2190a4".to_string()));
         assert_eq!(accent_from_name("'chartreuse'"), None);
+    }
+
+    #[test]
+    fn a_kitty_theme_supplies_the_palette() {
+        let text = "color0 #121318\ncolor1 #3a3f4b\ncolor2 #22d3ee\ncolor3 #ffb4ab\nbackground #121318\n";
+        assert_eq!(accent_from_kitty(text), Some("#22d3ee".to_string()));
+    }
+
+    #[test]
+    fn a_pastel_noctalia_palette_still_yields_one_of_its_colours() {
+        // The real Noctalia output is all pastels; the point is that one of them
+        // is chosen, not that a particular shade wins.
+        let text = "color1 #ffb4ab\ncolor2 #b4c4ff\ncolor3 #c1c5dd\ncolor11 #ebcdef\n";
+        let chosen = accent_from_kitty(text).expect("a palette colour");
+        assert!(text.contains(&chosen), "chosen {chosen} is not in the palette");
+    }
+
+    #[test]
+    fn a_generated_gtk_css_supplies_the_accent() {
+        let text = "@define-color window_bg_color #121318;\n@define-color accent_color #b4c4ff;\n";
+        assert_eq!(accent_from_gtk_css(text), Some("#b4c4ff".to_string()));
+        assert_eq!(accent_from_gtk_css("@define-color theme_fg_color #ffffff;"), None);
+    }
+
+    #[test]
+    fn noctalia_reports_its_own_scheme() {
+        let text = "[theme]\nmode = \"light\"\nsource = \"wallpaper\"\n\n[bar]\nmode = \"dark\"\n";
+        assert_eq!(mode_from_noctalia(text), Some("light".to_string()));
+        assert_eq!(mode_from_noctalia("[theme]\nmode = \"system\"\n"), None);
+        assert_eq!(mode_from_noctalia("[bar]\nmode = \"dark\"\n"), None);
     }
 
     #[test]

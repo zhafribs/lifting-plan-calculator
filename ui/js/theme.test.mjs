@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 
 import {
   THEME_PREFERENCES,
+  applyTheme,
   desktopIsDark,
   normalisePreference,
   resolveScheme,
@@ -12,6 +13,22 @@ import {
   tintedPalette,
   paletteTokens,
 } from "./theme.js";
+
+function fakeRoot() {
+  const properties = new Map();
+  return {
+    dataset: {},
+    style: {
+      colorScheme: "",
+      setProperty(name, value) {
+        properties.set(name, value);
+      },
+      getPropertyValue(name) {
+        return properties.get(name) ?? "";
+      },
+    },
+  };
+}
 
 function relativeLuminance(hex) {
   const [r, g, b] = [1, 3, 5].map((start) => Number.parseInt(hex.slice(start, start + 2), 16) / 255)
@@ -123,4 +140,53 @@ test("a missing or malformed desktop palette is ignored", () => {
   const noSurface = paletteTokens({ background: "#101010", text: "#eeeeee" });
   assert.equal(noSurface["--text"], "#eeeeee");
   assert.match(noSurface["--surface"], /^#[0-9a-f]{6}$/);
+});
+
+test("an explicit Light over a dark desktop uses a light palette", () => {
+  const root = fakeRoot();
+  const desktopPalette = { background: "#141318", surface: "#1b1a20", text: "#e5e1e9" };
+  const applied = applyTheme(root, {
+    preference: "light",
+    systemDark: true,
+    accent: "#c9beff",
+    accentSource: "wallpaper",
+    palette: desktopPalette,
+  });
+  assert.equal(applied.scheme, "light");
+  assert.equal(applied.exact, false);
+  assert.equal(applied.tinted, true);
+  assert.notEqual(root.style.getPropertyValue("--bg"), desktopPalette.background);
+  assert.equal(root.style.getPropertyValue("--bg"), tintedPalette("#c9beff", "light")["--bg"]);
+  assert.ok(
+    contrast(root.style.getPropertyValue("--text"), root.style.getPropertyValue("--bg")) >= 7,
+  );
+});
+
+test("following the desktop keeps its exact palette", () => {
+  const root = fakeRoot();
+  const desktopPalette = { background: "#141318", surface: "#1b1a20", text: "#e5e1e9" };
+  const applied = applyTheme(root, {
+    preference: "system",
+    systemDark: true,
+    accent: "#c9beff",
+    accentSource: "wallpaper",
+    palette: desktopPalette,
+  });
+  assert.equal(applied.scheme, "dark");
+  assert.equal(applied.exact, true);
+  assert.equal(root.style.getPropertyValue("--bg"), desktopPalette.background);
+});
+
+test("an explicit Light without a wallpaper palette clears the desktop surfaces", () => {
+  const root = fakeRoot();
+  const applied = applyTheme(root, {
+    preference: "light",
+    systemDark: true,
+    accent: "#c9beff",
+    accentSource: "desktop",
+    palette: { background: "#141318", surface: "#1b1a20", text: "#e5e1e9" },
+  });
+  assert.equal(applied.exact, false);
+  assert.equal(applied.tinted, false);
+  assert.equal(root.style.getPropertyValue("--bg"), "");
 });

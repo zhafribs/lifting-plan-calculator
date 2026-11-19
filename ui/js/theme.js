@@ -188,7 +188,12 @@ export function applyTheme(
   // background and text the terminals and the GTK applications use. Without
   // them, a wallpaper palette still tints our own ladder; anything else keeps
   // the neutral palette the stylesheet ships with.
-  const exact = paletteTokens(palette);
+  //
+  // Only when the resolved scheme matches the desktop's own. An explicit
+  // Light/Dark choice must not inherit the other scheme's desktop palette, or
+  // the override would repaint a few tokens while the surfaces stayed dark.
+  const desktopScheme = systemDark ? "dark" : "light";
+  const exact = scheme === desktopScheme ? paletteTokens(palette) : null;
   const surfaces =
     exact ?? (accentSource === "wallpaper" ? tintedPalette(vars.accent, scheme) : null);
   for (const name of TINT_SURFACES) {

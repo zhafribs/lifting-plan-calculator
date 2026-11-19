@@ -197,8 +197,15 @@ async function main() {
   const updateBar = el("div", { class: "update-bar" });
   screenEl.parentElement.insertBefore(updateBar, screenEl);
 
+  // The strip is a reminder, not a second update page: the actions live in
+  // Settings, so there is one place to look and one set of paths to keep.
   function showUpdate(info) {
-    const buttons = [
+    updateBar.replaceChildren(
+      el("span", {
+        class: "msg",
+        text: `Version ${info.latest} is available — you have ${info.current}.`,
+      }),
+      el("span", { class: "spacer" }),
       el(
         "button",
         { class: "btn ghost small", onClick: () => api.openExternal(info.release_url).catch(() => {}) },
@@ -206,33 +213,16 @@ async function main() {
       ),
       el(
         "button",
-        { class: "btn ghost small", onClick: () => api.openExternal(info.repo_url).catch(() => {}) },
-        "Repository",
+        {
+          class: "btn primary small",
+          onClick: () => {
+            updateBar.replaceChildren();
+            updateBar.classList.remove("on");
+            go("settings");
+          },
+        },
+        "Show updates",
       ),
-    ];
-    if (info.installer && ctx.platform === "windows") {
-      const install = el(
-        "button",
-        { class: "btn primary small", onClick: () => runInstaller(info, install) },
-        "Download & install",
-      );
-      buttons.push(install);
-    }
-    if (info.appimage && ctx.platform === "linux") {
-      const update = el(
-        "button",
-        { class: "btn primary small", onClick: () => runAppImageUpdate(info, update) },
-        "Download & update",
-      );
-      buttons.push(update);
-    }
-    updateBar.replaceChildren(
-      el("span", {
-        class: "msg",
-        text: `Version ${info.latest} is available — you have ${info.current}.`,
-      }),
-      el("span", { class: "spacer" }),
-      ...buttons,
       el(
         "button",
         {
@@ -247,40 +237,6 @@ async function main() {
       ),
     );
     updateBar.classList.add("on");
-  }
-
-  // Windows: fetch the release's installer and start it, then quit so the
-  // installer can replace the running files.
-  async function runInstaller(info, button) {
-    button.disabled = true;
-    const label = button.textContent;
-    button.textContent = "Downloading\u2026";
-    try {
-      await api.installUpdate(info.installer);
-      toast("The installer has started - the app will close so it can update.", "ok");
-      setTimeout(() => api.quitApp(), 1500);
-    } catch (error) {
-      button.disabled = false;
-      button.textContent = label;
-      toast(errorText(error), "error");
-    }
-  }
-
-  // Linux AppImage: fetch the new AppImage, then quit so the helper can replace
-  // the running file and start the new one.
-  async function runAppImageUpdate(info, button) {
-    button.disabled = true;
-    const label = button.textContent;
-    button.textContent = "Downloading\u2026";
-    try {
-      await api.installUpdate(info.appimage);
-      toast("The new AppImage is ready. The app will close, replace the old file and restart.", "ok");
-      setTimeout(() => api.quitApp(), 1500);
-    } catch (error) {
-      button.disabled = false;
-      button.textContent = label;
-      toast(errorText(error), "error");
-    }
   }
 
   const screens = {

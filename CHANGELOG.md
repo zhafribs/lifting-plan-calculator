@@ -2,6 +2,16 @@
 
 Nothing yet.
 
+## [2.16.6] - 2026-11-19
+
+### Changed
+
+- The Updates card moved from About to Settings, beside the appearance: one page
+  holds the controls. About keeps what the app does and who built it.
+- The launch reminder no longer carries its own installer buttons. It says a
+  release exists, links to its notes, and opens Settings, so the update paths
+  live in one place instead of two copies that could drift.
+
 ## [2.16.5] - 2026-11-19
 
 ### Added

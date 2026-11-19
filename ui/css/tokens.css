@@ -54,7 +54,6 @@
   --over-text: #f07171;
   --over-soft: rgba(240, 113, 113, 0.12);
   --danger: #8a3a3a;
-  --add: #2e6b4e;
 }
 
 /* The light palette. Same structure, so a rule that reads a token needs no
@@ -92,5 +91,4 @@
   --over-text: #a33333;
   --over-soft: rgba(178, 59, 59, 0.10);
   --danger: #b23b3b;
-  --add: #2f7d52;
 }

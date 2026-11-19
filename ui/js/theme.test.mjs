@@ -190,3 +190,20 @@ test("an explicit Light without a wallpaper palette clears the desktop surfaces"
   assert.equal(applied.tinted, false);
   assert.equal(root.style.getPropertyValue("--bg"), "");
 });
+
+test("an explicit Dark still carries the wallpaper accent", () => {
+  const root = fakeRoot();
+  const desktopPalette = { background: "#141318", surface: "#1b1a20", text: "#e5e1e9" };
+  const applied = applyTheme(root, {
+    preference: "dark",
+    systemDark: true,
+    accent: "#c9beff",
+    accentSource: "wallpaper",
+    palette: desktopPalette,
+  });
+  assert.equal(applied.scheme, "dark");
+  assert.equal(applied.exact, false);
+  assert.equal(applied.tinted, true);
+  assert.notEqual(root.style.getPropertyValue("--bg"), desktopPalette.background);
+  assert.equal(root.style.getPropertyValue("--bg"), tintedPalette("#c9beff", "dark")["--bg"]);
+});

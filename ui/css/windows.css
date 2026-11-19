@@ -32,7 +32,6 @@
   --over-text: #c42b1c;
   --over-soft: rgba(196, 43, 28, 0.10);
   --danger: #c42b1c;
-  --add: #0f7b0f;
   --radius: 8px;
   --radius-sm: 4px;
   --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -72,7 +71,6 @@
     --over-text: #ff99a4;
     --over-soft: rgba(255, 153, 164, 0.10);
     --danger: #ff99a4;
-    --add: #6ccb5f;
     --shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.28);
   color-scheme: dark;
@@ -431,7 +429,7 @@
 :root[data-platform="windows"] .btn.add {
   background: var(--accent-soft);
   border-color: var(--accent-line);
-  color: var(--accent);
+  color: var(--text);
 }
 
 :root[data-platform="windows"] .btn.add:hover {

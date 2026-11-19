@@ -454,8 +454,12 @@ select option { background: var(--surface-2); }
 }
 .btn.primary:hover { background: var(--accent-hover); }
 
-.btn.add { background: var(--add); border-color: #3b7f5d; color: #ffffff; }
-.btn.add:hover { filter: brightness(1.08); }
+.btn.add {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  color: var(--text);
+}
+.btn.add:hover { background: var(--accent-soft); border-color: var(--accent); }
 
 .btn.danger { background: var(--danger); border-color: #a04a4a; color: #ffffff; }
 .btn.danger:hover { filter: brightness(1.08); }

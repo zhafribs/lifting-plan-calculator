@@ -106,37 +106,37 @@ export function tintedPalette(accent, scheme) {
   const h = hueOf(accent);
   if (scheme === "light") {
     return {
-      "--bg": hsl(h, 0.22, 0.97),
-      "--bg-rail": hsl(h, 0.2, 0.93),
-      "--surface": "#ffffff",
-      "--surface-2": hsl(h, 0.2, 0.985),
-      "--surface-3": hsl(h, 0.21, 0.94),
-      "--surface-hi": hsl(h, 0.23, 0.9),
-      "--border": hsl(h, 0.18, 0.87),
-      "--border-soft": hsl(h, 0.16, 0.91),
-      "--border-strong": hsl(h, 0.2, 0.8),
-      "--text": hsl(h, 0.26, 0.12),
-      "--muted": hsl(h, 0.15, 0.4),
-      "--faint": hsl(h, 0.12, 0.52),
-      "--scroll": hsl(h, 0.14, 0.8),
-      "--placeholder": hsl(h, 0.1, 0.6),
+      "--bg": hsl(h, 0.32, 0.93),
+      "--bg-rail": hsl(h, 0.3, 0.89),
+      "--surface": hsl(h, 0.3, 0.98),
+      "--surface-2": hsl(h, 0.3, 0.96),
+      "--surface-3": hsl(h, 0.32, 0.91),
+      "--surface-hi": hsl(h, 0.34, 0.86),
+      "--border": hsl(h, 0.28, 0.83),
+      "--border-soft": hsl(h, 0.25, 0.88),
+      "--border-strong": hsl(h, 0.3, 0.75),
+      "--text": hsl(h, 0.28, 0.12),
+      "--muted": hsl(h, 0.16, 0.38),
+      "--faint": hsl(h, 0.13, 0.5),
+      "--scroll": hsl(h, 0.2, 0.78),
+      "--placeholder": hsl(h, 0.12, 0.58),
     };
   }
   return {
-    "--bg": hsl(h, 0.14, 0.08),
-    "--bg-rail": hsl(h, 0.16, 0.06),
-    "--surface": hsl(h, 0.13, 0.11),
-    "--surface-2": hsl(h, 0.14, 0.14),
-    "--surface-3": hsl(h, 0.15, 0.18),
-    "--surface-hi": hsl(h, 0.16, 0.23),
-    "--border": hsl(h, 0.15, 0.2),
-    "--border-soft": hsl(h, 0.14, 0.16),
-    "--border-strong": hsl(h, 0.17, 0.28),
-    "--text": hsl(h, 0.22, 0.93),
-    "--muted": hsl(h, 0.15, 0.65),
-    "--faint": hsl(h, 0.13, 0.48),
-    "--scroll": hsl(h, 0.14, 0.2),
-    "--placeholder": hsl(h, 0.1, 0.36),
+    "--bg": hsl(h, 0.25, 0.1),
+    "--bg-rail": hsl(h, 0.27, 0.08),
+    "--surface": hsl(h, 0.23, 0.13),
+    "--surface-2": hsl(h, 0.25, 0.16),
+    "--surface-3": hsl(h, 0.27, 0.2),
+    "--surface-hi": hsl(h, 0.28, 0.25),
+    "--border": hsl(h, 0.25, 0.22),
+    "--border-soft": hsl(h, 0.22, 0.18),
+    "--border-strong": hsl(h, 0.27, 0.31),
+    "--text": hsl(h, 0.22, 0.92),
+    "--muted": hsl(h, 0.16, 0.64),
+    "--faint": hsl(h, 0.14, 0.47),
+    "--scroll": hsl(h, 0.22, 0.23),
+    "--placeholder": hsl(h, 0.12, 0.36),
   };
 }
 
@@ -184,16 +184,15 @@ export function applyTheme(
   root.style.setProperty("--accent-hover", vars.accentHover);
   root.style.setProperty("--accent-contrast", vars.accentContrast);
 
-  // The desktop's own surfaces win when it publishes them: that is the same
-  // background and text the terminals and the GTK applications use. Without
-  // them, a wallpaper palette still tints our own ladder; anything else keeps
-  // the neutral palette the stylesheet ships with.
-  //
-  // Only when the resolved scheme matches the desktop's own. An explicit
-  // Light/Dark choice must not inherit the other scheme's desktop palette, or
-  // the override would repaint a few tokens while the surfaces stayed dark.
+  // The desktop's own surfaces win when it publishes them *and* the operator
+  // asked to follow the desktop: that is the same background and text the
+  // terminals and the GTK applications use. An explicit Light/Dark always uses
+  // our own ladder, tinted from the palette accent when there is a wallpaper
+  // accent, so the chosen scheme still carries the desktop's colour.
   const desktopScheme = systemDark ? "dark" : "light";
-  const exact = scheme === desktopScheme ? paletteTokens(palette) : null;
+  const followingDesktop = normalisePreference(preference) === "system";
+  const exact =
+    followingDesktop && scheme === desktopScheme ? paletteTokens(palette) : null;
   const surfaces =
     exact ?? (accentSource === "wallpaper" ? tintedPalette(vars.accent, scheme) : null);
   for (const name of TINT_SURFACES) {

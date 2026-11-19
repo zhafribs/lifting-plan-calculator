@@ -10,6 +10,7 @@ import {
   resolveScheme,
   themeAccent,
   tintedPalette,
+  paletteTokens,
 } from "./theme.js";
 
 function relativeLuminance(hex) {
@@ -103,4 +104,23 @@ test("the desktop's own scheme wins over the webview's guess", () => {
   assert.equal(desktopIsDark("light", true), false);
   assert.equal(desktopIsDark(null, true), true);
   assert.equal(desktopIsDark(undefined, false), false);
+});
+
+test("the desktop palette supplies the exact background and text", () => {
+  const tokens = paletteTokens({ background: "#1a1111", surface: "#271d1d", text: "#f0dede" });
+  assert.equal(tokens["--bg"], "#1a1111");
+  assert.equal(tokens["--surface"], "#271d1d");
+  assert.equal(tokens["--text"], "#f0dede");
+  // Secondary text sits between the two, leaning towards the background.
+  assert.ok(contrast(tokens["--muted"], "#1a1111") < contrast("#f0dede", "#1a1111"));
+  assert.ok(contrast(tokens["--muted"], "#1a1111") > contrast(tokens["--faint"], "#1a1111"));
+});
+
+test("a missing or malformed desktop palette is ignored", () => {
+  assert.equal(paletteTokens(null), null);
+  assert.equal(paletteTokens({ background: "not-a-colour", text: "#ffffff" }), null);
+  assert.equal(paletteTokens({ background: "#101010" }), null);
+  const noSurface = paletteTokens({ background: "#101010", text: "#eeeeee" });
+  assert.equal(noSurface["--text"], "#eeeeee");
+  assert.match(noSurface["--surface"], /^#[0-9a-f]{6}$/);
 });

@@ -113,13 +113,14 @@ pub const REPORT_CSS: &str = r#"
 /* Rows of factors need air between them. */
 .report table.working tr + tr td { padding-top: 5pt; }
 /* A heading is never the last thing on a page. */
-.report .section-card h2, .report .section-card h3 { break-after: avoid;
-    page-break-after: avoid; break-inside: avoid; }
 /* Keep-with-next, stated on both sides: a heading never ends a page, and the
-   block it introduces never starts one. Chrome honours the pair even where it
-   drops a single `break-after` inside a bordered card. */
-.report .section-card h2 + *,
-.report .section-card h3 + * { break-before: avoid; page-break-before: avoid; }
+   block it introduces never starts one. This applies to every heading in the
+   report — sections live in more than one container class (`section-card`,
+   `input-card`), and scoping the rule to one of them is what left "Lift Input
+   Parameters" alone at the foot of a page. */
+.report h2, .report h3 { break-after: avoid; page-break-after: avoid;
+    break-inside: avoid; }
+.report h2 + *, .report h3 + * { break-before: avoid; page-break-before: avoid; }
 /* No width hints: the columns take the room their content needs, so the
    divider sits at the true centre when both sides fit and moves to fit the
    wider side when they do not. */

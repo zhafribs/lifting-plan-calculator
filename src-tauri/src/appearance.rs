@@ -17,6 +17,17 @@ pub struct Appearance {
     pub accent_source: String,
     /// The desktop's own light/dark choice, when it publishes one.
     pub scheme: Option<String>,
+    /// The desktop's own surfaces, when it publishes them.
+    pub palette: Option<DesktopPalette>,
+}
+
+/// The colours the desktop itself uses, so the shell can match them exactly
+/// instead of approximating them from one accent.
+#[derive(Debug, Clone, Serialize)]
+pub struct DesktopPalette {
+    pub background: String,
+    pub surface: String,
+    pub text: String,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -82,6 +93,7 @@ pub fn current() -> Appearance {
         accent,
         accent_source: accent_source.to_string(),
         scheme: desktop_scheme(),
+        palette: desktop_palette(),
     }
 }
 
@@ -100,6 +112,16 @@ pub fn wallpaper_accent() -> Option<String> {
         }
     }
 
+    // The generated GTK stylesheet carries the roles every GTK application
+    // uses, so it is the closest thing to "the desktop's colour".
+    if let Some(text) = gtk_theme_text() {
+        if let Some(colour) = gtk_colour(&text, "accent_color")
+            .or_else(|| gtk_colour(&text, "accent_bg_color"))
+        {
+            return Some(colour);
+        }
+    }
+
     // Desktop shells that theme every application write the palette into the
     // application's own theme file. Noctalia (the usual Hyprland shell) does
     // this for kitty, so the terminal's palette is the desktop's palette.
@@ -107,14 +129,6 @@ pub fn wallpaper_accent() -> Option<String> {
         for relative in ["kitty/themes/noctalia.conf", "kitty/themes/wal.conf"] {
             if let Ok(text) = std::fs::read_to_string(config.join(relative)) {
                 if let Some(colour) = accent_from_kitty(&text) {
-                    return Some(colour);
-                }
-            }
-        }
-        // Generators that template GTK declare the accent in gtk.css.
-        for relative in ["gtk-3.0/gtk.css", "gtk-4.0/gtk.css"] {
-            if let Ok(text) = std::fs::read_to_string(config.join(relative)) {
-                if let Some(colour) = accent_from_gtk_css(&text) {
                     return Some(colour);
                 }
             }
@@ -192,25 +206,82 @@ fn accent_from_kitty(text: &str) -> Option<String> {
     pick_accent(palette.into_iter())
 }
 
-/// `@define-color accent_color #rrggbb;` in a generated gtk.css.
-fn accent_from_gtk_css(text: &str) -> Option<String> {
-    for wanted in ["accent_color", "accent_bg_color", "theme_selected_bg_color"] {
-        for line in text.lines() {
-            let Some(rest) = line.trim().strip_prefix("@define-color") else {
-                continue;
-            };
-            let mut parts = rest.split_whitespace();
-            if parts.next() != Some(wanted) {
-                continue;
-            }
-            if let Some(colour) = parts
-                .next()
-                .and_then(|value| normalise_hex(value.trim_end_matches(';')))
-            {
-                return Some(colour);
-            }
+/// `@define-color name #rrggbb;` in a generated GTK stylesheet.
+fn gtk_colour(text: &str, wanted: &str) -> Option<String> {
+    for line in text.lines() {
+        let Some(rest) = line.trim().strip_prefix("@define-color") else {
+            continue;
+        };
+        let mut parts = rest.split_whitespace();
+        if parts.next() != Some(wanted) {
+            continue;
+        }
+        if let Some(colour) = parts
+            .next()
+            .and_then(|value| normalise_hex(value.trim_end_matches(';')))
+        {
+            return Some(colour);
         }
     }
+    None
+}
+
+/// The GTK stylesheet and the files it imports. Noctalia writes `gtk.css` as a
+/// single `@import` of `noctalia.css`, so the roles are one level down.
+#[cfg(not(target_os = "windows"))]
+fn gtk_theme_text() -> Option<String> {
+    let config = config_home()?;
+    for directory in ["gtk-3.0", "gtk-4.0"] {
+        let base = config.join(directory);
+        let Ok(text) = std::fs::read_to_string(base.join("gtk.css")) else {
+            continue;
+        };
+        let mut combined = text.clone();
+        for line in text.lines() {
+            let Some(start) = line.find("@import") else {
+                continue;
+            };
+            let Some(open) = line[start..].find('"').map(|index| start + index) else {
+                continue;
+            };
+            let Some(close) = line[open + 1..].find('"').map(|index| open + 1 + index) else {
+                continue;
+            };
+            let name = &line[open + 1..close];
+            if name.contains("://") {
+                continue;
+            }
+            if let Ok(imported) = std::fs::read_to_string(base.join(name)) {
+                combined.push('\n');
+                combined.push_str(&imported);
+            }
+        }
+        if combined.contains("@define-color") {
+            return Some(combined);
+        }
+    }
+    None
+}
+
+#[cfg(not(target_os = "windows"))]
+fn desktop_palette() -> Option<DesktopPalette> {
+    let text = gtk_theme_text()?;
+    let background = gtk_colour(&text, "window_bg_color")
+        .or_else(|| gtk_colour(&text, "view_bg_color"))?;
+    let text_colour = gtk_colour(&text, "window_fg_color")
+        .or_else(|| gtk_colour(&text, "view_fg_color"))?;
+    let surface = gtk_colour(&text, "headerbar_bg_color")
+        .or_else(|| gtk_colour(&text, "view_bg_color"))
+        .unwrap_or_else(|| background.clone());
+    Some(DesktopPalette {
+        background,
+        surface,
+        text: text_colour,
+    })
+}
+
+#[cfg(target_os = "windows")]
+fn desktop_palette() -> Option<DesktopPalette> {
     None
 }
 
@@ -426,9 +497,9 @@ mod tests {
 
     #[test]
     fn a_generated_gtk_css_supplies_the_accent() {
-        let text = "@define-color window_bg_color #121318;\n@define-color accent_color #b4c4ff;\n";
-        assert_eq!(accent_from_gtk_css(text), Some("#b4c4ff".to_string()));
-        assert_eq!(accent_from_gtk_css("@define-color theme_fg_color #ffffff;"), None);
+        let text = "@define-color window_bg_color #121318;\n@define-color accent_color #ffb3b2;\n";
+        assert_eq!(gtk_colour(text, "accent_color"), Some("#ffb3b2".to_string()));
+        assert_eq!(gtk_colour(text, "theme_fg_color"), None);
     }
 
     #[test]

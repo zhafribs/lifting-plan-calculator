@@ -105,6 +105,7 @@ async function main() {
     accent: null,
     accentSource: "default",
     scheme: null,
+    palette: null,
   };
 
   function paintAppearance() {
@@ -113,6 +114,7 @@ async function main() {
       systemDark: desktopIsDark(appearance.scheme, darkQuery.matches),
       accent: appearance.accent,
       accentSource: appearance.accentSource,
+      palette: appearance.palette,
     });
     window.uilog &&
       window.uilog(
@@ -131,6 +133,8 @@ async function main() {
           typeof info?.accent_source === "string" ? info.accent_source : "default",
         scheme:
           info?.scheme === "dark" || info?.scheme === "light" ? info.scheme : null,
+        palette:
+          info?.palette && typeof info.palette === "object" ? info.palette : null,
       };
     } catch (error) {
       // A desktop that cannot answer still gets the fallback palette.
@@ -159,6 +163,13 @@ async function main() {
   darkQuery.addEventListener("change", () => {
     if (appearance.preference === "system") loadAppearance();
   });
+
+  // A wallpaper change rewrites the desktop's palette without an event. While
+  // the window is in front, a slow poll keeps the shell in step; in the
+  // background it costs nothing.
+  setInterval(() => {
+    if (document.hasFocus()) loadAppearance();
+  }, 20000);
 
   // A wallpaper change rewrites the palette file without telling anyone. One
   // cheap read when the window is focused keeps the tint current, without a

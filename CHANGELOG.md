@@ -2,6 +2,29 @@
 
 Nothing yet.
 
+## [2.16.8] - 2026-11-19
+
+### Fixed
+
+- **The app follows the wallpaper again, and now exactly.** Noctalia writes its
+  colours into the generated GTK stylesheet (`gtk-3.0/gtk.css` importing
+  `noctalia.css`), which is what the terminals and the file manager paint with.
+  The app read only the terminal's 16 colours and picked the most vivid one — a
+  yellow on a pink wallpaper. It now reads the GTK roles first (`accent_color`,
+  `window_bg_color`, `window_fg_color`, `headerbar_bg_color`) and paints its
+  surfaces from them, so it matches the rest of the desktop instead of
+  approximating it.
+
+- **A wallpaper change no longer needs a restart or an alt-tab.** While the
+  window is in front the palette is re-read every 20 seconds, in addition to the
+  refresh on focus.
+
+- **A section title can no longer end a page, in any section.** The
+  keep-with-next rule was scoped to `section-card`, but "Lift Input Parameters"
+  lives in `input-card` — the case in your plan. The rule is now stated on every
+  report heading and the block that follows it; measured cost: no extra page
+  (4 sections, 4 pages), and the orphaned heading moves with its rows.
+
 ## [2.16.7] - 2026-11-19
 
 ### Changed

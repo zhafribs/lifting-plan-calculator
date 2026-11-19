@@ -14,6 +14,16 @@ const FALLBACK_ACCENT = { dark: "#5cb3ff", light: "#2b6cb8" };
 // The surfaces a wallpaper palette is allowed to tint. The lightness ladder is
 // ours, so contrast is guaranteed; only the hue and a little chroma come from
 // the wallpaper.
+const HEX = /^#[0-9a-f]{6}$/i;
+
+function mix(from, to, amount) {
+  const parse = (hex) => [1, 3, 5].map((start) => Number.parseInt(hex.slice(start, start + 2), 16));
+  const [r1, g1, b1] = parse(from);
+  const [r2, g2, b2] = parse(to);
+  const channel = (a, b) => Math.round(a + (b - a) * amount).toString(16).padStart(2, "0");
+  return `#${channel(r1, r2)}${channel(g1, g2)}${channel(b1, b2)}`;
+}
+
 const TINT_SURFACES = [
   "--bg",
   "--bg-rail",
@@ -27,6 +37,8 @@ const TINT_SURFACES = [
   "--text",
   "--muted",
   "--faint",
+  "--scroll",
+  "--placeholder",
 ];
 
 function channels(hex) {
@@ -57,6 +69,38 @@ function hsl(hue, saturation, lightness) {
   return `#${channel(0)}${channel(8)}${channel(4)}`;
 }
 
+/**
+ * The desktop's own palette, when it publishes one: surfaces are mixed from its
+ * background towards its text colour, so the shell is the same warmth as the
+ * rest of the desktop instead of an approximation of it.
+ */
+export function paletteTokens(palette) {
+  if (!palette) return null;
+  const background = typeof palette.background === "string" ? palette.background.trim() : "";
+  const text = typeof palette.text === "string" ? palette.text.trim() : "";
+  if (!HEX.test(background) || !HEX.test(text)) return null;
+  const surface =
+    typeof palette.surface === "string" && HEX.test(palette.surface.trim())
+      ? palette.surface.trim()
+      : mix(background, text, 0.06);
+  return {
+    "--bg": background,
+    "--bg-rail": mix(background, text, 0.03),
+    "--surface": surface,
+    "--surface-2": mix(background, text, 0.09),
+    "--surface-3": mix(background, text, 0.13),
+    "--surface-hi": mix(background, text, 0.18),
+    "--border": mix(background, text, 0.16),
+    "--border-soft": mix(background, text, 0.1),
+    "--border-strong": mix(background, text, 0.26),
+    "--text": text,
+    "--muted": mix(text, background, 0.35),
+    "--faint": mix(text, background, 0.55),
+    "--scroll": mix(background, text, 0.22),
+    "--placeholder": mix(text, background, 0.5),
+  };
+}
+
 /** A tinted version of our palette: the accent's hue, our own lightness ladder. */
 export function tintedPalette(accent, scheme) {
   const h = hueOf(accent);
@@ -74,6 +118,8 @@ export function tintedPalette(accent, scheme) {
       "--text": hsl(h, 0.26, 0.12),
       "--muted": hsl(h, 0.15, 0.4),
       "--faint": hsl(h, 0.12, 0.52),
+      "--scroll": hsl(h, 0.14, 0.8),
+      "--placeholder": hsl(h, 0.1, 0.6),
     };
   }
   return {
@@ -89,6 +135,8 @@ export function tintedPalette(accent, scheme) {
     "--text": hsl(h, 0.22, 0.93),
     "--muted": hsl(h, 0.15, 0.65),
     "--faint": hsl(h, 0.13, 0.48),
+    "--scroll": hsl(h, 0.14, 0.2),
+    "--placeholder": hsl(h, 0.1, 0.36),
   };
 }
 
@@ -123,7 +171,7 @@ export function themeAccent(hex, scheme) {
  */
 export function applyTheme(
   root,
-  { preference, systemDark, accent, accentSource } = {},
+  { preference, systemDark, accent, accentSource, palette } = {},
 ) {
   const scheme = resolveScheme(preference, systemDark);
   const vars = themeAccent(accent, scheme);
@@ -136,11 +184,15 @@ export function applyTheme(
   root.style.setProperty("--accent-hover", vars.accentHover);
   root.style.setProperty("--accent-contrast", vars.accentContrast);
 
-  // A wallpaper palette tints the surfaces too; every other source keeps the
-  // neutral palette the stylesheet ships with.
-  const tint = accentSource === "wallpaper" ? tintedPalette(vars.accent, scheme) : null;
+  // The desktop's own surfaces win when it publishes them: that is the same
+  // background and text the terminals and the GTK applications use. Without
+  // them, a wallpaper palette still tints our own ladder; anything else keeps
+  // the neutral palette the stylesheet ships with.
+  const exact = paletteTokens(palette);
+  const surfaces =
+    exact ?? (accentSource === "wallpaper" ? tintedPalette(vars.accent, scheme) : null);
   for (const name of TINT_SURFACES) {
-    root.style.setProperty(name, tint ? tint[name] : "");
+    root.style.setProperty(name, surfaces ? surfaces[name] : "");
   }
-  return { scheme, vars, tinted: Boolean(tint) };
+  return { scheme, vars, tinted: Boolean(surfaces), exact: Boolean(exact) };
 }

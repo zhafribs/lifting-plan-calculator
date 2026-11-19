@@ -26,7 +26,7 @@ merging anything.
 ## What the council saw
 
 - Both moves are extraction: the same CSS text, the same const, reachable from
-  the same places. The 253 Rust tests and 25 frontend tests pass unchanged.
+  the same places. The 250 Rust tests and 25 frontend tests pass unchanged.
 - The light and dark palettes were photographed in the running app after the
   split, so the cascade order of the two stylesheets is proven, not assumed.
 - The remaining seams are named with their order: the diagram screen's drawing

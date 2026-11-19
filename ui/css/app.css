@@ -1023,15 +1023,24 @@ table.grid td.num { text-align: right; }
   border-radius: 10px;
   border: 1px solid var(--border-strong);
   box-shadow: var(--shadow);
-  overflow: hidden;
-  height: calc(100vh - var(--topbar-h) - 120px);
-  min-height: 480px;
+  overflow: auto;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .report-frame iframe { width: 100%; height: 100%; border: none; background: #fff; }
 
 /* The report's page view: the PDF that will be saved, with its own scroll. */
-.preview-pane { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+/* Both preview modes share one frame: the bar takes its height, and the live
+   frame or the page list fills the rest and scrolls inside. */
+.preview-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  height: calc(100vh - var(--topbar-h) - 120px);
+  min-height: 480px;
+}
 
 .preview-bar {
   display: flex;
@@ -1078,8 +1087,8 @@ table.grid td.num { text-align: right; }
   border: 1px solid var(--border-strong);
   box-shadow: var(--shadow);
   overflow: hidden;
-  height: calc(100vh - var(--topbar-h) - 160px);
-  min-height: 480px;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .pdf-view { height: 100%; overflow: auto; padding: 18px; outline: none; }

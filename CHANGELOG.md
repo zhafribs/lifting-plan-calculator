@@ -2,6 +2,24 @@
 
 Nothing yet.
 
+## [2.16.7] - 2026-11-19
+
+### Changed
+
+- A new plan's Summary starts with the crane check ticked and every other
+  section clear, including the working-range diagram. The sections a plan needs
+  beyond that are opt-in.
+
+### Fixed
+
+- The report preview's two modes share one frame size: the page list and the
+  live view now fill the same pane instead of one being shorter than the other.
+- The live preview is laid out at the print text width and zoomed to the pane,
+  so it reads at the size the page view shows instead of at 7 pt in a column.
+- A section title can no longer end a page. Keep-with-next is now stated on both
+  sides — the heading never ends a page, and the block after it never starts
+  one — which Chrome honours without costing a page.
+
 ## [2.16.6] - 2026-11-19
 
 ### Changed

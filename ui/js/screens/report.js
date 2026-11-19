@@ -9,7 +9,9 @@ import { createPdfViewer } from "../pdf-viewer.js";
 export function createReportScreen(ctx) {
   const { store, catalog, toast } = ctx;
 
-  const sections = { crane: true, outrigger: false, uniform: true, nonuniform: true, tandem: true };
+  // A new plan starts with the crane check alone: that is the section every plan
+  // needs. The rest are opt-in, so nothing unticked can look like an omission.
+  const sections = { crane: true, outrigger: false, uniform: false, nonuniform: false, tandem: false };
   let lastHtml = "";
   let lastSavedPath = null;
   const DEFAULT_FOOTER =
@@ -327,6 +329,24 @@ export function createReportScreen(ctx) {
     refreshButton,
   );
 
+  // The live frame carries the report at its real print size: 7 pt on a page of
+  // the chosen margins. Unscaled in a column it is unreadable, so the body is
+  // laid out at the print text width and zoomed to fill the pane — the same
+  // width the page view shows.
+  function fitLive() {
+    if (frameWrap.hidden) return;
+    const doc = frame.contentDocument;
+    if (!doc || !doc.body) return;
+    const textWidthPx = ((210 - margins.left - margins.right) * 96) / 25.4;
+    const scale = Math.min(2, Math.max(0.35, frameWrap.clientWidth / textWidthPx));
+    doc.body.style.width = `${textWidthPx}px`;
+    doc.body.style.margin = "0 auto";
+    doc.body.style.zoom = String(scale);
+  }
+
+  frame.addEventListener("load", fitLive);
+  new ResizeObserver(fitLive).observe(frameWrap);
+
   const previewPane = el("div", { class: "preview-pane" }, previewBar, frameWrap, pdfWrap);
   frameWrap.hidden = true;
   previewPane.classList.add("is-pages");
@@ -581,6 +601,7 @@ export function createReportScreen(ctx) {
     }
     frameWrap.hidden = mode !== "live";
     pdfWrap.hidden = mode !== "pages";
+    if (mode === "live") fitLive();
     previewPane.classList.toggle("is-pages", mode === "pages");
     if (mode === "pages") refreshPdf();
   }

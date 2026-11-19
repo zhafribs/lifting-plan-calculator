@@ -620,6 +620,13 @@ pub fn print_html(html: &str) -> String {
     html.replace(PAGE_FOOTER_CSS, "")
 }
 
+
+/// One report section's wrapper. Every section goes through here, so a future
+/// pagination rule has one place to live.
+fn section_card(body: &str) -> String {
+    format!("<section class=\"section-card\">{body}</section>")
+}
+
 /// The selected report sections as HTML.
 ///
 /// Missing or incomplete state is rendered as an explicit setup message rather
@@ -674,18 +681,15 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
 
     if selected("outrigger") {
         if let Some(outrigger) = &inputs.outrigger {
-            parts.push(format!(
-                "<section class=\"section-card\">{}</section>",
-                outrigger_section(outrigger)
-            ));
+            parts.push(section_card(&outrigger_section(outrigger)));
         } else if let Some(error) = &inputs.outrigger_error {
-            parts.push(format!(
-                "<section class=\"section-card\">{}<p>{}</p></section>",
+            parts.push(section_card(&format!(
+                "{}<p>{}</p>",
                 heading(2, "Outrigger Pad Size"),
                 escape(&format!(
                     "{error} The outrigger pad is not part of this plan."
                 ))
-            ));
+            )));
         }
     }
 
@@ -693,23 +697,11 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
         if let Some(sling) = &inputs.sling {
             if let Ok(spec) = hitch_spec(&sling.hitch) {
                 parts.push(section_inputs(sling, spec));
-                parts.push(format!(
-                    "<section class=\"section-card\">{}</section>",
-                    geometry_section(sling, spec)
-                ));
-                parts.push(format!(
-                    "<section class=\"section-card\">{}</section>",
-                    factors_section(sling, spec)
-                ));
-                parts.push(format!(
-                    "<section class=\"section-card\">{}</section>",
-                    capacity_section(sling, spec)
-                ));
+                parts.push(section_card(&geometry_section(sling, spec)));
+                parts.push(section_card(&factors_section(sling, spec)));
+                parts.push(section_card(&capacity_section(sling, spec)));
                 if shows_notes(spec) {
-                    parts.push(format!(
-                        "<section class=\"section-card\">{}</section>",
-                        notes_section(sling, spec)
-                    ));
+                    parts.push(section_card(&notes_section(sling, spec)));
                 }
             }
         }
@@ -724,7 +716,7 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
             inputs.nonuniform_error.as_deref(),
         )
         .join("");
-        parts.push(format!("<section class=\"section-card\">{section}</section>"));
+        parts.push(section_card(&section));
     }
     if selected("tandem") {
         let first = next_section_number(&parts);
@@ -737,7 +729,7 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
             inputs.tandem_error.as_deref(),
         )
         .join("");
-        parts.push(format!("<section class=\"section-card\">{section}</section>"));
+        parts.push(section_card(&section));
     }
 
     if gross <= 0.0 {

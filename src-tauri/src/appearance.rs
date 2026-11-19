@@ -13,6 +13,8 @@ pub const PREFERENCES: [&str; 3] = ["system", "light", "dark"];
 pub struct Appearance {
     pub preference: String,
     pub accent: Option<String>,
+    /// Where the accent came from: "wallpaper", "desktop" or "default".
+    pub accent_source: String,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -64,10 +66,137 @@ pub fn set_preference(value: &str) -> Result<(), String> {
 }
 
 pub fn current() -> Appearance {
+    let wallpaper = wallpaper_accent();
+    let accent = wallpaper.clone().or_else(desktop_accent);
+    let accent_source = if wallpaper.is_some() {
+        "wallpaper"
+    } else if accent.is_some() {
+        "desktop"
+    } else {
+        "default"
+    };
     Appearance {
         preference: preference(),
-        accent: desktop_accent(),
+        accent,
+        accent_source: accent_source.to_string(),
     }
+}
+
+/// The palette a wallpaper-aware desktop wrote, when there is one. Hyprland
+/// setups commonly run pywal or wallust, which publish their 16 colours under
+/// a fixed cache path; that palette is the desktop's colour in practice, so it
+/// is preferred over a static accent setting.
+#[cfg(not(target_os = "windows"))]
+pub fn wallpaper_accent() -> Option<String> {
+    let cache = cache_home()?;
+    for relative in ["wal/colors.json", "wallust/colors.json"] {
+        if let Ok(text) = std::fs::read_to_string(cache.join(relative)) {
+            if let Some(colour) = accent_from_palette_json(&text) {
+                return Some(colour);
+            }
+        }
+    }
+    std::fs::read_to_string(cache.join("wal/colors"))
+        .ok()
+        .and_then(|text| accent_from_colour_lines(&text))
+}
+
+#[cfg(target_os = "windows")]
+pub fn wallpaper_accent() -> Option<String> {
+    None
+}
+
+#[cfg(not(target_os = "windows"))]
+fn cache_home() -> Option<std::path::PathBuf> {
+    let base = std::env::var("XDG_CACHE_HOME")
+        .ok()
+        .filter(|value| !value.is_empty())
+        .map(std::path::PathBuf::from)
+        .or_else(|| {
+            std::env::var("HOME")
+                .ok()
+                .filter(|value| !value.is_empty())
+                .map(|home| std::path::PathBuf::from(home).join(".cache"))
+        })?;
+    Some(base)
+}
+
+fn normalise_hex(value: &str) -> Option<String> {
+    let text = value.trim().trim_start_matches('#');
+    if text.len() != 6 || !text.chars().all(|ch| ch.is_ascii_hexdigit()) {
+        return None;
+    }
+    Some(format!("#{}", text.to_ascii_lowercase()))
+}
+
+/// pywal and wallust both write `{"colors": {"color0": "#..", ...}}`.
+fn accent_from_palette_json(text: &str) -> Option<String> {
+    let value: serde_json::Value = serde_json::from_str(text).ok()?;
+    let colours = value.get("colors")?.as_object()?;
+    let mut palette: Vec<(u32, String)> = colours
+        .iter()
+        .filter_map(|(key, value)| {
+            // color0 is the background; the rest are the usable palette.
+            let index: u32 = key.strip_prefix("color")?.parse().ok()?;
+            if index == 0 || index > 15 {
+                return None;
+            }
+            Some((index, normalise_hex(value.as_str()?)?))
+        })
+        .collect();
+    palette.sort_by_key(|(index, _)| *index);
+    pick_accent(palette.into_iter().map(|(_, colour)| colour))
+}
+
+/// The plain pywal list: one `#rrggbb` per line, background first.
+fn accent_from_colour_lines(text: &str) -> Option<String> {
+    let palette: Vec<String> = text
+        .lines()
+        .skip(1)
+        .filter_map(normalise_hex)
+        .collect();
+    pick_accent(palette.into_iter())
+}
+
+/// The most usable colour in a palette: vivid, and neither near-black nor
+/// near-white, so it can sit on either surface.
+fn pick_accent(colours: impl Iterator<Item = String>) -> Option<String> {
+    // First wins on a tie: the palette's own order is the better guess when two
+    // slots are equally vivid.
+    let mut best: Option<(f32, String)> = None;
+    for colour in colours {
+        let score = accent_score(&colour);
+        if best.as_ref().is_none_or(|(best_score, _)| score > *best_score) {
+            best = Some((score, colour));
+        }
+    }
+    best.map(|(_, colour)| colour)
+}
+
+fn accent_score(colour: &str) -> f32 {
+    let channels: Vec<f32> = colour
+        .trim_start_matches('#')
+        .as_bytes()
+        .chunks(2)
+        .filter_map(|pair| std::str::from_utf8(pair).ok())
+        .filter_map(|pair| u8::from_str_radix(pair, 16).ok())
+        .map(|channel| f32::from(channel) / 255.0)
+        .collect();
+    if channels.len() != 3 {
+        return 0.0;
+    }
+    let max = channels.iter().copied().fold(0.0_f32, f32::max);
+    let min = channels.iter().copied().fold(1.0_f32, f32::min);
+    let lightness = (max + min) / 2.0;
+    let delta = max - min;
+    let saturation = if delta == 0.0 {
+        0.0
+    } else {
+        delta / (1.0 - (2.0 * lightness - 1.0).abs())
+    };
+    // Vivid and mid-light: a saturated colour reads as an accent on either
+    // surface, while the palette's background and text slots do not.
+    (saturation * (1.0 - (lightness - 0.5).abs() / 0.5)).max(0.0)
 }
 
 /// The desktop's accent as `#rrggbb`, when it publishes one.
@@ -165,6 +294,33 @@ mod tests {
         assert_eq!(accent_from_name("'blue'\n"), Some("#3584e4".to_string()));
         assert_eq!(accent_from_name("\"teal\""), Some("#2190a4".to_string()));
         assert_eq!(accent_from_name("'chartreuse'"), None);
+    }
+
+    #[test]
+    fn a_palette_yields_its_most_usable_colour() {
+        let text = r##"{"colors": {
+            "color0": "#1a1b26", "color1": "#f7768e", "color2": "#9ece6a",
+            "color3": "#e0af68", "color4": "#7aa2f7", "color5": "#bb9af7",
+            "color6": "#7dcfff", "color7": "#a9b1d6", "color8": "#414868"
+        }}"##;
+        // Bright and saturated: the cyan wins over the dark background and the
+        // near-grey text colour.
+        assert_eq!(accent_from_palette_json(text), Some("#7dcfff".to_string()));
+    }
+
+    #[test]
+    fn background_and_near_white_are_not_an_accent() {
+        let text = r##"{"colors": {"color0": "#000000", "color7": "#f7f7f7", "color9": "#7aa2f7"}}"##;
+        assert_eq!(accent_from_palette_json(text), Some("#7aa2f7".to_string()));
+    }
+
+    #[test]
+    fn a_plain_pywal_list_skips_the_background_line() {
+        let text = "#101010
+#ff5500
+#00aaff
+";
+        assert_eq!(accent_from_colour_lines(text), Some("#ff5500".to_string()));
     }
 
     #[cfg(not(target_os = "windows"))]

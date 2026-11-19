@@ -112,6 +112,19 @@ export function createAboutScreen(ctx) {
     }
   }
 
+  // Where the accent came from, in plain words: a wallpaper palette tints the
+  // whole shell, a desktop accent only colours the controls.
+  function accentSummary() {
+    const source = ctx.accentSource ? ctx.accentSource() : "default";
+    if (source === "wallpaper") {
+      return `Accent: ${ctx.accent ? ctx.accent() : ""} from the wallpaper palette (pywal or wallust); the surfaces are tinted to match.`;
+    }
+    if (source === "desktop") {
+      return `Accent: ${ctx.accent ? ctx.accent() : ""} from the desktop's own accent setting.`;
+    }
+    return "Accent: the app's own blue \u2014 this desktop publishes no accent and no wallpaper palette.";
+  }
+
   renderUpdateButtons(null);
     }
   }
@@ -192,6 +205,19 @@ export function createAboutScreen(ctx) {
     }
   }
 
+  // Where the accent came from, in plain words: a wallpaper palette tints the
+  // whole shell, a desktop accent only colours the controls.
+  function accentSummary() {
+    const source = ctx.accentSource ? ctx.accentSource() : "default";
+    if (source === "wallpaper") {
+      return `Accent: ${ctx.accent ? ctx.accent() : ""} from the wallpaper palette (pywal or wallust); the surfaces are tinted to match.`;
+    }
+    if (source === "desktop") {
+      return `Accent: ${ctx.accent ? ctx.accent() : ""} from the desktop's own accent setting.`;
+    }
+    return "Accent: the app's own blue \u2014 this desktop publishes no accent and no wallpaper palette.";
+  }
+
   renderUpdateButtons(null);
 
   const root = el(
@@ -240,6 +266,7 @@ export function createAboutScreen(ctx) {
             "accent colour when one is published, so it sits alongside the rest of the " +
             "system. Otherwise it uses its own neutral pair.",
         }),
+        el("p", { class: "faint small", style: { margin: "0 0 10px" }, text: accentSummary() }),
         field({
           label: "Colour scheme",
           hint: "Matching the desktop is what most desktops expect; the other two override it.",

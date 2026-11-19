@@ -8,7 +8,28 @@ import {
   normalisePreference,
   resolveScheme,
   themeAccent,
+  tintedPalette,
 } from "./theme.js";
+
+function relativeLuminance(hex) {
+  const [r, g, b] = [1, 3, 5].map((start) => Number.parseInt(hex.slice(start, start + 2), 16) / 255)
+    .map((value) => (value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function hue(hex) {
+  const [r, g, b] = [1, 3, 5].map((start) => Number.parseInt(hex.slice(start, start + 2), 16) / 255);
+  const max = Math.max(r, g, b);
+  const delta = max - Math.min(r, g, b);
+  if (!delta) return 0;
+  const value = max === r ? ((g - b) / delta) % 6 : max === g ? (b - r) / delta + 2 : (r - g) / delta + 4;
+  return (value * 60 + 360) % 360;
+}
+
+function contrast(a, b) {
+  const [light, dark] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
+  return (light + 0.05) / (dark + 0.05);
+}
 
 test("an unknown or missing preference is 'system'", () => {
   assert.equal(normalisePreference(""), "system");
@@ -41,4 +62,37 @@ test("each palette has its own fallback accent", () => {
 test("the accent tokens keep a readable contrast pair", () => {
   assert.equal(themeAccent("#2b6cb8", "light").accentContrast, "#ffffff");
   assert.match(themeAccent("#5cb3ff", "dark").accentSoft, /^rgba\(/);
+});
+
+test("a wallpaper palette tints the surfaces with its own hue", () => {
+  for (const scheme of ["dark", "light"]) {
+    const palette = tintedPalette("#7dcfff", scheme);
+    // 191° is the cyan of the sample. The low-chroma surfaces round their
+    // channels, so the hue is checked where the tint is strongest.
+    assert.ok(Math.abs(hue(palette["--text"]) - 191) < 25, `${scheme} text hue`);
+    assert.ok(Math.abs(hue(palette["--surface-hi"]) - 191) < 25, `${scheme} surface hue`);
+    assert.notEqual(palette["--surface"], palette["--bg"]);
+  }
+});
+
+test("the tinted palette keeps text readable on its own surfaces", () => {
+  for (const scheme of ["dark", "light"]) {
+    for (const accent of ["#7dcfff", "#f7768e", "#9ece6a", "#ff5500", "#808080"]) {
+      const palette = tintedPalette(accent, scheme);
+      assert.ok(
+        contrast(palette["--text"], palette["--bg"]) >= 7,
+        `${scheme} ${accent}: text on background`,
+      );
+      assert.ok(
+        contrast(palette["--text"], palette["--surface"]) >= 7,
+        `${scheme} ${accent}: text on surface`,
+      );
+    }
+  }
+});
+
+test("a hue-less accent still produces a usable palette", () => {
+  const palette = tintedPalette("#808080", "dark");
+  assert.match(palette["--bg"], /^#[0-9a-f]{6}$/);
+  assert.ok(contrast(palette["--text"], palette["--bg"]) >= 7);
 });

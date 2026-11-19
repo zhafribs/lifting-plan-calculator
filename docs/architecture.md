@@ -41,7 +41,7 @@ Rust (src-tauri/src)
 | `pdf_print.rs`, `pdf_windows.rs` | The Linux and Windows print paths. |
 | `commands.rs` | The Tauri commands and the file dialogs behind them. |
 | `update.rs` | Update check, verified download, per-platform install. |
-| `appearance.rs` | The stored scheme preference and the desktop's accent. |
+| `appearance.rs` | The stored scheme preference, the wallpaper palette (pywal/wallust) and the desktop accent. |
 | `theme_windows.rs` | Windows-only accent lookup. |
 
 ## Frontend modules

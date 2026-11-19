@@ -98,17 +98,19 @@ async function main() {
   // follows the desktop unless the operator chose one in About, and the accent
   // is the desktop's own when it publishes one.
   const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
-  let appearance = { preference: "system", accent: null };
+  let appearance = { preference: "system", accent: null, accentSource: "default" };
 
   function paintAppearance() {
     const applied = applyTheme(document.documentElement, {
       preference: appearance.preference,
       systemDark: darkQuery.matches,
       accent: appearance.accent,
+      accentSource: appearance.accentSource,
     });
     window.uilog &&
       window.uilog(
-        `theme: scheme=${applied.scheme} preference=${appearance.preference} accent=${applied.vars.accent}`,
+        `theme: scheme=${applied.scheme} preference=${appearance.preference} ` +
+          `accent=${applied.vars.accent} source=${appearance.accentSource} tinted=${applied.tinted}`,
       );
   }
 
@@ -118,6 +120,8 @@ async function main() {
       appearance = {
         preference: normalisePreference(info?.preference),
         accent: typeof info?.accent === "string" ? info.accent : null,
+        accentSource:
+          typeof info?.accent_source === "string" ? info.accent_source : "default",
       };
     } catch (error) {
       // A desktop that cannot answer still gets the fallback palette.
@@ -147,6 +151,17 @@ async function main() {
     if (appearance.preference === "system") loadAppearance();
   });
 
+  // A wallpaper change rewrites the palette file without telling anyone. One
+  // cheap read when the window is focused keeps the tint current, without a
+  // timer running in the background.
+  let lastAppearanceRead = 0;
+  window.addEventListener("focus", () => {
+    const now = Date.now();
+    if (now - lastAppearanceRead < 10000) return;
+    lastAppearanceRead = now;
+    loadAppearance();
+  });
+
   await loadAppearance();
 
   function toast(text, kind = "") {
@@ -164,6 +179,8 @@ async function main() {
     showReport,
     setThemePreference,
     themePreference: () => appearance.preference,
+    accentSource: () => appearance.accentSource,
+    accent: () => appearance.accent,
   };
 
   // The update reminder strip, between the topbar and the screen. Hidden until

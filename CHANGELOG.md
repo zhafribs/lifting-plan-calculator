@@ -2,6 +2,19 @@
 
 Nothing yet.
 
+## [2.16.3] - 2026-11-19
+
+### Added
+
+- The app follows the wallpaper on setups that publish a palette. When pywal or
+  wallust has written `~/.cache/wal/colors.json`, `~/.cache/wallust/colors.json`
+  or `~/.cache/wal/colors`, the most usable colour of that palette becomes the
+  accent and the surfaces are tinted with its hue — the same way the rest of a
+  wallpaper-themed Hyprland desktop follows it. The tint is re-read when the
+  window is focused, so changing the wallpaper does not need a restart.
+- About now says where the accent came from: the wallpaper palette, the
+  desktop's accent setting, or the app's own blue.
+
 ## [2.16.2] - 2026-11-19
 
 ### Changed

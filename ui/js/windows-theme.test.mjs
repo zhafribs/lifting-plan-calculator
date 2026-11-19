@@ -33,9 +33,11 @@ test("accent contrast follows the accent luminance", () => {
   assert.match(accentVars("#0078D4", true).accentSoft, /^rgba?\(/);
 });
 
-test("the windows stylesheet is scoped and has a dark variant", () => {
+test("the windows stylesheet is scoped and follows the app's scheme", () => {
   const css = readFileSync(new URL("../css/windows.css", import.meta.url), "utf8");
   assert.match(css, /\[data-platform="windows"\]/);
-  assert.match(css, /prefers-color-scheme:\s*dark/);
+  // The Settings switch is the authority: a media query here would override it.
+  assert.match(css, /\[data-platform="windows"\]\[data-theme="dark"\]/);
+  assert.doesNotMatch(css, /prefers-color-scheme/);
   assert.match(css, /--font-ui/);
 });

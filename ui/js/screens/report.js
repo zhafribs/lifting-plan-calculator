@@ -36,6 +36,10 @@ export function createReportScreen(ctx) {
   ];
 
   const checkBoxes = {};
+  // Sections the operator has pushed to a new page. Empty by default: the
+  // report finds its own breaks until someone asks for a specific layout.
+  const pageBreaks = new Set();
+  const breakBoxes = {};
   const checkNodes = {
     crane: ["Crane", "Capacity check against the load chart"],
     outrigger: ["Outrigger Pad Size", "Bearing area from the BS 8004 ground table"],
@@ -48,10 +52,22 @@ export function createReportScreen(ctx) {
     input.checked = sections[key];
     input.addEventListener("change", () => {
       sections[key] = input.checked;
+      breakBoxes[key].disabled = !input.checked;
       schedulePreview(0);
       schedulePdf(0);
     });
     checkBoxes[key] = input;
+
+    const breakInput = el("input", { type: "checkbox" });
+    breakInput.title = "Start this section on a new page";
+    breakInput.disabled = !sections[key];
+    breakInput.addEventListener("change", () => {
+      if (breakInput.checked) pageBreaks.add(key);
+      else pageBreaks.delete(key);
+      schedulePreview(0);
+      schedulePdf(0);
+    });
+    breakBoxes[key] = breakInput;
   }
 
   const diagramInput = el("input", { type: "checkbox" });
@@ -465,7 +481,22 @@ export function createReportScreen(ctx) {
             "div",
             { class: "stack" },
             ...Object.entries(checkNodes).flatMap(([key, [title, desc]]) => {
-              const row = el("label", { class: "check" }, checkBoxes[key], el("span", {}, el("div", { class: "t", text: title }), el("div", { class: "d", text: desc })));
+              const row = el(
+                "div",
+                { class: "section-row" },
+                el(
+                  "label",
+                  { class: "check" },
+                  checkBoxes[key],
+                  el("span", {}, el("div", { class: "t", text: title }), el("div", { class: "d", text: desc })),
+                ),
+                el(
+                  "label",
+                  { class: "check break" },
+                  breakBoxes[key],
+                  el("span", { class: "d", text: "New page" }),
+                ),
+              );
               return key === "crane" ? [row, diagramRow] : [row];
             }),
           ),
@@ -559,6 +590,7 @@ export function createReportScreen(ctx) {
         diagram,
         footerText,
         margins,
+        [...pageBreaks],
       );
       lastHtml = html;
       // srcdoc pages do not resolve the wrapper's relative asset paths, so the

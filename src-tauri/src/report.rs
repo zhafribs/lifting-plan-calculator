@@ -332,6 +332,9 @@ pub struct ReportInputs {
     pub working_diagram: Option<String>,
     /// The centre text of every printed page's footer; None uses the default.
     pub footer_center: Option<String>,
+    /// Sections the operator wants to start on a new page: "crane",
+    /// "outrigger", "uniform", "nonuniform", "tandem".
+    pub page_breaks: Vec<String>,
 }
 
 /// The sections a report may carry, in the builder's own source order.
@@ -623,8 +626,18 @@ pub fn print_html(html: &str) -> String {
 
 /// One report section's wrapper. Every section goes through here, so a future
 /// pagination rule has one place to live.
-fn section_card(body: &str) -> String {
-    format!("<section class=\"section-card\">{body}</section>")
+fn section_card(body: &str, new_page: bool) -> String {
+    let extra = if new_page { " new-page" } else { "" };
+    format!("<section class=\"section-card{extra}\">{body}</section>")
+}
+
+/// Start a section on a fresh page, at the operator's request.
+fn with_break(html: String, new_page: bool) -> String {
+    if new_page {
+        format!("<div class=\"new-page\">{html}</div>")
+    } else {
+        html
+    }
 }
 
 /// The selected report sections as HTML.
@@ -633,6 +646,7 @@ fn section_card(body: &str) -> String {
 /// than raising while the operator is still entering data.
 pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
     let selected = |name: &str| include.iter().any(|section| section == name);
+    let breaks = |name: &str| inputs.page_breaks.iter().any(|section| section == name);
     let gross = inputs.totals.gross;
     let crane_for_head = if selected("crane") {
         inputs.crane.as_ref()
@@ -681,7 +695,7 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
 
     if selected("outrigger") {
         if let Some(outrigger) = &inputs.outrigger {
-            parts.push(section_card(&outrigger_section(outrigger)));
+            parts.push(section_card(&outrigger_section(outrigger), breaks("outrigger")));
         } else if let Some(error) = &inputs.outrigger_error {
             parts.push(section_card(&format!(
                 "{}<p>{}</p>",
@@ -689,19 +703,19 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
                 escape(&format!(
                     "{error} The outrigger pad is not part of this plan."
                 ))
-            )));
+            ), breaks("outrigger")));
         }
     }
 
     if selected("uniform") {
         if let Some(sling) = &inputs.sling {
             if let Ok(spec) = hitch_spec(&sling.hitch) {
-                parts.push(section_inputs(sling, spec));
-                parts.push(section_card(&geometry_section(sling, spec)));
-                parts.push(section_card(&factors_section(sling, spec)));
-                parts.push(section_card(&capacity_section(sling, spec)));
+                parts.push(with_break(section_inputs(sling, spec), breaks("uniform")));
+                parts.push(section_card(&geometry_section(sling, spec), false));
+                parts.push(section_card(&factors_section(sling, spec), false));
+                parts.push(section_card(&capacity_section(sling, spec), false));
                 if shows_notes(spec) {
-                    parts.push(section_card(&notes_section(sling, spec)));
+                    parts.push(section_card(&notes_section(sling, spec), false));
                 }
             }
         }
@@ -716,7 +730,7 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
             inputs.nonuniform_error.as_deref(),
         )
         .join("");
-        parts.push(section_card(&section));
+        parts.push(with_break(section_card(&section, false), breaks("nonuniform")));
     }
     if selected("tandem") {
         let first = next_section_number(&parts);
@@ -729,7 +743,7 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
             inputs.tandem_error.as_deref(),
         )
         .join("");
-        parts.push(section_card(&section));
+        parts.push(with_break(section_card(&section, false), breaks("tandem")));
     }
 
     if gross <= 0.0 {
@@ -1229,6 +1243,17 @@ mod tests {
     }
 
     #[test]
+    fn a_section_can_be_pushed_to_its_own_page() {
+        assert!(section_card("<h2>x</h2>", true).contains("section-card new-page"));
+        assert!(!section_card("<h2>x</h2>", false).contains("new-page"));
+        assert_eq!(
+            with_break("x".to_string(), true),
+            "<div class=\"new-page\">x</div>"
+        );
+        assert_eq!(with_break("x".to_string(), false), "x");
+    }
+
+    #[test]
     fn the_plan_embeds_an_attached_working_diagram() {
         let inputs = ReportInputs {
             working_diagram: Some("data:image/png;base64,AAAA".to_string()),
@@ -1310,6 +1335,7 @@ mod tests {
                 issued_at: None,
                 working_diagram: None,
                 footer_center: None,
+                page_breaks: Vec::new(),
             },
             &[],
         );

@@ -147,6 +147,7 @@ fn main() {
             issued_at: None,
             working_diagram: None,
             footer_center: None,
+        page_breaks: Vec::new(),
         },
         &["crane", "outrigger", "uniform", "nonuniform", "tandem"]
             .iter()

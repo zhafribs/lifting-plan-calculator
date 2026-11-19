@@ -2,6 +2,25 @@
 
 Nothing yet.
 
+## [2.16.9] - 2026-11-19
+
+### Added
+
+- **A page break per section.** Every row in Report sections has a New page tick:
+  tick it and that section starts on a fresh page, in the page view and in the
+  saved PDF. The report still finds its own breaks when nothing is ticked.
+
+### Fixed
+
+- **Windows: the appearance choice now works.** The Fluent layer followed the
+  operating system's light/dark setting through a media query, so Light and Dark
+  in Settings changed the stored value but not the window. It now follows the
+  app's own choice, like the rest of the shell.
+- **Windows: the choice is remembered.** The setting was written under `$HOME`,
+  which a normal Windows session does not have; it now goes to `%APPDATA%`.
+- **A failed installer says where the file is**, so an update that cannot start
+  can be finished by hand instead of dead-ending.
+
 ## [2.16.8] - 2026-11-19
 
 ### Fixed

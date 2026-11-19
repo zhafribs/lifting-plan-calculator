@@ -312,6 +312,9 @@ pub fn chart_update(
 }
 
 /// The full report page, with the sections the caller asked for.
+// The arguments mirror the screen's call one for one; a wrapper struct would
+// only move the same list somewhere else.
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub fn build_report(
     state: AppState,
@@ -321,6 +324,7 @@ pub fn build_report(
     working_diagram: Option<String>,
     footer_center: Option<String>,
     margins: Option<crate::report::PageMargins>,
+    page_breaks: Option<Vec<String>>,
 ) -> String {
     let solved = solve_all_internal(&state);
     let tandem = match solved.tandem.result {
@@ -342,6 +346,7 @@ pub fn build_report(
         issued_at: Some(issued_at).filter(|value| !value.is_empty()),
         working_diagram,
         footer_center,
+        page_breaks: page_breaks.unwrap_or_default(),
     };
     wrap_katex_with(
         &build_report_html(&inputs, &include),

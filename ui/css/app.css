@@ -1014,6 +1014,16 @@ table.grid td.num { text-align: right; }
 
 .graph-page .checks .check { padding: 8px 10px; }
 
+/* A report section's row: the include tick, and its own page-break tick. */
+.report-layout .section-row { display: flex; align-items: stretch; gap: 6px; }
+.report-layout .section-row > .check:first-child { flex: 1 1 auto; }
+.report-layout .section-row > .check.break {
+  flex: 0 0 auto;
+  align-items: center;
+  padding: 8px 10px;
+}
+.report-layout .section-row > .check.break .d { margin: 0; }
+
 .graph-page .check input[type="radio"] { accent-color: var(--accent); }
 
 .graph-page .field.disabled { opacity: 0.55; }

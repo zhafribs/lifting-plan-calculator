@@ -535,9 +535,13 @@ pub fn install(asset: &InstallerAsset) -> Result<String, String> {
     } else {
         std::process::Command::new(&target)
     };
-    command
-        .spawn()
-        .map_err(|error| format!("The installer could not be started: {error}"))?;
+    command.spawn().map_err(|error| {
+        format!(
+            "The installer could not be started: {error}. \
+             It was saved to {} — you can run it by hand, or download it from the release page.",
+            target.display()
+        )
+    })?;
     Ok(target.to_string_lossy().to_string())
 }
 

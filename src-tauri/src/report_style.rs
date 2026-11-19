@@ -121,6 +121,8 @@ pub const REPORT_CSS: &str = r#"
 .report h2, .report h3 { break-after: avoid; page-break-after: avoid;
     break-inside: avoid; }
 .report h2 + *, .report h3 + * { break-before: avoid; page-break-before: avoid; }
+/* The operator's own page breaks: a section that starts on a fresh page. */
+.report .new-page { break-before: page; page-break-before: always; }
 /* No width hints: the columns take the room their content needs, so the
    divider sits at the true centre when both sides fit and moves to fit the
    wider side when they do not. */

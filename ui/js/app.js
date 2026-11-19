@@ -11,7 +11,12 @@ import {
   nextNavMode,
   navToggleLabel,
 } from "./windows-theme.js";
-import { applyTheme, desktopIsDark, normalisePreference } from "./theme.js";
+import {
+  applyTheme,
+  desktopIsDark,
+  normalisePaletteChoice,
+  normalisePreference,
+} from "./theme.js";
 import { createOverallScreen } from "./screens/overall.js";
 import { createCraneScreen } from "./screens/crane.js";
 import { createOutriggerScreen } from "./screens/outrigger.js";
@@ -106,6 +111,7 @@ async function main() {
     accentSource: "default",
     scheme: null,
     palette: null,
+    paletteChoice: "desktop",
   };
   // The last scheme handed to the native chrome, so the 20-second palette poll
   // does not send the same IPC on every pass.
@@ -118,6 +124,7 @@ async function main() {
       accent: appearance.accent,
       accentSource: appearance.accentSource,
       palette: appearance.palette,
+      paletteChoice: appearance.paletteChoice,
     });
     window.uilog &&
       window.uilog(
@@ -147,6 +154,7 @@ async function main() {
           info?.scheme === "dark" || info?.scheme === "light" ? info.scheme : null,
         palette:
           info?.palette && typeof info.palette === "object" ? info.palette : null,
+        paletteChoice: normalisePaletteChoice(info?.palette_choice),
       };
     } catch (error) {
       // A desktop that cannot answer still gets the fallback palette.
@@ -160,6 +168,16 @@ async function main() {
     paintAppearance();
     try {
       await api.setThemePreference(appearance.preference);
+    } catch (error) {
+      toast(errorText(error), "error");
+    }
+  }
+
+  async function setPaletteChoice(palette) {
+    appearance.paletteChoice = normalisePaletteChoice(palette);
+    paintAppearance();
+    try {
+      await api.setPaletteChoice(appearance.paletteChoice);
     } catch (error) {
       toast(errorText(error), "error");
     }
@@ -210,7 +228,9 @@ async function main() {
     go,
     showReport,
     setThemePreference,
+    setPaletteChoice,
     themePreference: () => appearance.preference,
+    paletteChoice: () => appearance.paletteChoice,
     accentSource: () => appearance.accentSource,
     accent: () => appearance.accent,
   };

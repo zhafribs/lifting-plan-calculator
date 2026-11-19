@@ -8,10 +8,15 @@
 use serde::{Deserialize, Serialize};
 
 pub const PREFERENCES: [&str; 3] = ["system", "light", "dark"];
+/// The curated palette choices. "desktop" means the desktop's own accent and
+/// palette; the others are fixed, contrast-checked accents.
+pub const PALETTES: [&str; 4] = ["desktop", "clay", "lavender", "pine"];
 
 #[derive(Debug, Serialize)]
 pub struct Appearance {
     pub preference: String,
+    /// The chosen palette: "desktop", "clay", "lavender" or "pine".
+    pub palette_choice: String,
     pub accent: Option<String>,
     /// Where the accent came from: "wallpaper", "desktop" or "default".
     pub accent_source: String,
@@ -34,6 +39,8 @@ pub struct DesktopPalette {
 struct Stored {
     #[serde(default)]
     preference: String,
+    #[serde(default)]
+    palette: String,
 }
 
 fn normalise(value: &str) -> String {
@@ -42,6 +49,15 @@ fn normalise(value: &str) -> String {
         value.to_string()
     } else {
         "system".to_string()
+    }
+}
+
+fn normalise_palette(value: &str) -> String {
+    let value = value.trim();
+    if PALETTES.contains(&value) {
+        value.to_string()
+    } else {
+        "desktop".to_string()
     }
 }
 
@@ -68,22 +84,39 @@ fn config_path() -> Option<std::path::PathBuf> {
 }
 
 pub fn preference() -> String {
+    normalise(&stored().preference)
+}
+
+fn stored() -> Stored {
     config_path()
         .and_then(|path| std::fs::read_to_string(path).ok())
         .and_then(|text| serde_json::from_str::<Stored>(&text).ok())
-        .map(|stored| normalise(&stored.preference))
-        .unwrap_or_else(|| "system".to_string())
+        .unwrap_or_default()
 }
 
-pub fn set_preference(value: &str) -> Result<(), String> {
+pub fn palette_preference() -> String {
+    normalise_palette(&stored().palette)
+}
+
+fn write_setting(preference: String, palette: String) -> Result<(), String> {
     let path = config_path().ok_or_else(|| "There is no home folder to save the setting in.".to_string())?;
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)
             .map_err(|error| format!("The setting folder could not be created: {error}"))?;
     }
-    let body = serde_json::to_string(&Stored { preference: normalise(value) })
+    let body = serde_json::to_string(&Stored { preference, palette })
         .map_err(|error| format!("The setting could not be written: {error}"))?;
     std::fs::write(&path, body).map_err(|error| format!("The setting could not be saved: {error}"))
+}
+
+pub fn set_preference(value: &str) -> Result<(), String> {
+    let palette = palette_preference();
+    write_setting(normalise(value), palette)
+}
+
+pub fn set_palette(value: &str) -> Result<(), String> {
+    let preference = preference();
+    write_setting(preference, normalise_palette(value))
 }
 
 pub fn current() -> Appearance {
@@ -98,6 +131,7 @@ pub fn current() -> Appearance {
     };
     Appearance {
         preference: preference(),
+        palette_choice: palette_preference(),
         accent,
         accent_source: accent_source.to_string(),
         scheme: desktop_scheme(),
@@ -553,5 +587,20 @@ mod tests {
         assert_eq!(accent_from_kde("49,116"), None);
         assert_eq!(accent_from_kde("49,116,181,4"), None);
         assert_eq!(accent_from_kde("300,0,0"), None);
+    }
+
+    #[test]
+    fn unknown_scheme_and_palette_values_fall_back() {
+        assert_eq!(normalise("midnight"), "system");
+        assert_eq!(normalise("light"), "light");
+        assert_eq!(normalise_palette("rainbow"), "desktop");
+        assert_eq!(normalise_palette(" clay "), "clay");
+    }
+
+    #[test]
+    fn an_old_setting_without_a_palette_means_desktop() {
+        let stored: Stored = serde_json::from_str(r#"{"preference":"dark"}"#).unwrap();
+        assert_eq!(normalise_palette(&stored.palette), "desktop");
+        assert_eq!(normalise(&stored.preference), "dark");
     }
 }

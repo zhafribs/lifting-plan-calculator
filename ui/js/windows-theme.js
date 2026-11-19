@@ -65,7 +65,12 @@ export function navToggleLabel(mode) {
 export function accentVars(hex, dark = false) {
   const accent = normaliseHex(hex) || (dark ? DEFAULT_ACCENT_DARK : DEFAULT_ACCENT_LIGHT);
   const [r, g, b] = channels(accent);
-  const accentContrast = luminance(accent) > 0.55 ? "#000000" : "#ffffff";
+  // Pick whichever of black or white actually contrasts more. A fixed
+  // luminance threshold gets mid-tone accents (clay, teal) wrong.
+  const lightness = luminance(accent);
+  const whiteContrast = 1.05 / (lightness + 0.05);
+  const blackContrast = (lightness + 0.05) / 0.05;
+  const accentContrast = whiteContrast >= blackContrast ? "#ffffff" : "#000000";
   return {
     accent,
     accentSoft: `rgba(${r}, ${g}, ${b}, ${dark ? 0.16 : 0.12})`,

@@ -119,6 +119,12 @@ pub fn set_theme_preference(preference: String) -> Result<(), String> {
     crate::appearance::set_preference(&preference)
 }
 
+/// Remember a curated palette choice; "desktop" hands it back to the desktop.
+#[tauri::command]
+pub fn set_palette_choice(palette: String) -> Result<(), String> {
+    crate::appearance::set_palette(&palette)
+}
+
 /// The native window theme for a scheme name. `None` means "follow the system",
 /// which is what DWM expects for the default.
 fn window_theme(scheme: &str) -> Option<tauri::Theme> {

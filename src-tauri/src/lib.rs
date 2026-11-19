@@ -47,6 +47,7 @@ pub fn run() {
             commands::open_report_file,
             commands::appearance,
             commands::set_theme_preference,
+            commands::set_palette_choice,
             commands::set_window_theme,
             update::check_update,
             update::install_update,

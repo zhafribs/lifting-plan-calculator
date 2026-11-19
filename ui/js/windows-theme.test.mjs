@@ -28,8 +28,9 @@ test("the rail toggles both ways and labels its action", () => {
 });
 
 test("accent contrast follows the accent luminance", () => {
-  assert.equal(accentVars("#0078D4", false).accentContrast, "#ffffff");
+  assert.equal(accentVars("#005a9e", false).accentContrast, "#ffffff");
   assert.equal(accentVars("#FCE100", false).accentContrast, "#000000");
+  assert.equal(accentVars("#c98a5b", true).accentContrast, "#000000");
   assert.match(accentVars("#0078D4", true).accentSoft, /^rgba?\(/);
 });
 

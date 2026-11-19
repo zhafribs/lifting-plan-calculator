@@ -3,6 +3,14 @@
 import { el } from "../dom.js";
 import { card, field, selectInput } from "../components.js";
 import { api, errorText } from "../api.js";
+import { PALETTE_CHOICES } from "../theme.js";
+
+const PALETTE_LABELS = {
+  desktop: "Match the desktop",
+  clay: "Clay (warm brown)",
+  lavender: "Lavender",
+  pine: "Pine (green)",
+};
 
 export function createSettingsScreen(ctx) {
   const updateStatus = el("div", { class: "faint small", style: { margin: "10px 2px 0" } });
@@ -11,6 +19,10 @@ export function createSettingsScreen(ctx) {
   // Where the accent came from, in plain words: a desktop palette tints the
   // whole shell, a desktop accent only colours the controls.
   function accentSummary() {
+    const choice = ctx.paletteChoice ? ctx.paletteChoice() : "desktop";
+    if (choice !== "desktop") {
+      return `Palette: ${PALETTE_LABELS[choice] || choice} \u2014 a fixed, contrast-checked accent; the desktop's palette is not used.`;
+    }
     const source = ctx.accentSource ? ctx.accentSource() : "default";
     if (source === "wallpaper") {
       const colour = ctx.accent ? ctx.accent() : "";
@@ -197,19 +209,32 @@ export function createSettingsScreen(ctx) {
             "system. Otherwise it uses its own neutral pair.",
         }),
         el("p", { class: "faint small accent-summary", style: { margin: "0 0 10px" }, text: accentSummary() }),
-        field({
-          label: "Colour scheme",
-          hint: "Matching the desktop is what most desktops expect; the other two override it.",
-          input: selectInput({
-            options: [
-              { key: "system", label: "Match the desktop" },
-              { key: "light", label: "Light" },
-              { key: "dark", label: "Dark" },
-            ],
-            value: ctx.themePreference ? ctx.themePreference() : "system",
-            onChange: (value) => ctx.setThemePreference && ctx.setThemePreference(value),
+        el(
+          "div",
+          { style: { display: "grid", gap: "10px" } },
+          field({
+            label: "Colour scheme",
+            hint: "Matching the desktop is what most desktops expect; the other two override it.",
+            input: selectInput({
+              options: [
+                { key: "system", label: "Match the desktop" },
+                { key: "light", label: "Light" },
+                { key: "dark", label: "Dark" },
+              ],
+              value: ctx.themePreference ? ctx.themePreference() : "system",
+              onChange: (value) => ctx.setThemePreference && ctx.setThemePreference(value),
+            }),
           }),
-        }),
+          field({
+            label: "Palette",
+            hint: "A small fixed set, chosen for contrast; Match the desktop follows the system.",
+            input: selectInput({
+              options: PALETTE_CHOICES.map((key) => ({ key, label: PALETTE_LABELS[key] })),
+              value: ctx.paletteChoice ? ctx.paletteChoice() : "desktop",
+              onChange: (value) => ctx.setPaletteChoice && ctx.setPaletteChoice(value),
+            }),
+          }),
+        ),
       ),
     }),
     card({

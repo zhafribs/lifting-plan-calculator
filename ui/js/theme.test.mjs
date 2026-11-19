@@ -4,9 +4,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  PALETTE_CHOICES,
   THEME_PREFERENCES,
   applyTheme,
   desktopIsDark,
+  normalisePaletteChoice,
   normalisePreference,
   resolveScheme,
   themeAccent,
@@ -206,4 +208,48 @@ test("an explicit Dark still carries the wallpaper accent", () => {
   assert.equal(applied.tinted, true);
   assert.notEqual(root.style.getPropertyValue("--bg"), desktopPalette.background);
   assert.equal(root.style.getPropertyValue("--bg"), tintedPalette("#c9beff", "dark")["--bg"]);
+});
+
+test("a curated palette wins over the desktop accent and palette", () => {
+  const root = fakeRoot();
+  const applied = applyTheme(root, {
+    preference: "dark",
+    systemDark: true,
+    accent: "#c9beff",
+    accentSource: "wallpaper",
+    palette: { background: "#141318", surface: "#1b1a20", text: "#e5e1e9" },
+    paletteChoice: "clay",
+  });
+  assert.equal(applied.palette, "clay");
+  assert.equal(applied.vars.accent, "#c98a5b");
+  assert.equal(applied.exact, false);
+  assert.equal(applied.tinted, true);
+  assert.equal(root.style.getPropertyValue("--bg"), tintedPalette("#c98a5b", "dark")["--bg"]);
+});
+
+test("only the curated palette names are accepted", () => {
+  assert.equal(normalisePaletteChoice("rainbow"), "desktop");
+  assert.equal(normalisePaletteChoice(" pine "), "desktop");
+  for (const choice of PALETTE_CHOICES) {
+    assert.equal(normalisePaletteChoice(choice), choice);
+  }
+});
+
+test("each curated accent keeps readable text on its filled button", () => {
+  const pairs = [
+    ["#8a5a33", "light", "white"],
+    ["#c98a5b", "dark", "black"],
+    ["#5f53a0", "light", "white"],
+    ["#c9beff", "dark", "black"],
+    ["#2f6f5e", "light", "white"],
+    ["#8fd8bf", "dark", "black"],
+  ];
+  for (const [accent, scheme, expected] of pairs) {
+    const vars = themeAccent(accent, scheme === "dark");
+    const contrastWith = (hex) => contrast(vars.accent, hex);
+    assert.ok(
+      contrastWith(vars.accentContrast) >= 4.5,
+      `${accent} on ${vars.accentContrast} (${scheme}, expected ${expected})`,
+    );
+  }
 });

@@ -8,6 +8,16 @@ import { accentVars } from "./windows-theme.js";
 
 export const THEME_PREFERENCES = ["system", "light", "dark"];
 
+// A deliberately small, curated set: the desktop's own colour, plus three
+// contrast-checked accents. No free picker, no rainbow; the scheme still
+// decides light or dark.
+export const PALETTE_CHOICES = ["desktop", "clay", "lavender", "pine"];
+const NAMED_ACCENTS = {
+  clay: { light: "#8a5a33", dark: "#c98a5b" },
+  lavender: { light: "#5f53a0", dark: "#c9beff" },
+  pine: { light: "#2f6f5e", dark: "#8fd8bf" },
+};
+
 // The accent each palette falls back to when the desktop does not answer.
 const FALLBACK_ACCENT = { dark: "#5cb3ff", light: "#2b6cb8" };
 
@@ -144,6 +154,10 @@ export function normalisePreference(value) {
   return THEME_PREFERENCES.includes(value) ? value : "system";
 }
 
+export function normalisePaletteChoice(value) {
+  return PALETTE_CHOICES.includes(value) ? value : "desktop";
+}
+
 /** The desktop's own scheme when it publishes one, the webview's otherwise. */
 export function desktopIsDark(hint, mediaDark) {
   if (hint === "dark") return true;
@@ -171,10 +185,12 @@ export function themeAccent(hex, scheme) {
  */
 export function applyTheme(
   root,
-  { preference, systemDark, accent, accentSource, palette } = {},
+  { preference, systemDark, accent, accentSource, palette, paletteChoice } = {},
 ) {
   const scheme = resolveScheme(preference, systemDark);
-  const vars = themeAccent(accent, scheme);
+  const choice = normalisePaletteChoice(paletteChoice);
+  const named = NAMED_ACCENTS[choice];
+  const vars = themeAccent(named ? named[scheme] : accent, scheme === "dark");
   root.dataset.theme = scheme;
   root.style.colorScheme = scheme;
   root.style.setProperty("--accent", vars.accent);
@@ -192,11 +208,17 @@ export function applyTheme(
   const desktopScheme = systemDark ? "dark" : "light";
   const followingDesktop = normalisePreference(preference) === "system";
   const exact =
-    followingDesktop && scheme === desktopScheme ? paletteTokens(palette) : null;
+    !named && followingDesktop && scheme === desktopScheme ? paletteTokens(palette) : null;
   const surfaces =
-    exact ?? (accentSource === "wallpaper" ? tintedPalette(vars.accent, scheme) : null);
+    exact ?? (named || accentSource === "wallpaper" ? tintedPalette(vars.accent, scheme) : null);
   for (const name of TINT_SURFACES) {
     root.style.setProperty(name, surfaces ? surfaces[name] : "");
   }
-  return { scheme, vars, tinted: Boolean(surfaces), exact: Boolean(exact) };
+  return {
+    scheme,
+    palette: choice,
+    vars,
+    tinted: Boolean(surfaces),
+    exact: Boolean(exact),
+  };
 }

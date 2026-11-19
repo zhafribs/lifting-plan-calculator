@@ -39,6 +39,11 @@ export function createAboutScreen(ctx) {
           el("button", { class: "btn primary small", onClick: () => runAppImageUpdate(info) }, "Download & update"),
         );
       }
+      if (ctx.platform === "linux" && info.package) {
+        buttons.unshift(
+          el("button", { class: "btn primary small", onClick: () => runPackageUpdate(info) }, "Download & install"),
+        );
+      }
     }
     updateButtons.replaceChildren(...buttons);
   }
@@ -53,7 +58,61 @@ export function createAboutScreen(ctx) {
       renderUpdateButtons(info);
     } catch (error) {
       updateStatus.textContent = errorText(error);
-      renderUpdateButtons(null);
+      // The Arch package needs root; when no polkit agent answers, the verified
+  // file stays on disk and the operator runs one command instead.
+  function showPackageCommand(command) {
+    const code = el("code", {
+      text: command,
+      style: {
+        display: "block",
+        marginTop: "8px",
+        padding: "7px 9px",
+        background: "var(--surface-2)",
+        border: "1px solid var(--border)",
+        borderRadius: "7px",
+        userSelect: "all",
+        whiteSpace: "pre-wrap",
+        font: "12px ui-monospace, monospace",
+      },
+    });
+    const copy = el("button", {
+      class: "btn ghost small",
+      onClick: async () => {
+        try {
+          await navigator.clipboard.writeText(command);
+          copy.textContent = "Copied";
+        } catch {
+          const range = document.createRange();
+          range.selectNodeContents(code);
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      },
+    }, "Copy command");
+    updateStatus.replaceChildren(
+      el("div", { class: "faint small" }, "Nothing was installed \u2014 no polkit prompt answered. Run this in a terminal:", copy),
+      code,
+    );
+  }
+
+  async function runPackageUpdate(info) {
+    updateStatus.textContent = "Downloading the package\u2026";
+    try {
+      const result = await api.installPackageUpdate(info.package);
+      if (result.installed) {
+        updateStatus.textContent =
+          "The package is installed \u2014 the app will close; open it again to run the new version.";
+        setTimeout(() => api.quitApp(), 1500);
+      } else {
+        showPackageCommand(result.command);
+      }
+    } catch (error) {
+      updateStatus.textContent = errorText(error);
+    }
+  }
+
+  renderUpdateButtons(null);
     }
   }
 
@@ -74,6 +133,60 @@ export function createAboutScreen(ctx) {
       await api.installUpdate(info.appimage);
       updateStatus.textContent = "The new AppImage is ready \u2014 the app will close, replace the old file and restart.";
       setTimeout(() => api.quitApp(), 1500);
+    } catch (error) {
+      updateStatus.textContent = errorText(error);
+    }
+  }
+
+  // The Arch package needs root; when no polkit agent answers, the verified
+  // file stays on disk and the operator runs one command instead.
+  function showPackageCommand(command) {
+    const code = el("code", {
+      text: command,
+      style: {
+        display: "block",
+        marginTop: "8px",
+        padding: "7px 9px",
+        background: "var(--surface-2)",
+        border: "1px solid var(--border)",
+        borderRadius: "7px",
+        userSelect: "all",
+        whiteSpace: "pre-wrap",
+        font: "12px ui-monospace, monospace",
+      },
+    });
+    const copy = el("button", {
+      class: "btn ghost small",
+      onClick: async () => {
+        try {
+          await navigator.clipboard.writeText(command);
+          copy.textContent = "Copied";
+        } catch {
+          const range = document.createRange();
+          range.selectNodeContents(code);
+          const selection = window.getSelection();
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      },
+    }, "Copy command");
+    updateStatus.replaceChildren(
+      el("div", { class: "faint small" }, "Nothing was installed \u2014 no polkit prompt answered. Run this in a terminal:", copy),
+      code,
+    );
+  }
+
+  async function runPackageUpdate(info) {
+    updateStatus.textContent = "Downloading the package\u2026";
+    try {
+      const result = await api.installPackageUpdate(info.package);
+      if (result.installed) {
+        updateStatus.textContent =
+          "The package is installed \u2014 the app will close; open it again to run the new version.";
+        setTimeout(() => api.quitApp(), 1500);
+      } else {
+        showPackageCommand(result.command);
+      }
     } catch (error) {
       updateStatus.textContent = errorText(error);
     }
@@ -153,7 +266,8 @@ export function createAboutScreen(ctx) {
           text:
             "The app checks GitHub for a newer release at launch, and on demand here. " +
             "On Windows it can fetch and start the release's installer. On Linux it can " +
-            "download the new AppImage, replace the running file and restart.",
+            "download the new AppImage, replace the running file and restart, and the " +
+            "Arch package installs itself through the system's polkit prompt.",
         }),
         updateButtons,
         updateStatus,

@@ -64,8 +64,9 @@ jobs:
           work="$(mktemp -d)"
           cp ui/js/pdf-math.js ui/js/pdf-math.test.mjs ui/js/jib.js ui/js/jib.test.mjs \
             ui/js/graph/print-palette.js ui/js/graph/print-palette.test.mjs \
-            ui/js/theme.js ui/js/theme.test.mjs \
-            ui/js/windows-theme.js ui/js/windows-theme.test.mjs "$work/"
+            ui/js/theme.js ui/js/theme.test.mjs "$work/"
+          # theme.js imports the accent maths from here.
+          cp ui/js/windows-theme.js "$work/"
           # The Windows theme test reads the stylesheet through a relative URL,
           # so keep that pair's layout: js/ next to css/.
           mkdir -p "$work/js" "$work/css"
@@ -76,7 +77,7 @@ jobs:
           # Node versions the runners carry.
           node --test "$work/pdf-math.test.mjs" "$work/jib.test.mjs" \
             "$work/print-palette.test.mjs" "$work/theme.test.mjs" \
-            "$work/windows-theme.test.mjs" "$work/js/windows-theme.test.mjs"
+            "$work/js/windows-theme.test.mjs"
 
       # The vendored PDF parser is pinned by hash: a different file is a
       # deliberate change, not an update.

@@ -39,6 +39,8 @@ pub struct UpdateInfo {
     pub installer: Option<InstallerAsset>,
     /// The Linux AppImage the app can fetch and swap in, when present.
     pub appimage: Option<InstallerAsset>,
+    /// The Arch package, when this copy was installed by pacman.
+    pub package: Option<InstallerAsset>,
 }
 
 /// One downloadable installer from the release.
@@ -142,6 +144,26 @@ fn check_api(current: &str) -> Result<UpdateInfo, String> {
     } else {
         None
     };
+    let package = if installed_from_package() {
+        let assets: Vec<&serde_json::Value> = json
+            .get("assets")
+            .and_then(|value| value.as_array())
+            .map(|assets| assets.iter().collect())
+            .unwrap_or_default();
+        assets.iter().find_map(|asset| {
+            let name = asset.get("name")?.as_str()?;
+            if !name.ends_with(".pkg.tar.zst") {
+                return None;
+            }
+            let url = asset.get("browser_download_url")?.as_str()?;
+            Some(InstallerAsset {
+                name: name.to_string(),
+                url: url.to_string(),
+            })
+        })
+    } else {
+        None
+    };
 
     Ok(UpdateInfo {
         current: current.to_string(),
@@ -151,6 +173,7 @@ fn check_api(current: &str) -> Result<UpdateInfo, String> {
         repo_url: REPO_URL.to_string(),
         installer,
         appimage,
+        package,
     })
 }
 
@@ -190,6 +213,14 @@ fn update_from_tag(current: &str, tag: &str) -> UpdateInfo {
     } else {
         None
     };
+    let package = if installed_from_package() {
+        Some(InstallerAsset {
+            name: format!("Lifting-Plan-Calculator-{latest}-linux-x86_64.pkg.tar.zst"),
+            url: format!("{base}/Lifting-Plan-Calculator-{latest}-linux-x86_64.pkg.tar.zst"),
+        })
+    } else {
+        None
+    };
     UpdateInfo {
         current: current.to_string(),
         newer: is_newer(current, &latest),
@@ -200,6 +231,7 @@ fn update_from_tag(current: &str, tag: &str) -> UpdateInfo {
         repo_url: REPO_URL.to_string(),
         installer,
         appimage,
+        package,
     }
 }
 
@@ -582,6 +614,74 @@ pub fn install(asset: &InstallerAsset) -> Result<String, String> {
     Ok(target.to_string_lossy().to_string())
 }
 
+/// Whether this copy was installed by pacman. The AppImage and the Flatpak
+/// carry their own markers and must not be treated as a packaged install.
+#[cfg(target_os = "linux")]
+pub fn installed_from_package() -> bool {
+    if std::env::var_os("APPIMAGE").is_some() || std::env::var_os("FLATPAK_ID").is_some() {
+        return false;
+    }
+    std::process::Command::new("pacman")
+        .args(["-Q", "lifting-plan-calculator"])
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or(false)
+}
+
+#[cfg(not(target_os = "linux"))]
+pub fn installed_from_package() -> bool {
+    false
+}
+
+/// What happened when the app tried to install an Arch package.
+#[derive(Debug, Serialize)]
+pub struct PackageUpdate {
+    /// True when pacman finished successfully through pkexec.
+    pub installed: bool,
+    /// The command the operator can run when it did not, with the verified file.
+    pub command: String,
+}
+
+/// Linux package: download the release's `pkg.tar.zst`, verify its checksum,
+/// then hand it to pacman through pkexec. When no polkit agent answers, the
+/// caller shows `command` instead of failing silently.
+#[cfg(target_os = "linux")]
+pub fn install_package(asset: &InstallerAsset) -> Result<PackageUpdate, String> {
+    if !asset.name.ends_with(".pkg.tar.zst") {
+        return Err("That release file is not an Arch package.".to_string());
+    }
+    if !is_release_asset_url(&asset.url) {
+        return Err("That download is not from this project's releases.".to_string());
+    }
+    let name = std::path::Path::new(&asset.name)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .filter(|name| *name == asset.name)
+        .ok_or_else(|| "That update names a file outside its release.".to_string())?
+        .to_string();
+
+    let directory = std::env::temp_dir().join("lifting-plan-calculator-update");
+    std::fs::create_dir_all(&directory)
+        .map_err(|error| format!("The package could not be saved: {error}"))?;
+    let target = directory.join(&name);
+    let _ = std::fs::remove_file(&target);
+    verified_download(asset, &target)?;
+
+    let command = format!("sudo pacman -U '{}'", target.display());
+    let installed = std::process::Command::new("pkexec")
+        .args(["pacman", "-U", "--noconfirm"])
+        .arg(&target)
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false);
+    Ok(PackageUpdate { installed, command })
+}
+
+#[cfg(not(target_os = "linux"))]
+pub fn install_package(_asset: &InstallerAsset) -> Result<PackageUpdate, String> {
+    Err("Only the Linux package installs itself this way.".to_string())
+}
+
 /// Other platforms: the release page is the update path.
 #[cfg(not(any(target_os = "windows", target_os = "linux")))]
 pub fn install(_asset: &InstallerAsset) -> Result<String, String> {
@@ -612,6 +712,13 @@ pub async fn install_update(asset: InstallerAsset) -> Result<String, String> {
 }
 
 #[tauri::command]
+pub async fn install_package_update(asset: InstallerAsset) -> Result<PackageUpdate, String> {
+    tauri::async_runtime::spawn_blocking(move || install_package(&asset))
+        .await
+        .map_err(|error| format!("The update failed: {error}"))?
+}
+
+#[tauri::command]
 pub fn open_external(url: String) -> Result<(), String> {
     if !(url.starts_with("https://") || url.starts_with("http://")) {
         return Err("Only web links can be opened.".to_string());
@@ -627,6 +734,16 @@ pub fn quit_app(app: tauri::AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn only_an_arch_package_installs_itself() {
+        let asset = InstallerAsset {
+            name: "Lifting-Plan-Calculator-2.16.1-linux-x86_64.AppImage".to_string(),
+            url: "https://github.com/zhafribs/lifting-plan-calculator/releases/download/v2.16.1/Lifting-Plan-Calculator-2.16.1-linux-x86_64.AppImage".to_string(),
+        };
+        assert!(install_package(&asset).is_err());
+    }
 
     #[test]
     fn the_atom_feed_skips_a_prerelease_and_finds_the_stable_tag() {

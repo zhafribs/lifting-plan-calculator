@@ -48,6 +48,7 @@ pub fn run() {
             commands::set_theme_preference,
             update::check_update,
             update::install_update,
+            update::install_package_update,
             update::open_external,
             update::quit_app,
         ])

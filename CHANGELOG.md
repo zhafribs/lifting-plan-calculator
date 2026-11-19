@@ -2,6 +2,17 @@
 
 Nothing yet.
 
+## [2.16.1] - 2026-11-19
+
+### Added
+
+- The Arch package updates from the app's own button. When the running copy was
+  installed by pacman, About offers Download & install: the release's
+  `.pkg.tar.zst` is downloaded, checked against the signed `SHA256SUMS.txt`, and
+  handed to `pkexec pacman -U`. A desktop with no polkit agent is not a dead
+  end — the app shows the exact `sudo pacman -U` command, with a copy button,
+  for the file it already verified.
+
 ## [2.16.0] - 2026-11-19
 
 ### Added

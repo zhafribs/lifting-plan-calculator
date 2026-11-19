@@ -35,6 +35,7 @@ export const api = {
   openReportFile: (path) => invoke("open_report_file", { path }),
   checkUpdate: () => invoke("check_update"),
   installUpdate: (asset) => invoke("install_update", { asset }),
+  installPackageUpdate: (asset) => invoke("install_package_update", { asset }),
   openExternal: (url) => invoke("open_external", { url }),
   appearance: () => invoke("appearance"),
   setThemePreference: (preference) => invoke("set_theme_preference", { preference }),

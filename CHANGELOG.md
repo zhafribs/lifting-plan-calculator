@@ -2,6 +2,25 @@
 
 Nothing yet.
 
+## [2.17.0] - 2026-11-19
+
+### Added
+
+- **Three curated palettes in Settings: Clay, Lavender and Pine.** Each has a
+  light and a dark accent, and the shell's surfaces are tinted to match. `Match
+  the desktop` remains the default and keeps following the system accent and
+  palette. The set is deliberately small; there is no free colour picker, so the
+  contrast and the shell's identity stay under control.
+- The palette choice is stored beside the scheme in
+  `~/.config/lifting-plan-calculator/appearance.json`; an older file without the
+  setting means `Match the desktop`.
+
+### Fixed
+
+- The text colour on a filled accent button now chooses whichever of black or
+  white contrasts more. Mid-tone accents such as Clay previously received white
+  text at about 2.9:1; they now get black at about 7:1.
+
 ## [2.16.13] - 2026-11-19
 
 ### Changed

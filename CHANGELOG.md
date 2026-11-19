@@ -2,6 +2,20 @@
 
 Nothing yet.
 
+## [2.16.12] - 2026-11-19
+
+### Fixed
+
+- **An explicit Light or Dark choice now overrides the desktop's surfaces.** If
+  the desktop published a palette for the other scheme — a dark Noctalia palette
+  while choosing Light — its tinted surfaces were applied anyway, so only part
+  of the shell changed. The desktop palette is now used only when it matches the
+  resolved scheme; an override uses our own palette for that scheme, tinted from
+  the wallpaper accent when there is one.
+- **The Windows title bar follows the in-app scheme.** Choosing Light or Dark now
+  sets the native window theme as well, so the title bar and Mica no longer stay
+  on the system scheme while the page changes.
+
 ## [2.16.11] - 2026-11-19
 
 ### Changed

@@ -215,7 +215,7 @@ pub fn section_inputs(result: &SlingResult, spec: &HitchSpec) -> String {
     }
     format!(
         "<section class=\"input-card\">{}{}</section>",
-        heading(2, "Lift Input Parameters"),
+        heading(2, "Lift Input Parameters - Uniform Load"),
         card_grid(&rows)
     )
 }
@@ -1030,7 +1030,7 @@ mod tests {
     fn the_input_section_matches_the_reference() {
         let html = inputs("direct_hook");
         for expected in [
-            "<h2>2. LIFT INPUT PARAMETERS</h2>".to_string(),
+            "<h2>2. LIFT INPUT PARAMETERS - UNIFORM LOAD</h2>".to_string(),
             input_card(
                 "Sling Configuration",
                 "1-Leg Sling Direct hook Hitch (1 Effective Leg)",

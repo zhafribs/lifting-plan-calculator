@@ -755,7 +755,31 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
     }
 
     parts.push("</div>".to_string());
-    parts.join("")
+    renumber_sections(&parts.join(""))
+}
+
+/// Number the report's sections in the order they actually appear. The section
+/// builders carry their own numbers, which collide as soon as an optional
+/// section — the outrigger pad, for instance — is inserted before them.
+fn renumber_sections(html: &str) -> String {
+    let mut out = String::with_capacity(html.len());
+    let mut rest = html;
+    let mut number = 0usize;
+    while let Some(start) = rest.find("<h2>") {
+        let after = start + 4;
+        out.push_str(&rest[..after]);
+        let tail = &rest[after..];
+        let digits = tail.bytes().take_while(u8::is_ascii_digit).count();
+        if digits > 0 && tail.as_bytes().get(digits) == Some(&b'.') {
+            number += 1;
+            out.push_str(&number.to_string());
+            rest = &tail[digits..];
+        } else {
+            rest = tail;
+        }
+    }
+    out.push_str(rest);
+    out
 }
 
 /// The crane, its boom and the capacity check against the load chart.
@@ -1240,6 +1264,25 @@ mod tests {
             ..ReportInputs::default()
         };
         assert!(build_report_html(&inputs, &[]).contains("--footer-center: \"Custom footer\""));
+    }
+
+    #[test]
+    fn section_numbers_follow_the_sections_that_are_printed() {
+        let html = "<h2>1. PLAN DETAILS</h2><h2>2. OUTRIGGER PAD SIZE</h2>\
+                    <h2>2. LIFT INPUT PARAMETERS</h2><h2>3. GEOMETRY</h2>\
+                    <h2>6. FINAL CAPACITY</h2>";
+        let numbered = renumber_sections(html);
+        for expected in [
+            "<h2>1. PLAN DETAILS</h2>",
+            "<h2>2. OUTRIGGER PAD SIZE</h2>",
+            "<h2>3. LIFT INPUT PARAMETERS</h2>",
+            "<h2>4. GEOMETRY</h2>",
+            "<h2>5. FINAL CAPACITY</h2>",
+        ] {
+            assert!(numbered.contains(expected), "{expected} missing from {numbered}");
+        }
+        // A heading without a number is left alone.
+        assert_eq!(renumber_sections("<h2>NO NUMBER</h2>"), "<h2>NO NUMBER</h2>");
     }
 
     #[test]

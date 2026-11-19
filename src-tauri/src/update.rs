@@ -528,20 +528,19 @@ pub fn install(asset: &InstallerAsset) -> Result<String, String> {
     let _ = std::fs::remove_file(&target);
     verified_download(asset, &target)?;
 
-    let mut command = if asset.name.ends_with(".msi") {
-        let mut command = std::process::Command::new("msiexec");
-        command.arg("/i").arg(&target);
-        command
-    } else {
-        std::process::Command::new(&target)
-    };
-    command.spawn().map_err(|error| {
-        format!(
-            "The installer could not be started: {error}. \
-             It was saved to {} — you can run it by hand, or download it from the release page.",
-            target.display()
-        )
-    })?;
+    if asset.name.ends_with(".msi") {
+        std::process::Command::new("msiexec")
+            .arg("/i")
+            .arg(&target)
+            .spawn()
+            .map_err(|error| format!("The installer could not be started: {error}"))?;
+        return Ok(target.to_string_lossy().to_string());
+    }
+
+    // The setup is per-machine, so its manifest requires elevation. CreateProcess
+    // refuses that with ERROR_ELEVATION_REQUIRED (740) when the app itself is not
+    // elevated; ShellExecuteW with the "runas" verb shows the UAC prompt instead.
+    launch_elevated(&target)?;
     Ok(target.to_string_lossy().to_string())
 }
 
@@ -770,6 +769,44 @@ pub fn install_package(asset: &InstallerAsset) -> Result<PackageUpdate, String> 
 #[cfg(not(target_os = "linux"))]
 pub fn install_package(_asset: &InstallerAsset) -> Result<PackageUpdate, String> {
     Err("Only the Linux package installs itself this way.".to_string())
+}
+
+/// Start an executable that needs administrator rights, through the shell's
+/// "runas" verb so Windows asks for consent.
+#[cfg(target_os = "windows")]
+fn launch_elevated(target: &std::path::Path) -> Result<(), String> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows::core::PCWSTR;
+    use windows::Win32::UI::Shell::ShellExecuteW;
+    use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+
+    fn wide(value: &std::ffi::OsStr) -> Vec<u16> {
+        value.encode_wide().chain(std::iter::once(0)).collect()
+    }
+
+    let verb: Vec<u16> = "runas\0".encode_utf16().collect();
+    let file = wide(target.as_os_str());
+    // SAFETY: both pointers are NUL-terminated buffers that outlive the call.
+    let result = unsafe {
+        ShellExecuteW(
+            None,
+            PCWSTR(verb.as_ptr()),
+            PCWSTR(file.as_ptr()),
+            None,
+            None,
+            SW_SHOWNORMAL,
+        )
+    };
+    // ShellExecute returns a value of 32 or less when it fails.
+    if result.0 as isize <= 32 {
+        return Err(format!(
+            "Windows did not start the installer (ShellExecute code {}). \
+             It was saved to {} — you can run it by hand, or download it from the release page.",
+            result.0 as isize,
+            target.display()
+        ));
+    }
+    Ok(())
 }
 
 /// Other platforms: the release page is the update path.

@@ -35,6 +35,8 @@ export function createReportScreen(ctx) {
     ["approved_by", "Approved by"],
   ];
 
+  // One sling arrangement per plan: the three sling sections replace each other.
+  const EXCLUSIVE = ["uniform", "nonuniform", "tandem"];
   const checkBoxes = {};
   // Sections the operator has pushed to a new page. Empty by default: the
   // report finds its own breaks until someone asks for a specific layout.
@@ -53,6 +55,16 @@ export function createReportScreen(ctx) {
     input.addEventListener("change", () => {
       sections[key] = input.checked;
       breakBoxes[key].disabled = !input.checked;
+      if (input.checked && EXCLUSIVE.includes(key)) {
+        for (const other of EXCLUSIVE) {
+          if (other === key) continue;
+          sections[other] = false;
+          checkBoxes[other].checked = false;
+          breakBoxes[other].checked = false;
+          breakBoxes[other].disabled = true;
+          pageBreaks.delete(other);
+        }
+      }
       schedulePreview(0);
       schedulePdf(0);
     });

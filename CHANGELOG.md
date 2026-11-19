@@ -2,6 +2,24 @@
 
 Nothing yet.
 
+## [2.16.10] - 2026-11-19
+
+### Fixed
+
+- **Section numbers follow what is actually printed.** The builders carried
+  their own numbers, so adding the outrigger pad section produced two "2."
+  headings and left the rest out of step. The report is renumbered in print
+  order at the end: with crane, diagram, outrigger and uniform ticked, the cards
+  run 1 to 6 and the last is FINAL CAPACITY & EQUIPMENT SELECTION.
+- **The uniform load inputs are named.** The card reads
+  `3. LIFT INPUT PARAMETERS - UNIFORM LOAD` instead of leaving it ambiguous.
+- **Only one sling arrangement at a time.** Ticking Uniform, Nonuniform or
+  Tandem clears the other two, with their page-break ticks.
+- **Windows: the update no longer fails with "requires elevation" (os error
+  740).** The per-machine setup cannot be started with CreateProcess from a
+  non-elevated app; it now goes through the shell's `runas` verb, which shows
+  the UAC prompt the installer expects.
+
 ## [2.16.9] - 2026-11-19
 
 ### Added

@@ -739,7 +739,7 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
                 NonuniformResult::Tandem(tandem.clone())
             }).as_ref(),
             first,
-            "Tandem Lift",
+            "Tandem",
             inputs.tandem_error.as_deref(),
         )
         .join("");

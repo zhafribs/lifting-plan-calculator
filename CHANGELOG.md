@@ -2,6 +2,17 @@
 
 Nothing yet.
 
+## [2.16.11] - 2026-11-19
+
+### Changed
+
+- The first section of every sling arrangement is named for it:
+  `LIFT INPUT PARAMETERS - UNIFORM LOAD`, `... - NONUNIFORM LOAD`,
+  `... - TANDEM`. Previously only the uniform case carried the suffix, and the
+  nonuniform and tandem inputs sat under a bare sub-heading.
+- The nonuniform and tandem inputs use the same three-column figure cards as the
+  uniform inputs, instead of a long key/value table.
+
 ## [2.16.10] - 2026-11-19
 
 ### Fixed

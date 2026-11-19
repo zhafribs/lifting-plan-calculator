@@ -7,8 +7,8 @@
 use crate::calc::{crane_usage_band, UsageState};
 use crate::nonuniform::{governing_case_words, NonuniformResult, TandemResult};
 use crate::report::{
-    equation, escape, fmt, heading, label_or_not_entered, label_value, p, subheading, table,
-    tex_num,
+    card_grid, equation, escape, fmt, heading, label_or_not_entered, label_value, p, subheading,
+    table, tex_num,
 };
 
 /// How a governing case reads in the report's prose.
@@ -41,7 +41,7 @@ pub fn nonuniform_sections(
     title: &str,
     error: Option<&str>,
 ) -> Vec<String> {
-    let heading_line = heading(first_number, title);
+    let heading_line = heading(first_number, &format!("Lift Input Parameters - {title}"));
     if let Some(error) = error {
         return vec![
             heading_line,
@@ -98,10 +98,12 @@ pub fn asym_sections(
     first_number: usize,
     title: &str,
 ) -> Vec<String> {
-    let mut out = vec![heading(first_number, title)];
+    let mut out = vec![heading(
+        first_number,
+        &format!("Lift Input Parameters - {title}"),
+    )];
     let step = result.pick_point2_height;
-    out.push(subheading("Lift Input Parameters"));
-    out.push(table(&[
+    out.push(card_grid(&[
         (
             "Load weight".to_string(),
             fmt(Some(result.load_weight), 2, "kg"),
@@ -575,9 +577,11 @@ pub fn tandem_sections(
     let angle = result.angle;
     let has_vertical = result.tension_b_vertical.is_some();
 
-    let mut out = vec![heading(first_number, title)];
-    out.push(subheading("Lift Input Parameters"));
-    out.push(table(&[
+    let mut out = vec![heading(
+        first_number,
+        &format!("Lift Input Parameters - {title}"),
+    )];
+    out.push(card_grid(&[
         (
             "Total load weight".to_string(),
             fmt(Some(result.load_weight), 2, "kg"),
@@ -1277,16 +1281,16 @@ mod tests {
     }
 
     fn tandem_html() -> String {
-        tandem_sections(&tandem(), 1, "Tandem Lift").join("")
+        tandem_sections(&tandem(), 1, "Tandem").join("")
     }
 
     #[test]
     fn the_asymmetric_bridle_report_matches_the_reference() {
         let html = asym_html();
         for expected in [
-            "<h2>1. NONUNIFORM LOAD</h2>",
+            "<h2>1. LIFT INPUT PARAMETERS - NONUNIFORM LOAD</h2>",
             "<h2>2. GEOMETRIC &amp; HEADROOM CALCULATIONS (SHORTENING METHOD WITH ELEVATION DELTA)</h2>",
-            "<tr><th>Vertical height difference between pick points</th><td>0.500 m (pick point 2 higher)</td></tr>",
+            "<span class=\"metric-k\">Vertical height difference between pick points</span><span class=\"metric-v input-v\">0.500 m (pick point 2 higher)</span>",
             "\\[\\text{X}_2 = \\text{Total Span} - \\text{X}_1 = 5.000 - 3.500 = 1.500\\ \\text{m}\\]",
             "\\[\\text{Length}_{1} = \\text{Standard Length} = 7.000\\ \\text{m}\\]",
             "\\[\\text{Y}_{1} = \\sqrt{\\text{Length}^2 - \\text{X}_{1}^2} = \\sqrt{7.000^2 - 3.500^2} = 6.062\\ \\text{m}\\]",
@@ -1330,7 +1334,7 @@ mod tests {
     fn the_tandem_geometry_matches_the_reference() {
         let html = tandem_html();
         for expected in [
-            "<h2>1. TANDEM LIFT</h2>",
+            "<h2>1. LIFT INPUT PARAMETERS - TANDEM</h2>",
             "<h2>2. GEOMETRIC &amp; HEADROOM CALCULATIONS (DYNAMIC TILT METHOD)</h2>",
             "\\[\\text{Angle}_1 = \\text{Angle}_2 = 0.00^\\circ\\ \\text{from vertical}\\]",
             "\\[\\text{ND}_1 = \\text{h} \\times \\sin\\theta + \\text{D}_1 \\times \\cos\\theta = 2.000 \\times \\sin(35.00^\\circ) + 3.000 \\times \\cos(35.00^\\circ) = 3.605\\ \\text{m}\\]",
@@ -1415,10 +1419,10 @@ mod tests {
         assert!(html.contains(
             "The COG must sit between the two pick points. Complete the Nonuniform Load tab to include it in this plan."
         ));
-        let html = nonuniform_sections(None, 4, "Tandem Lift", None).join("");
-        assert!(html.contains("<h2>4. TANDEM LIFT</h2>"));
+        let html = nonuniform_sections(None, 4, "Tandem", None).join("");
+        assert!(html.contains("<h2>4. LIFT INPUT PARAMETERS - TANDEM</h2>"));
         assert!(html.contains(
-            "No tandem lift has been set up. Complete the Tandem Lift tab to include it in this plan."
+            "No tandem has been set up. Complete the Tandem tab to include it in this plan."
         ));
     }
 
@@ -1431,7 +1435,7 @@ mod tests {
             None,
         )
         .join("");
-        assert!(html.contains("1. NONUNIFORM LOAD"));
+        assert!(html.contains("1. LIFT INPUT PARAMETERS - NONUNIFORM LOAD"));
 
         let unloaded = solve_nonuniform(
             &example_nonuniform_inputs("asym_2leg_shortening").unwrap(),
@@ -1447,11 +1451,11 @@ mod tests {
 
     #[test]
     fn the_two_blocks_number_themselves_from_wherever_they_start() {
-        let from_six = tandem_sections(&tandem(), 6, "Tandem Lift");
+        let from_six = tandem_sections(&tandem(), 6, "Tandem");
         assert!(from_six
             .first()
             .unwrap()
-            .contains("<h2>6. TANDEM LIFT</h2>"));
+            .contains("<h2>6. LIFT INPUT PARAMETERS - TANDEM</h2>"));
         assert!(from_six.join("").contains("<h2>10. NOTE</h2>"));
         assert_eq!(
             from_six

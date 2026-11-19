@@ -119,6 +119,33 @@ pub fn set_theme_preference(preference: String) -> Result<(), String> {
     crate::appearance::set_preference(&preference)
 }
 
+/// The native window theme for a scheme name. `None` means "follow the system",
+/// which is what DWM expects for the default.
+fn window_theme(scheme: &str) -> Option<tauri::Theme> {
+    match scheme {
+        "light" => Some(tauri::Theme::Light),
+        "dark" => Some(tauri::Theme::Dark),
+        _ => None,
+    }
+}
+
+/// Give the native window chrome the same scheme the shell painted. Windows
+/// draws the title bar and Mica from the system theme; without this, an in-app
+/// override changes the page but leaves the chrome on the desktop's scheme.
+/// Other platforms are a no-op here: their window theme is app-wide and follows
+/// the desktop, not this screen.
+#[tauri::command]
+pub fn set_window_theme(window: tauri::WebviewWindow, scheme: String) -> Result<(), String> {
+    let theme = window_theme(&scheme);
+    #[cfg(target_os = "windows")]
+    window.set_theme(theme).map_err(|error| error.to_string())?;
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = (window, theme);
+    }
+    Ok(())
+}
+
 /// `~/.cache/lifting-plan-calculator/ui.log`, which is how startup problems are
 /// diagnosed when the window itself cannot say what went wrong.
 #[tauri::command]
@@ -1246,6 +1273,14 @@ fn ensure_nonuniform_variant_marker(result: &NonuniformResult) -> &'static str {
 #[cfg(test)]
 mod pdf_export_tests {
     use super::*;
+
+    #[test]
+    fn a_scheme_name_maps_to_the_native_window_theme() {
+        assert_eq!(window_theme("light"), Some(tauri::Theme::Light));
+        assert_eq!(window_theme("dark"), Some(tauri::Theme::Dark));
+        assert_eq!(window_theme("system"), None);
+        assert_eq!(window_theme("midnight"), None);
+    }
 
     #[test]
     fn file_urls_escape_spaces_and_use_forward_slashes() {

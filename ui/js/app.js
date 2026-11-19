@@ -107,6 +107,9 @@ async function main() {
     scheme: null,
     palette: null,
   };
+  // The last scheme handed to the native chrome, so the 20-second palette poll
+  // does not send the same IPC on every pass.
+  let lastWindowTheme = null;
 
   function paintAppearance() {
     const applied = applyTheme(document.documentElement, {
@@ -121,6 +124,15 @@ async function main() {
         `theme: scheme=${applied.scheme} preference=${appearance.preference} ` +
           `accent=${applied.vars.accent} source=${appearance.accentSource} tinted=${applied.tinted}`,
       );
+    // Windows draws the title bar and Mica from the native window theme, so an
+    // in-app override has to reach the window too or the chrome keeps the
+    // desktop's scheme. Other platforms ignore the call.
+    const requestedTheme =
+      appearance.preference === "system" ? "system" : applied.scheme;
+    if (requestedTheme !== lastWindowTheme) {
+      lastWindowTheme = requestedTheme;
+      api.setWindowTheme(requestedTheme).catch(() => {});
+    }
   }
 
   async function loadAppearance() {

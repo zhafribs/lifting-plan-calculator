@@ -40,6 +40,7 @@ export const api = {
   openExternal: (url) => invoke("open_external", { url }),
   appearance: () => invoke("appearance"),
   setThemePreference: (preference) => invoke("set_theme_preference", { preference }),
+  setWindowTheme: (scheme) => invoke("set_window_theme", { scheme }),
   quitApp: () => invoke("quit_app"),
 };
 

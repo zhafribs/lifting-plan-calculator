@@ -2,6 +2,23 @@
 
 Nothing yet.
 
+## [2.16.0] - 2026-11-19
+
+### Added
+
+- A neutral shell of our own for Linux, in a light and a dark palette, with the
+  same structure on every distribution and desktop. It follows the desktop's
+  light/dark preference and borrows its accent colour when one is published
+  (GNOME and KDE today), and About offers Match the desktop, Light or Dark.
+  The choice is remembered in `~/.config/lifting-plan-calculator/appearance.json`.
+- Windows keeps its Fluent layer, now sharing the same accent plumbed from the
+  system.
+
+### Changed
+
+- Filled buttons carry their own text colour, so the primary and add/danger
+  buttons stay readable in both palettes.
+
 ## [2.15.1] - 2026-11-19
 
 ### Fixed

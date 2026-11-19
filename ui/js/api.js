@@ -36,6 +36,8 @@ export const api = {
   checkUpdate: () => invoke("check_update"),
   installUpdate: (asset) => invoke("install_update", { asset }),
   openExternal: (url) => invoke("open_external", { url }),
+  appearance: () => invoke("appearance"),
+  setThemePreference: (preference) => invoke("set_theme_preference", { preference }),
   quitApp: () => invoke("quit_app"),
 };
 

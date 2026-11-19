@@ -4,6 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Lifting Plan Calculator</title>
+  <script>
+    // Paint the right palette before the first frame: a dark desktop should not
+    // flash a light window. app.js refines this with the stored preference.
+    (function () {
+      var dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = dark ? "dark" : "light";
+    })();
+  </script>
   <link rel="stylesheet" href="css/app.css" />
   <link rel="stylesheet" href="css/windows.css" />
   <script>

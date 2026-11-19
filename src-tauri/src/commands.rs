@@ -107,6 +107,18 @@ pub fn catalog() -> Catalog {
 }
 
 /// A tiny breadcrumb channel for the frontend: anything it logs lands in
+/// The scheme the operator chose and the accent the desktop publishes.
+#[tauri::command]
+pub fn appearance() -> crate::appearance::Appearance {
+    crate::appearance::current()
+}
+
+/// Remember a scheme choice; "system" hands the decision back to the desktop.
+#[tauri::command]
+pub fn set_theme_preference(preference: String) -> Result<(), String> {
+    crate::appearance::set_preference(&preference)
+}
+
 /// `~/.cache/lifting-plan-calculator/ui.log`, which is how startup problems are
 /// diagnosed when the window itself cannot say what went wrong.
 #[tauri::command]

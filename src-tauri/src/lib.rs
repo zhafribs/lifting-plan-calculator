@@ -3,6 +3,7 @@
 //! The calculation engine lives in the sibling modules (ported from the Android
 //! Kotlin source); this file only wires it to the Tauri shell.
 
+pub mod appearance;
 pub mod calc;
 pub mod commands;
 pub mod crane;
@@ -43,6 +44,8 @@ pub fn run() {
             commands::save_pdf,
             commands::preview_pdf,
             commands::open_report_file,
+            commands::appearance,
+            commands::set_theme_preference,
             update::check_update,
             update::install_update,
             update::open_external,

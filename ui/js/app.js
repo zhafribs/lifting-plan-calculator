@@ -10,8 +10,8 @@ import {
   initialNavMode,
   nextNavMode,
   navToggleLabel,
-  accentVars,
 } from "./windows-theme.js";
+import { applyTheme, normalisePreference } from "./theme.js";
 import { createOverallScreen } from "./screens/overall.js";
 import { createCraneScreen } from "./screens/crane.js";
 import { createOutriggerScreen } from "./screens/outrigger.js";
@@ -92,41 +92,62 @@ async function main() {
     return;
   }
 
-  // --- windows theme -------------------------------------------------------
-  // The Windows build paints the Fluent layer through a platform marker on
-  // <html>; Linux and macOS keep the base stylesheet untouched. The accent is
-  // re-applied whenever the host flips light/dark, so the contrast pair follows
-  // the surface it sits on.
+  // --- appearance -----------------------------------------------------------
+  // One neutral palette for every desktop. Windows paints its Fluent layer over
+  // it through a platform marker; Linux keeps the neutral shell. The scheme
+  // follows the desktop unless the operator chose one in About, and the accent
+  // is the desktop's own when it publishes one.
   const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
-  let themeInfo = null;
+  let appearance = { preference: "system", accent: null };
 
-  function applyAccent(info) {
-    const vars = accentVars(info?.accent, darkQuery.matches);
-    const root = document.documentElement;
-    root.style.setProperty("--accent", vars.accent);
-    root.style.setProperty("--accent-soft", vars.accentSoft);
-    root.style.setProperty("--accent-line", vars.accent);
-    root.style.setProperty("--accent-strong", vars.accentHover);
-    root.style.setProperty("--accent-hover", vars.accentHover);
-    root.style.setProperty("--accent-contrast", vars.accentContrast);
-  }
-
-  function applyTheme(info) {
-    themeInfo = info;
-    const root = document.documentElement;
-    root.dataset.platform = platformScope(info || {});
-    if (root.dataset.platform !== "windows") return;
-    setNavMode(initialNavMode(window.innerWidth));
-    applyAccent(info);
+  function paintAppearance() {
+    const applied = applyTheme(document.documentElement, {
+      preference: appearance.preference,
+      systemDark: darkQuery.matches,
+      accent: appearance.accent,
+    });
     window.uilog &&
       window.uilog(
-        `theme: platform=${root.dataset.platform} nav=${root.dataset.nav} accent=${accentVars(info?.accent, darkQuery.matches).accent}`,
+        `theme: scheme=${applied.scheme} preference=${appearance.preference} accent=${applied.vars.accent}`,
       );
   }
 
+  async function loadAppearance() {
+    try {
+      const info = await api.appearance();
+      appearance = {
+        preference: normalisePreference(info?.preference),
+        accent: typeof info?.accent === "string" ? info.accent : null,
+      };
+    } catch (error) {
+      // A desktop that cannot answer still gets the fallback palette.
+      window.uilog && window.uilog(`appearance unavailable: ${errorText(error)}`);
+    }
+    paintAppearance();
+  }
+
+  async function setThemePreference(preference) {
+    appearance.preference = normalisePreference(preference);
+    paintAppearance();
+    try {
+      await api.setThemePreference(appearance.preference);
+    } catch (error) {
+      toast(errorText(error), "error");
+    }
+  }
+
+  function applyPlatform(info) {
+    document.documentElement.dataset.platform = platformScope(info || {});
+    if (document.documentElement.dataset.platform === "windows") {
+      setNavMode(initialNavMode(window.innerWidth));
+    }
+  }
+
   darkQuery.addEventListener("change", () => {
-    if (document.documentElement.dataset.platform === "windows") applyAccent(themeInfo);
+    if (appearance.preference === "system") loadAppearance();
   });
+
+  await loadAppearance();
 
   function toast(text, kind = "") {
     const node = el("div", { class: `toast ${kind}`.trim(), text });
@@ -135,7 +156,15 @@ async function main() {
   }
 
   const store = createStore({ onError: (error) => toast(errorText(error), "error") });
-  const ctx = { store, catalog, toast, go, showReport };
+  const ctx = {
+    store,
+    catalog,
+    toast,
+    go,
+    showReport,
+    setThemePreference,
+    themePreference: () => appearance.preference,
+  };
 
   // The update reminder strip, between the topbar and the screen. Hidden until
   // GitHub says there is a newer release.
@@ -399,7 +428,7 @@ async function main() {
     const info = await api.appInfo();
     window.uilog && window.uilog(`app_info: ${JSON.stringify(info)}`);
     ctx.platform = info.platform;
-    applyTheme(info);
+    applyPlatform(info);
     // A quiet start-of-day reminder: GitHub is asked once per launch, and an
     // offline machine (or a rate-limited one) simply sees no banner.
     api

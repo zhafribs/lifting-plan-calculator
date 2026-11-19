@@ -1,7 +1,7 @@
 // About: what the app does, who built it, and the warning that matters.
 
 import { el } from "../dom.js";
-import { card, kvRows } from "../components.js";
+import { card, field, kvRows, selectInput } from "../components.js";
 import { api, errorText } from "../api.js";
 
 const REPO_URL = "https://github.com/zhafribs/lifting-plan-calculator";
@@ -112,6 +112,34 @@ export function createAboutScreen(ctx) {
           ["Phone", catalog.contact_phone],
         ]),
         el("p", { class: "faint small", style: { margin: "10px 2px 0" }, text: "The figures are checked against the crane's own load chart before a lift is made — a lifting plan is only as good as the person who checks it." }),
+      ),
+    }),
+    card({
+      title: "Appearance",
+      body: el(
+        "div",
+        {},
+        el("p", {
+          class: "muted small",
+          style: { margin: "0 0 10px" },
+          text:
+            "The palette follows the desktop's light or dark preference and borrows its " +
+            "accent colour when one is published, so it sits alongside the rest of the " +
+            "system. Otherwise it uses its own neutral pair.",
+        }),
+        field({
+          label: "Colour scheme",
+          hint: "Matching the desktop is what most desktops expect; the other two override it.",
+          input: selectInput({
+            options: [
+              { key: "system", label: "Match the desktop" },
+              { key: "light", label: "Light" },
+              { key: "dark", label: "Dark" },
+            ],
+            value: ctx.themePreference ? ctx.themePreference() : "system",
+            onChange: (value) => ctx.setThemePreference && ctx.setThemePreference(value),
+          }),
+        }),
       ),
     }),
     card({

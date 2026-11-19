@@ -2,6 +2,20 @@
 
 Nothing yet.
 
+## [2.16.13] - 2026-11-19
+
+### Changed
+
+- **The Add buttons follow the palette.** They were a fixed green that had no
+  relation to the desktop accent; they now use the accent-tinted fill and border
+  with the normal text colour. Success and warning bands keep their semantic
+  green.
+- **Explicit Light and Dark surfaces carry the palette accent.** The tint was so
+  faint that the result read as flat white or black. The app's own ladder is now
+  visibly tinted from the wallpaper accent, giving cream/light brown and dark
+  brown for a brown accent, and the matching lavender pair. `Match the
+  desktop` still uses the desktop's exact palette.
+
 ## [2.16.12] - 2026-11-19
 
 ### Fixed

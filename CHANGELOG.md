@@ -2,6 +2,26 @@
 
 Nothing yet.
 
+## [2.16.5] - 2026-11-19
+
+### Added
+
+- **A Settings tab**, above About, holding the appearance: Match the desktop,
+  Light or Dark, and a line saying where the accent came from. It left the About
+  page, which keeps the update path and the credits.
+
+- **Help for the Arch update when polkit is missing.** The in-app update needs
+  pkexec and a running polkit agent. When either is absent, About now says which
+  one and offers the command that installs it — `polkit` itself, or
+  `hyprpolkitagent` on Hyprland (`polkit-gnome` elsewhere) — then you press the
+  button again. A cancelled password prompt installs nothing and suggests
+  nothing.
+
+### Changed
+
+- The manual `sudo pacman -U` command is always offered next to the packaging
+  help, for an operator who would rather not use the button at all.
+
 ## [2.16.4] - 2026-11-19
 
 ### Fixed

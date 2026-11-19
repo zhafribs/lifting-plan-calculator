@@ -72,6 +72,8 @@ const ICONS = {
     '<path d="M7 3.5h7.5L19 8v12.5H7z"/><path d="M14.5 3.5V8H19"/><path d="M10 12h6M10 15.5h6M10 18h3.5"/>',
   about:
     '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r="0.9" fill="currentColor" stroke="none"/>',
+  settings:
+    '<path d="M4 7h6M16 7h4"/><path d="M4 12h3M13 12h7"/><path d="M4 17h6M16 17h4"/><circle cx="13" cy="7" r="2.2"/><circle cx="10" cy="12" r="2.2"/><circle cx="13" cy="17" r="2.2"/>',
   plus: '<path d="M12 5.5v13M5.5 12h13"/>',
   menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
   close: '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',

@@ -21,6 +21,7 @@ import { createNonuniformScreen } from "./screens/nonuniform.js";
 import { createTandemScreen } from "./screens/tandem.js";
 import { createReportScreen } from "./screens/report.js";
 import { createAboutScreen } from "./screens/about.js";
+import { createSettingsScreen } from "./screens/settings.js";
 
 const NAV = [
   {
@@ -49,6 +50,7 @@ const NAV = [
   {
     group: "Help",
     items: [
+      { key: "settings", label: "Settings", icon: "settings", title: "Settings", subtitle: "The appearance, and where its colours come from." },
       { key: "about", label: "About", icon: "about", title: "About", subtitle: "What this app does, and the person behind it." },
     ],
   },
@@ -290,6 +292,7 @@ async function main() {
     nonuniform: createNonuniformScreen(ctx),
     tandem: createTandemScreen(ctx),
     report: createReportScreen(ctx),
+    settings: createSettingsScreen(ctx),
     about: createAboutScreen(ctx),
   };
 

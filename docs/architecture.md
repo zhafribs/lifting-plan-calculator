@@ -49,7 +49,7 @@ Rust (src-tauri/src)
 | File | Responsibility |
 | --- | --- |
 | `app.js` | The shell: navigation, topbar, toasts, appearance, update banner. |
-| `screens/overall.js`, `crane.js`, `outrigger.js`, `uniform.js`, `nonuniform.js`, `tandem.js`, `report.js`, `about.js` | One tab each. |
+| `screens/overall.js`, `crane.js`, `outrigger.js`, `uniform.js`, `nonuniform.js`, `tandem.js`, `report.js`, `settings.js`, `about.js` | One tab each. |
 | `screens/graph.js` | The working-range diagram: drawing, interaction, capture. |
 | `graph/geometry.js` | Diagram geometry, no DOM. |
 | `graph/print-palette.js` | Turns the dark palette into print colours in the bitmap. |

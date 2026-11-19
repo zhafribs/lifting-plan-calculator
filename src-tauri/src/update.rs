@@ -633,6 +633,14 @@ pub fn installed_from_package() -> bool {
     false
 }
 
+/// What to install or start so the in-app update can work at all.
+#[derive(Debug, Serialize)]
+pub struct SetupHint {
+    pub reason: String,
+    /// Runnable commands, in order, each shown with a copy button.
+    pub commands: Vec<String>,
+}
+
 /// What happened when the app tried to install an Arch package.
 #[derive(Debug, Serialize)]
 pub struct PackageUpdate {
@@ -640,6 +648,71 @@ pub struct PackageUpdate {
     pub installed: bool,
     /// The command the operator can run when it did not, with the verified file.
     pub command: String,
+    /// The missing piece, when the update could not even ask for a password.
+    pub setup: Option<SetupHint>,
+}
+
+/// Why the authorisation did not happen.
+#[derive(Debug, PartialEq)]
+enum AuthFailure {
+    /// pkexec itself is not installed.
+    Missing,
+    /// pkexec is there, but nothing is running to ask for the password.
+    NoAgent,
+    /// The operator closed the prompt.
+    Cancelled,
+    Other,
+}
+
+fn auth_failure(stderr: &str, code: Option<i32>) -> AuthFailure {
+    let text = stderr.to_ascii_lowercase();
+    if text.contains("no authentication agent") {
+        return AuthFailure::NoAgent;
+    }
+    if text.contains("not found") || text.contains("no such file") {
+        return AuthFailure::Missing;
+    }
+    if code == Some(126) {
+        return AuthFailure::Cancelled;
+    }
+    AuthFailure::Other
+}
+
+/// The suggestion for a failed authorisation. `hyprland` picks the agent that
+/// desktop actually uses; everything else gets the generic GNOME agent.
+fn setup_for(failure: &AuthFailure, hyprland: bool) -> Option<SetupHint> {
+    match failure {
+        AuthFailure::Missing => Some(SetupHint {
+            reason: "The app installs its update through pkexec, which comes with polkit."
+                .to_string(),
+            commands: vec!["sudo pacman -S --needed polkit".to_string()],
+        }),
+        AuthFailure::NoAgent => {
+            let (package, start) = if hyprland {
+                (
+                    "hyprpolkitagent",
+                    "systemctl --user enable --now hyprpolkitagent".to_string(),
+                )
+            } else {
+                ("polkit-gnome", "polkit-gnome-authentication-agent-1 &".to_string())
+            };
+            Some(SetupHint {
+                reason: format!(
+                    "pkexec is installed, but no polkit agent is running to ask for the password. \
+                     {package} provides one."
+                ),
+                commands: vec![format!("sudo pacman -S --needed {package}"), start],
+            })
+        }
+        AuthFailure::Cancelled | AuthFailure::Other => None,
+    }
+}
+
+fn on_hyprland() -> bool {
+    std::env::var_os("HYPRLAND_INSTANCE_SIGNATURE").is_some()
+        || std::env::var("XDG_CURRENT_DESKTOP")
+            .map(|desktop| desktop.to_ascii_lowercase().contains("hyprland"))
+            .unwrap_or(false)
 }
 
 /// Linux package: download the release's `pkg.tar.zst`, verify its checksum,
@@ -668,13 +741,26 @@ pub fn install_package(asset: &InstallerAsset) -> Result<PackageUpdate, String> 
     verified_download(asset, &target)?;
 
     let command = format!("sudo pacman -U '{}'", target.display());
-    let installed = std::process::Command::new("pkexec")
+    let mut installed = false;
+    let mut setup = None;
+    match std::process::Command::new("pkexec")
         .args(["pacman", "-U", "--noconfirm"])
         .arg(&target)
-        .status()
-        .map(|status| status.success())
-        .unwrap_or(false);
-    Ok(PackageUpdate { installed, command })
+        .output()
+    {
+        Ok(output) if output.status.success() => installed = true,
+        Ok(output) => {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            setup = setup_for(&auth_failure(&stderr, output.status.code()), on_hyprland());
+        }
+        // pkexec is not installed at all.
+        Err(_) => setup = setup_for(&AuthFailure::Missing, on_hyprland()),
+    }
+    Ok(PackageUpdate {
+        installed,
+        command,
+        setup,
+    })
 }
 
 #[cfg(not(target_os = "linux"))]
@@ -734,6 +820,40 @@ pub fn quit_app(app: tauri::AppHandle) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_authorisation_failure_is_named() {
+        assert_eq!(
+            auth_failure("Error executing command as another user: No authentication agent found.", Some(127)),
+            AuthFailure::NoAgent
+        );
+        assert_eq!(auth_failure("", Some(126)), AuthFailure::Cancelled);
+        assert_eq!(auth_failure("pkexec: command not found", Some(127)), AuthFailure::Missing);
+        assert_eq!(auth_failure("something else", Some(1)), AuthFailure::Other);
+    }
+
+    #[test]
+    fn a_missing_polkit_is_names_and_installs() {
+        let hint = setup_for(&AuthFailure::Missing, false).expect("a hint");
+        assert!(hint.commands[0].contains("polkit"));
+        assert!(hint.reason.to_lowercase().contains("pkexec"));
+    }
+
+    #[test]
+    fn a_missing_agent_gets_the_desktops_agent() {
+        let hypr = setup_for(&AuthFailure::NoAgent, true).expect("a hint");
+        assert!(hypr.commands[0].contains("hyprpolkitagent"));
+        assert!(hypr.commands[1].contains("systemctl"));
+
+        let other = setup_for(&AuthFailure::NoAgent, false).expect("a hint");
+        assert!(other.commands[0].contains("polkit-gnome"));
+    }
+
+    #[test]
+    fn a_cancelled_prompt_suggests_nothing_to_install() {
+        assert!(setup_for(&AuthFailure::Cancelled, true).is_none());
+        assert!(setup_for(&AuthFailure::Other, true).is_none());
+    }
 
     #[cfg(target_os = "linux")]
     #[test]

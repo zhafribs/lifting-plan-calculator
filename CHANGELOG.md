@@ -2,6 +2,15 @@
 
 Nothing yet.
 
+## [2.16.2] - 2026-11-19
+
+### Changed
+
+- The code is split by responsibility, with a written map in
+  [`docs/architecture.md`](docs/architecture.md): the report's stylesheet moved
+  to `report_style.rs`, and the palettes and measurements moved out of `app.css`
+  to `tokens.css`. No behaviour changed.
+
 ## [2.16.1] - 2026-11-19
 
 ### Added

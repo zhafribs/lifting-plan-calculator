@@ -20,6 +20,7 @@ pub mod pdf_print;
 pub mod pdf_windows;
 pub mod report;
 pub mod report_capacity;
+pub mod report_style;
 pub mod report_nonuniform;
 pub mod report_outrigger;
 pub mod report_uniform;

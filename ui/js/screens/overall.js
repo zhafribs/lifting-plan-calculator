@@ -5,6 +5,7 @@ import { el, svgIcon } from "../dom.js";
 import {
   card,
   emptyState,
+  kvRows,
   numberInput,
   selectInput,
   textInput,
@@ -319,38 +320,23 @@ export function createOverallScreen(ctx) {
     );
 
     const totals = solved.totals;
-    const summaryRow = (label, value, kind = "", extra = "one-line") =>
-      el(
-        "div",
-        { class: `kv-row summary ${extra}`.trim() },
-        el("span", { class: "k", text: label }),
-        el(
-          "span",
-          { class: `v ${kind}`.trim() },
-          el("span", { class: "v-value", text: fmt(value, 2, "") }),
-          el("span", { class: "v-unit", text: "kg" }),
-        ),
-      );
-    const summary = el(
-      "div",
-      { class: "kv" },
-      summaryRow("Total load weight", totals.load),
-      summaryRow("Lifting tackle weight", totals.tackle),
-      summaryRow(
-        "Overall weight",
-        totals.gross,
-        totals.gross > 0 ? "accent" : "",
-        "big one-line",
-      ),
-      summaryRow(
-        "Min. crane rating (75%)",
-        totals.required_chart_capacity,
-        totals.required_chart_capacity > 0 ? "caution" : "",
-        "big one-line",
-      ),
-    );
     summaryBox.replaceChildren(
-      summary,
+      kvRows([
+        ["Total load weight", fmt(totals.load, 2, "kg"), "", "one-line"],
+        ["Lifting tackle weight", fmt(totals.tackle, 2, "kg"), "", "one-line"],
+        [
+          "Overall weight",
+          fmt(totals.gross, 2, "kg"),
+          totals.gross > 0 ? "accent" : "",
+          "big one-line",
+        ],
+        [
+          "Min. crane rating (75%)",
+          fmt(totals.required_chart_capacity, 2, "kg"),
+          totals.required_chart_capacity > 0 ? "caution" : "",
+          "big one-line",
+        ],
+      ]),
       el("p", {
         class: "faint small",
         style: { margin: "10px 2px 0" },

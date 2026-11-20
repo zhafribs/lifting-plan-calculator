@@ -49,6 +49,8 @@ Weight by Volume ▾   ×   1   [ 12.5 m3 ]   [ 2,400 kg/m3 ]
   each`) and no measured-by, so its right edge matches the load card.
 - The Weight summary uses the same scale: figures at 600 weight and a small
   muted unit, with the overall weight still the only coloured figure.
+- The shared `kvRows` now splits a formatted figure from its unit once, so the
+  crane, sling, outrigger and tandem results use the same scale as well.
 - The column header, per-field label markup, grid templates and narrow-window
   fallbacks are gone; each input keeps an `aria-label` for its name.
 

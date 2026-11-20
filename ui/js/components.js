@@ -277,6 +277,21 @@ function openSelectMenu(select) {
   paintSelectHighlight();
 }
 
+// A figure and its trailing unit, when the value is a plain formatted number.
+// The unit then renders one step smaller, as in the item rows.
+const VALUE_UNIT = /^([-+]?[\d.,]+)\s+(kg\/m3|kg\/m³|m3|m³|m2|m²|kg|kN\/m2|kN|kPa|MPa|mm|m|t|deg|°|%)$/;
+
+function valueNode(value, kind) {
+  const match = typeof value === "string" ? value.match(VALUE_UNIT) : null;
+  if (!match) return el("span", { class: `v ${kind || ""}`, text: value });
+  return el(
+    "span",
+    { class: `v v-split ${kind || ""}`.trim() },
+    el("span", { class: "v-value", text: match[1] }),
+    el("span", { class: "v-unit", text: match[2] }),
+  );
+}
+
 export function kvRows(rows) {
   const box = el("div", { class: "kv" });
   for (const row of rows) {
@@ -287,7 +302,7 @@ export function kvRows(rows) {
         "div",
         { class: `kv-row${row[3] ? ` ${row[3]}` : ""}` },
         el("span", { class: "k", text: label }),
-        typeof value === "string" ? el("span", { class: `v ${kind || ""}`, text: value }) : value,
+        typeof value === "string" ? valueNode(value, kind) : value,
       ),
     );
   }

@@ -809,17 +809,21 @@ select option { background: var(--surface-2); }
 .kv-row .v.accent { color: var(--accent); }
 
 /* The summary reads like the item rows: the figure at 600, its unit small. */
-.kv-row.summary .v {
-  display: flex;
+/* A figure and its unit: the value keeps the row's weight, the unit steps
+   down and stays quiet. Used by every result list in the app. */
+.kv-row .v { font-weight: 600; }
+
+.kv-row.big .v,
+.kv-row.mega .v { font-weight: 700; }
+
+.kv-row .v-split {
+  display: inline-flex;
   align-items: baseline;
   justify-content: flex-end;
   gap: 3px;
-  font-weight: 600;
 }
 
-.kv-row.summary.big .v { font-weight: 700; }
-
-.kv-row.summary .v-unit {
+.kv-row .v-unit {
   font-size: 11px;
   font-weight: 500;
   color: inherit;

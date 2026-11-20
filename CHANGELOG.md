@@ -10,9 +10,10 @@
   instead of nested cards; the measured-by keeps its full label at its own
   width; the description keeps a soft field edge so it reads as typeable, and
   the add row is dashed in the accent colour. Nothing is clipped at the 720px
-  window with the rail expanded. The Weight summary follows the same scale —
-  600-weight figures with a small muted unit — so the overall weight stays the
-  one coloured hero figure.
+  window with the rail expanded. Every result list in the app follows the same
+  scale — 600-weight figures with a small muted unit — so the overall weight
+  stays the one coloured hero figure and the crane, sling, outrigger and tandem
+  figures read the same as the item rows.
 
 ## [2.17.6] - 2026-11-20
 

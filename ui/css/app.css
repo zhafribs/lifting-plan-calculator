@@ -784,6 +784,17 @@ select option { background: var(--surface-2); }
   .tackle-row > *:nth-child(5) { position: absolute; top: 10px; right: 10px; }
 }
 
+/* With the rail expanded beside a small window the card can shrink below the
+   width the two-line fixed row needs. The old row kept the dropdown at 156px
+   and let the quantity's flexible column collapse under it. Below 485px the
+   quantity gets its own 62px column and the dropdown takes the space that is
+   left, so it sits between the quantity and the value box on the same line. */
+@container (max-width: 485px) {
+  .load-row:not(.two-measure) {
+    grid-template-columns: 62px minmax(0, 1fr) var(--wbox) 96px;
+  }
+}
+
 /* ---------- key/value rows ----------------------------------------------- */
 
 .kv { display: flex; flex-direction: column; }

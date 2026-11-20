@@ -1,3 +1,14 @@
+## [2.17.6] - 2026-11-20
+
+### Fixed
+
+- **The fixed-weight dropdown stays between the quantity and the value box.**
+  With the rail expanded in a small window, the card shrank below the row's
+  width; the 62px quantity slid under the 156px dropdown and clipped "Fixed"
+  to "ed". Below a 485px card the quantity has its own column and the dropdown
+  takes the space left between it and the value box, so the row stays on two
+  lines without overlapping.
+
 ## [2.17.5] - 2026-11-20
 
 ### Fixed

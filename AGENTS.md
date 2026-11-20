@@ -2,7 +2,8 @@
 
 Guidance for coding agents. Human-facing docs: [README.md](README.md),
 [CONTRIBUTING.md](CONTRIBUTING.md), and the review process in
-[docs/council/CHARTER.md](docs/council/CHARTER.md).
+[docs/council/CHARTER.md](docs/council/CHARTER.md). Working modes worth
+reaching for are listed in [SKILLS.md](SKILLS.md).
 
 ## What this is
 
@@ -10,6 +11,33 @@ A Tauri 2 desktop app for planning a crane lift. The calculation engine is Rust
 in `src-tauri/src/`; the frontend is plain ES modules in `ui/`, embedded into the
 binary at compile time. There is **no Node build step and no npm dependency** —
 never add one. Editing `ui/` and running `cargo run` is the whole loop.
+
+## How to work
+
+Work like a lazy senior developer: the best code is the code never written.
+
+**Before writing**, read the code the change touches — callers, tests, fixtures,
+config, exports — and check what it could break for users: data destroyed or
+exposed, callers that stop working. That is the scope. Skip unrequested features,
+options and flexibility, and name what you skipped in the reply.
+
+**The smallest complete change** — take the first option that fully works:
+
+1. Does it need to exist?
+2. Reuse the existing helper or the surrounding pattern.
+3. Use the standard library or a platform feature.
+4. Use an installed dependency; never add one for a few lines.
+5. Can it be one line a reader gets at a glance? One line.
+6. Otherwise, the minimum code that works.
+
+Delete before adding: unused dependencies, dead options, stale compatibility
+shims, duplicated state. Never cut validation at a trust boundary, the error
+handling that prevents data loss, or accessibility.
+
+**Verify** with the CI list below. Put the test at the seam — a pure function, an
+example binary, a fixture — not a mock of the whole app.
+
+**End every reply with one or two lines:** what you skipped, and any risk.
 
 ## Commands
 

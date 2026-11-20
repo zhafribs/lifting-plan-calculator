@@ -122,7 +122,159 @@ export function selectInput({ options, value, onChange, disabled = false }) {
   select.addEventListener("change", () => {
     if (onChange) onChange(select.value);
   });
+
+  // The platform's dropdown is a separate window that renders as a huge box
+  // over the control under XWayland. The <select> still holds the value,
+  // focus and keyboard state; only its list is drawn here.
+  select.setAttribute("aria-haspopup", "listbox");
+  select.setAttribute("aria-expanded", "false");
+  select.addEventListener("pointerdown", (event) => {
+    if (select.disabled) return;
+    event.preventDefault();
+    select.focus();
+    if (menuOwner === select && selectMenu && !selectMenu.hidden) closeSelectMenu();
+    else openSelectMenu(select);
+  });
+  select.addEventListener("click", (event) => event.preventDefault());
+  select.addEventListener("keydown", (event) => {
+    const open = menuOwner === select && selectMenu && !selectMenu.hidden;
+    if (!open) {
+      if (
+        event.key === "Enter" ||
+        event.key === " " ||
+        (event.key === "ArrowDown" && event.altKey)
+      ) {
+        event.preventDefault();
+        openSelectMenu(select);
+      }
+      return;
+    }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      moveSelectHighlight(1);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      moveSelectHighlight(-1);
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      menuItems[menuIndex] && menuItems[menuIndex].click();
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      closeSelectMenu();
+      select.focus();
+    } else if (event.key === "Tab") {
+      closeSelectMenu();
+    }
+  });
   return select;
+}
+
+let selectMenu = null;
+let menuOwner = null;
+let menuItems = [];
+let menuIndex = 0;
+
+function closeSelectMenu() {
+  if (!selectMenu) return;
+  selectMenu.hidden = true;
+  if (menuOwner) menuOwner.setAttribute("aria-expanded", "false");
+  menuOwner = null;
+}
+
+function paintSelectHighlight() {
+  menuItems.forEach((item, index) => {
+    item.classList.toggle("is-active", index === menuIndex);
+  });
+  const active = menuItems[menuIndex];
+  if (active) active.scrollIntoView({ block: "nearest" });
+}
+
+function moveSelectHighlight(delta) {
+  if (!menuItems.length) return;
+  menuIndex = (menuIndex + delta + menuItems.length) % menuItems.length;
+  paintSelectHighlight();
+}
+
+function chooseSelectOption(select, option) {
+  const changed = select.value !== option.value;
+  select.value = option.value;
+  closeSelectMenu();
+  select.focus();
+  // Match the platform: a change event only when the value actually moves.
+  if (changed) select.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+function ensureSelectMenu() {
+  if (selectMenu) return selectMenu;
+  selectMenu = el("div", { class: "select-menu", role: "listbox", hidden: true });
+  document.body.append(selectMenu);
+  document.addEventListener(
+    "pointerdown",
+    (event) => {
+      if (!selectMenu || selectMenu.hidden) return;
+      if (selectMenu.contains(event.target)) return;
+      if (menuOwner && menuOwner.contains(event.target)) return;
+      closeSelectMenu();
+    },
+    true,
+  );
+  window.addEventListener("resize", closeSelectMenu);
+  window.addEventListener("scroll", closeSelectMenu, true);
+  return selectMenu;
+}
+
+function openSelectMenu(select) {
+  if (select.disabled) return;
+  const menu = ensureSelectMenu();
+  const entries = [];
+  for (const child of select.children) {
+    if (child.tagName === "OPTGROUP") {
+      for (const option of child.children) entries.push({ option, group: child.label });
+    } else if (child.tagName === "OPTION") {
+      entries.push({ option: child });
+    }
+  }
+  if (!entries.length) return;
+  menu.replaceChildren();
+  let group = null;
+  for (const { option, group: label } of entries) {
+    if (label && label !== group) {
+      group = label;
+      menu.append(el("div", { class: "select-group", text: label }));
+    }
+    menu.append(
+      el(
+        "button",
+        {
+          type: "button",
+          class: "select-option",
+          role: "option",
+          "aria-selected": option.selected ? "true" : "false",
+          onClick: () => chooseSelectOption(select, option),
+        },
+        option.text,
+      ),
+    );
+  }
+  menuItems = [...menu.querySelectorAll(".select-option")];
+  menuIndex = Math.max(0, entries.findIndex(({ option }) => option.selected));
+  paintSelectHighlight();
+
+  menu.hidden = false;
+  menuOwner = select;
+  select.setAttribute("aria-expanded", "true");
+  const box = select.getBoundingClientRect();
+  const width = Math.min(Math.max(box.width, 190), window.innerWidth - 16);
+  menu.style.width = `${width}px`;
+  menu.style.left = `${Math.max(8, Math.min(box.left, window.innerWidth - width - 8))}px`;
+  const height = menu.offsetHeight;
+  const below = box.bottom + 4;
+  menu.style.top = `${
+    below + height > window.innerHeight - 8
+      ? Math.max(8, box.top - height - 4)
+      : below
+  }px`;
+  paintSelectHighlight();
 }
 
 export function kvRows(rows) {

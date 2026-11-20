@@ -1,3 +1,14 @@
+## [2.17.5] - 2026-11-20
+
+### Fixed
+
+- **Dropdowns are drawn by the app, not left to the platform.** A native
+  dropdown opens as its own window; on some Linux compositors that window is
+  oversized and covers the control, which made the selected text look clipped
+  and the list enormous. Every dropdown now opens a compact app-drawn list —
+  grouped where the options are grouped — while the underlying `<select>` keeps
+  the value, focus and keyboard behaviour.
+
 ## [2.17.4] - 2026-11-20
 
 ### Fixed

@@ -142,6 +142,9 @@ Builds: `./build-appimage.sh` (host) or `./build-appimage-portable.sh`
 
 - Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:` …), imperative subject.
 - Match the surrounding code; comments explain *why*, not *what*.
+- Prose in docs, comments, commit bodies and replies follows the `humanizer`
+  mode in [SKILLS.md](SKILLS.md): state the point, no inflated significance, no
+  one-line closers. It never licenses changing a figure or a verdict.
 - User-visible changes get a `CHANGELOG.md` entry under `[Unreleased]`, in the
   same words the release notes will use.
 - Keep changes focused: one topic per PR, no drive-by refactors.

@@ -1,6 +1,18 @@
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- `SKILLS.md` gains a `humanizer` mode, adapted from `blader/humanizer` (MIT):
+  the prose rules for docs, release notes and replies.
+
+### Fixed
+
+- **An update download is bounded.** The installer or AppImage is capped at
+  512 MiB and hashed in chunks, so a broken or hostile release endpoint can no
+  longer exhaust memory by sending an endless body.
+- **Saving the HTML report is atomic.** The page is written beside the chosen
+  file and moved into place, so a failed save leaves the previous report intact
+  instead of a truncated one.
 
 ## [2.17.1] - 2026-11-20
 

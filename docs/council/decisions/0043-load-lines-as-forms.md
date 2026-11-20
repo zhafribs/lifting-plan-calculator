@@ -47,6 +47,8 @@ Weight by Volume ▾   ×   1   [ 12.5 m3 ]   [ 2,400 kg/m3 ]
   the card.
 - The Lifting tackle card uses the same ledger with one value box (`Weight
   each`) and no measured-by, so its right edge matches the load card.
+- The Weight summary uses the same scale: figures at 600 weight and a small
+  muted unit, with the overall weight still the only coloured figure.
 - The column header, per-field label markup, grid templates and narrow-window
   fallbacks are gone; each input keeps an `aria-label` for its name.
 

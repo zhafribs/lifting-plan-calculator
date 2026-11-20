@@ -808,6 +808,24 @@ select option { background: var(--surface-2); }
 .kv-row .v.over { color: var(--over-text); }
 .kv-row .v.accent { color: var(--accent); }
 
+/* The summary reads like the item rows: the figure at 600, its unit small. */
+.kv-row.summary .v {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 3px;
+  font-weight: 600;
+}
+
+.kv-row.summary.big .v { font-weight: 700; }
+
+.kv-row.summary .v-unit {
+  font-size: 11px;
+  font-weight: 500;
+  color: inherit;
+  opacity: 0.68;
+}
+
 .kv .sub {
   font-size: 11.5px;
   color: var(--faint);

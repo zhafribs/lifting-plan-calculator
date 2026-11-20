@@ -2,6 +2,19 @@
 
 Nothing yet.
 
+## [2.17.1] - 2026-11-20
+
+### Added
+
+- `AGENTS.md`, guidance for coding agents: the build and test commands, the
+  project layout, and the rules the build enforces. No application change — the
+  installed app behaves exactly as 2.17.0.
+
+### Changed
+
+- `AGENTS.md` names all three files that carry the version: `Cargo.toml`,
+  `tauri.conf.json` and `Cargo.lock`.
+
 ## [2.17.0] - 2026-11-19
 
 ### Added

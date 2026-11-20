@@ -60,8 +60,9 @@ Builds: `./build-appimage.sh` (host) or `./build-appimage-portable.sh`
 
 - **Do not edit expected test values to make a test pass.** The suite carries the
   original Kotlin tests' own literals; a drift in the arithmetic must fail.
-- The version lives in **two** files — `src-tauri/Cargo.toml` and
-  `src-tauri/tauri.conf.json`. Bump both together.
+- The version lives in **three** places — `src-tauri/Cargo.toml`,
+  `src-tauri/tauri.conf.json` (the release gate reads this one) and the
+  `lifting-plan-calculator` entry in `src-tauri/Cargo.lock`. Bump all three.
 - A tag is refused without `docs/releases/<tag>.md` naming that version and an
   accepted council record naming the tag. The notes are the release page; never
   reuse an earlier release's notes.

@@ -388,6 +388,50 @@ jobs:
           fi
           ls -l dist
 
+      # The install is more than an executable: the licence, the copyright line
+      # and the third-party notices are part of the package. Lay both installers
+      # out where a user would see them, so the payload is proven rather than
+      # assumed, then uninstall again.
+      - name: Check the installed layout
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $required = @("LICENSE", "COPYRIGHT", "THIRD_PARTY_NOTICES.md", "licenses")
+
+          function Assert-Layout($files, $where) {
+            $files | Sort-Object | Write-Output
+            if (-not ($files | Where-Object { $_ -like "*.exe" })) {
+              throw "$where installs no executable"
+            }
+            foreach ($name in $required) {
+              if (-not ($files | Where-Object { $_ -like "*$name*" })) {
+                throw "$where installs no $name"
+              }
+            }
+          }
+
+          # MSI administrative install: the file table without running the app.
+          $msi = Get-ChildItem "src-tauri/target/release/bundle/msi" -Filter *.msi | Select-Object -First 1
+          if (-not $msi) { throw "no MSI to check" }
+          $flat = Join-Path $env:RUNNER_TEMP "msi-layout"
+          Start-Process msiexec.exe -Wait -ArgumentList @(
+            "/a", "`"$($msi.FullName)`"", "/qn", "TARGETDIR=`"$flat`""
+          )
+          $msiFiles = Get-ChildItem -Recurse -File $flat |
+            ForEach-Object { $_.FullName.Substring($flat.Length + 1) }
+          Assert-Layout $msiFiles "the MSI"
+
+          # NSIS silent install: what the setup .exe leaves in Program Files.
+          $setup = Get-ChildItem "src-tauri/target/release/bundle/nsis" -Filter *.exe | Select-Object -First 1
+          if (-not $setup) { throw "no NSIS setup to check" }
+          Start-Process -FilePath $setup.FullName -ArgumentList "/S" -Wait
+          $appDir = Join-Path $env:ProgramFiles "Lifting Plan Calculator"
+          if (-not (Test-Path $appDir)) { throw "the NSIS installer created no $appDir" }
+          $installed = Get-ChildItem -Recurse -File $appDir |
+            ForEach-Object { $_.FullName.Substring($appDir.Length + 1) }
+          Assert-Layout $installed "the NSIS installer"
+          Start-Process -FilePath (Join-Path $appDir "uninstall.exe") -ArgumentList "/S" -Wait
+
       - name: Record the build-time digests
         shell: pwsh
         run: |

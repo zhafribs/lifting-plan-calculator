@@ -669,6 +669,7 @@ select option { background: var(--surface-2); }
 
 .row-working {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   min-width: 0;
@@ -707,14 +708,14 @@ select option { background: var(--surface-2); }
   text-align: right;
 }
 
-/* One or two value boxes. Each keeps its unit's width; if the line is too
-   narrow they wrap, and nothing is ever clipped. */
+/* One or two value boxes. The pair is a single unit: it keeps its boxes side
+   by side and, when the working line is too narrow, the pair moves to its own
+   line rather than stacking the two boxes. */
 .row-measure {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
   flex: 1 1 auto;
-  min-width: 0;
 }
 
 .row-measure > * { flex: 1 1 92px; min-width: 76px; max-width: 160px; }
@@ -800,6 +801,7 @@ select option { background: var(--surface-2); }
 
 /* Summary rows that must never wrap: the label stays on one line (clipped with
    an ellipsis at the very narrowest widths) and the value never breaks. */
+.kv-row.one-line { grid-template-columns: minmax(0, 1fr) auto; }
 .kv-row.one-line .k { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .kv-row.one-line .v { white-space: nowrap; }
 .kv-row.mega .v { font-size: 24px; color: var(--text); }

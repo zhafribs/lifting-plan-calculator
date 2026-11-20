@@ -87,3 +87,6 @@ Weight by Volume ▾   ×   1   [ 12.5 m3 ]   [ 2,400 kg/m3 ]
   boxes grow.
 - Widths were derived from font metrics and checked by hand, not by an
   automated visual test.
+- A two-box measurement never stacks: if the working line is too narrow, the
+  pair moves to its own line. Summary rows use a content-sized value column so
+  a long figure cannot run into its label.

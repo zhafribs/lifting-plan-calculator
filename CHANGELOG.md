@@ -2,6 +2,9 @@
 
 ### Changed
 
+- **The outrigger report no longer repeats the stiffener rule.** The section
+  already prints "Stiffeners: required, or use a 40–50 mm plate"; the note two
+  lines below said the same thing in prose. The flag and the row stay.
 - **Load and tackle lines are ledger rows.** Each line leads with its identity
   and its result — description on the left, subtotal on the right, sharing one
   edge down the card — and carries the working underneath: the measured-by
@@ -14,6 +17,12 @@
   scale — 600-weight figures with a small muted unit — so the overall weight
   stays the one coloured hero figure and the crane, sling, outrigger and tandem
   figures read the same as the item rows.
+
+### Fixed
+
+- **A two-box measurement never stacks.** When the working line is too narrow,
+  the pair moves to a line of its own and stays side by side. The summary's
+  one-line values also stop running into their labels at narrow widths.
 
 ## [2.17.6] - 2026-11-20
 

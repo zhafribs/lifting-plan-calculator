@@ -39,6 +39,30 @@ example binary, a fixture — not a mock of the whole app.
 
 **End every reply with one or two lines:** what you skipped, and any risk.
 
+## Review gate — three seats, 8/10
+
+Before any change lands, three seats read it independently. Each scores out of
+10 against its own checklist, and **every seat must score 8.0 or more** — a seat
+below 8 blocks, lists the required changes, and re-scores them.
+
+| Seat | Owns | Always summoned for |
+| --- | --- | --- |
+| **Safety & QA** | The arithmetic, the verdicts, the tests and what they prove | Any figure, limit, verdict, or the words describing one |
+| **Security & Build** | Inputs, file writes, network calls, dependencies, the release pipeline | Anything under `.github/`, a dependency change, a new call or write |
+| **Design & Steward** | Conventions, readability, accessibility, upkeep cost, honesty of scope | Any UI or public-facing text |
+
+Rules:
+
+- A seat cannot score its own work; the author answers questions only.
+- A safety, security or data-integrity defect is a blocker whatever the score.
+- A change that scores below 8 does not land. Nothing is "waived for now" — the
+  scope is cut instead.
+- Evidence, not adjectives: a score cites the file, the line or the command it
+  rests on.
+- This is the agent-side gate. It does not replace
+  [docs/council/CHARTER.md](docs/council/CHARTER.md): a release tag still needs
+  an accepted record in `docs/council/decisions/` naming the tag.
+
 ## Commands
 
 ```bash

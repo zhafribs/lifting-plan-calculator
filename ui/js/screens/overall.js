@@ -29,27 +29,6 @@ export function createOverallScreen(ctx) {
   );
   const summaryBox = el("div", {});
 
-  const loadHead = el(
-    "div",
-    { class: "rows-head load-head" },
-    el("span", { text: "Description" }),
-    el("span", { text: "Measured by" }),
-    el("span", { text: "Qty", style: { textAlign: "center" } }),
-    el("span", { text: "Measurement" }),
-    el("span", { text: "Subtotal", style: { textAlign: "right" } }),
-    el("span", {}),
-  );
-
-  const tackleHead = el(
-    "div",
-    { class: "rows-head tackle-head" },
-    el("span", { text: "Description" }),
-    el("span", { text: "Qty", style: { textAlign: "center" } }),
-    el("span", { text: "Weight each" }),
-    el("span", { text: "Subtotal", style: { textAlign: "right" } }),
-    el("span", {}),
-  );
-
   const addLoad = el(
     "button",
     {
@@ -88,7 +67,7 @@ export function createOverallScreen(ctx) {
         card({
           title: "Load weight",
           note: "What the crane actually lifts",
-          body: el("div", {}, loadHead, loadRows, loadEmpty, el("div", { class: "mt12" }, addLoad)),
+          body: el("div", {}, loadRows, loadEmpty, el("div", { class: "mt12" }, addLoad)),
         }),
         card({
           title: "Lifting tackle",
@@ -96,7 +75,6 @@ export function createOverallScreen(ctx) {
           body: el(
             "div",
             {},
-            tackleHead,
             tackleRows,
             tackleEmpty,
             el("div", { class: "mt12" }, addTackle),
@@ -145,18 +123,26 @@ export function createOverallScreen(ctx) {
   // changes, so the form always shows the measurement it is actually reading.
   function measurementFields(item, index) {
     const set = (patch) => store.update((state) => Object.assign(state.load_items[index], patch));
-    const num = (key, unit) =>
-      withUnit(
-        numberInput({ value: item[key], onInput: (value) => set({ [key]: value ?? 0 }) }),
-        unit,
-      );
+    const num = (key, unit, label) => {
+      const input = numberInput({
+        value: item[key],
+        onInput: (value) => set({ [key]: value ?? 0 }),
+      });
+      input.setAttribute("aria-label", label);
+      const wrap = withUnit(input, unit);
+      wrap.dataset.unit = unit;
+      return wrap;
+    };
     if (item.load_type === "per_metre") {
-      return [num("kg_per_metre", "kg/m"), num("length_m", "m")];
+      return [
+        num("kg_per_metre", "kg/m", "Weight per metre"),
+        num("length_m", "m", "Length"),
+      ];
     }
     if (item.load_type === "per_volume") {
-      return [num("volume_m3", "m3"), num("density_kg_m3", "kg/m3")];
+      return [num("volume_m3", "m3", "Volume"), num("density_kg_m3", "kg/m3", "Density")];
     }
-    return [num("weight_kg", "kg")];
+    return [num("weight_kg", "kg", "Weight")];
   }
 
   function buildRows(state) {
@@ -166,16 +152,9 @@ export function createOverallScreen(ctx) {
     tackleTotalNodes = [];
 
     state.load_items.forEach((item, index) => {
-      const total = el("span", { class: "line-total", text: "—" });
-      const measure = el("div", { class: "row", style: { gap: "8px" } });
-      const rowCard = el("div", { class: "row-card load-row" });
-      const paintMeasure = () => {
-        const fields = measurementFields(item, index);
-        // Per metre and per volume read two boxes. The narrow layout gives
-        // their dropdown a line of its own, so the label is never clipped.
-        rowCard.classList.toggle("two-measure", fields.length > 1);
-        measure.replaceChildren(...fields);
-      };
+      const total = el("span", { class: "line-total empty", text: "—" });
+      const measure = el("div", { class: "row-measure" });
+      const paintMeasure = () => measure.replaceChildren(...measurementFields(item, index));
       paintMeasure();
       const remove = el(
         "button",
@@ -189,43 +168,59 @@ export function createOverallScreen(ctx) {
         },
         svgIcon("close", 14),
       );
-      loadRows.append(rowCard);
-      rowCard.append(
-        textInput({
-          value: item.name,
-          placeholder: "e.g. steel plate",
-          onInput: (value) =>
-            store.update((s) => {
-              s.load_items[index].name = value;
-            }),
-        }),
-        selectInput({
-          options: catalog.load_types.map((type) => ({ key: type.key, label: type.label })),
-          value: item.load_type,
-          onChange: (value) => {
-            store.update((s) => {
-              s.load_items[index].load_type = value;
-            });
-            paintMeasure();
-          },
-        }),
-        numberInput({
-          value: item.qty,
-          placeholder: "qty",
-          onInput: (value) =>
-            store.update((s) => {
-              s.load_items[index].qty = Math.max(1, Math.round(value ?? 1));
-            }),
-        }),
-        measure,
-        total,
-        remove,
+      const nameInput = textInput({
+        value: item.name,
+        placeholder: "e.g. steel plate",
+        onInput: (value) =>
+          store.update((s) => {
+            s.load_items[index].name = value;
+          }),
+      });
+      nameInput.className = "row-name";
+      nameInput.setAttribute("aria-label", "Description");
+      const typeSelect = selectInput({
+        options: catalog.load_types.map((type) => ({ key: type.key, label: type.label })),
+        value: item.load_type,
+        onChange: (value) => {
+          store.update((s) => {
+            s.load_items[index].load_type = value;
+          });
+          paintMeasure();
+        },
+      });
+      typeSelect.classList.add("row-mode");
+      typeSelect.setAttribute("aria-label", "Measured by");
+      const qtyInput = numberInput({
+        value: item.qty,
+        placeholder: "qty",
+        onInput: (value) =>
+          store.update((s) => {
+            s.load_items[index].qty = Math.max(1, Math.round(value ?? 1));
+          }),
+      });
+      qtyInput.classList.add("row-qty");
+      qtyInput.setAttribute("aria-label", "Quantity");
+      loadRows.append(
+        el(
+          "div",
+          { class: "row-card load-row" },
+          el("div", { class: "row-identity" }, nameInput, total),
+          el(
+            "div",
+            { class: "row-working" },
+            typeSelect,
+            el("span", { class: "row-times", "aria-hidden": "true", text: "×" }),
+            qtyInput,
+            measure,
+          ),
+          remove,
+        ),
       );
       loadTotalNodes.push(total);
     });
 
     state.tackle_items.forEach((item, index) => {
-      const total = el("span", { class: "line-total", text: "—" });
+      const total = el("span", { class: "line-total empty", text: "—" });
       const remove = el(
         "button",
         {
@@ -238,37 +233,48 @@ export function createOverallScreen(ctx) {
         },
         svgIcon("close", 14),
       );
+      const descInput = textInput({
+        value: item.description,
+        placeholder: "e.g. 4-leg chain sling",
+        onInput: (value) =>
+          store.update((s) => {
+            s.tackle_items[index].description = value;
+          }),
+      });
+      descInput.className = "row-name";
+      descInput.setAttribute("aria-label", "Description");
+      const qtyInput = numberInput({
+        value: item.qty,
+        placeholder: "qty",
+        onInput: (value) =>
+          store.update((s) => {
+            s.tackle_items[index].qty = Math.max(0, Math.round(value ?? 0));
+          }),
+      });
+      qtyInput.classList.add("row-qty");
+      qtyInput.setAttribute("aria-label", "Quantity");
+      const weightInput = numberInput({
+        value: item.weight_kg,
+        onInput: (value) =>
+          store.update((s) => {
+            s.tackle_items[index].weight_kg = value ?? 0;
+          }),
+      });
+      weightInput.setAttribute("aria-label", "Weight each");
+      const weight = withUnit(weightInput, "kg");
+      weight.dataset.unit = "kg";
       tackleRows.append(
         el(
           "div",
           { class: "row-card tackle-row" },
-          textInput({
-            value: item.description,
-            placeholder: "e.g. 4-leg chain sling",
-            onInput: (value) =>
-              store.update((s) => {
-                s.tackle_items[index].description = value;
-              }),
-          }),
-          numberInput({
-            value: item.qty,
-            placeholder: "qty",
-            onInput: (value) =>
-              store.update((s) => {
-                s.tackle_items[index].qty = Math.max(0, Math.round(value ?? 0));
-              }),
-          }),
-          withUnit(
-            numberInput({
-              value: item.weight_kg,
-              onInput: (value) =>
-                store.update((s) => {
-                  s.tackle_items[index].weight_kg = value ?? 0;
-                }),
-            }),
-            "kg",
+          el("div", { class: "row-identity" }, descInput, total),
+          el(
+            "div",
+            { class: "row-working" },
+            el("span", { class: "row-times", "aria-hidden": "true", text: "×" }),
+            qtyInput,
+            el("div", { class: "row-measure" }, weight),
           ),
-          total,
           remove,
         ),
       );
@@ -293,12 +299,25 @@ export function createOverallScreen(ctx) {
 
   function render(solved) {
     if (!solved) return;
-    (solved.line_weights || []).forEach((weight, index) => {
-      if (loadTotalNodes[index]) loadTotalNodes[index].textContent = fmt(weight, 2, "kg");
-    });
-    (solved.tackle_subtotals || []).forEach((weight, index) => {
-      if (tackleTotalNodes[index]) tackleTotalNodes[index].textContent = fmt(weight, 2, "kg");
-    });
+    const setLineTotal = (node, weight) => {
+      if (!node) return;
+      if (weight === null || weight === undefined) {
+        node.textContent = "—";
+        node.classList.add("empty");
+        return;
+      }
+      node.classList.remove("empty");
+      node.replaceChildren(
+        el("span", { class: "total-value", text: fmt(weight, 2, "") }),
+        el("span", { class: "total-unit", text: "kg" }),
+      );
+    };
+    (solved.line_weights || []).forEach((weight, index) =>
+      setLineTotal(loadTotalNodes[index], weight),
+    );
+    (solved.tackle_subtotals || []).forEach((weight, index) =>
+      setLineTotal(tackleTotalNodes[index], weight),
+    );
 
     const totals = solved.totals;
     summaryBox.replaceChildren(

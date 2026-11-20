@@ -502,34 +502,6 @@
   color: var(--faint);
 }
 
-:root[data-platform="windows"] .rows-head {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0;
-  text-transform: none;
-  color: var(--muted);
-}
-
-/* Narrow two-line load row: the Qty field is a fixed 62px, but the base grid
-   lets its column shrink below that, so the field used to spill under the
-   Measured-by select. Keep the Qty column at 62px and let the select take the
-   rest. */
-@container (max-width: 620px) {
-  :root[data-platform="windows"] .load-row {
-    grid-template-columns: 62px minmax(0, 1fr) var(--wbox) 96px;
-  }
-}
-
-:root[data-platform="windows"] .row-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-}
-
-:root[data-platform="windows"] .row-card:hover {
-  border-color: var(--border-strong);
-}
-
 :root[data-platform="windows"] .kv-row {
   min-height: 40px;
   border-bottom: 1px solid var(--border-soft);

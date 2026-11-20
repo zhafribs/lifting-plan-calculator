@@ -621,57 +621,143 @@ select option { background: var(--surface-2); }
 
 /* ---------- item rows ---------------------------------------------------- */
 
-.rows { display: flex; flex-direction: column; gap: 8px; }
+/* A line is a ledger entry: its name and result share the first line, the
+   working sits underneath, and a hairline separates one entry from the next.
+   Nothing is boxed inside the card; the right edge is the design. */
+.rows { display: flex; flex-direction: column; }
 
-.rows-head {
-  display: grid;
+.row-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 9px 0 10px;
+  border-top: 1px solid var(--border-soft);
+  background: transparent;
+}
+
+.row-card:first-child { border-top: 0; padding-top: 1px; }
+
+.row-card:hover { background: var(--surface-2); }
+
+.row-card .remove {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.row-identity {
+  display: flex;
+  align-items: center;
   gap: 10px;
-  /* Match the row card's content box (1px border + 10px padding) so every
-     label sits exactly over its column instead of 7px to the left. */
-  padding: 0 11px;
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  min-width: 0;
+  padding-right: 36px;
+}
+
+/* The description is the line's name, not a labelled form field. */
+.row-card .row-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 4px 6px;
+  border-color: transparent;
+  background: transparent;
+  font-weight: 500;
+}
+
+.row-card .row-name:hover { background: var(--surface-3); }
+.row-card .row-name:focus { background: var(--surface-2); }
+
+.row-working {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding-left: 6px;
+}
+
+/* The measured-by choice is a caption that happens to be a control: full text,
+   never squeezed. */
+.row-card .row-mode {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: none;
+  padding: 4px 22px 4px 6px;
+  border-color: transparent;
+  background-color: transparent;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.row-card .row-mode:hover {
+  color: var(--text);
+  background-color: var(--surface-3);
+}
+
+.row-times {
+  flex: 0 0 auto;
+  font-size: 11px;
   color: var(--faint);
 }
 
-.row-card {
-  display: grid;
-  gap: 10px;
-  align-items: center;
-  background: var(--surface-2);
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
-  padding: 9px 10px;
+.row-card .row-qty {
+  flex: 0 0 46px;
+  width: 46px;
+  padding: 4px 6px;
+  text-align: right;
 }
 
-/* Grid and flex children default to min-width:auto, which stops them from
-   shrinking and pushes later columns out of the card. Let them shrink. */
-.row-card > *,
-.rows-head > *,
-.row-card .row > *,
-.row-card input,
-.row-card select {
+/* One or two value boxes. Each keeps its unit's width; if the line is too
+   narrow they wrap, and nothing is ever clipped. */
+.row-measure {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
-/* Row dropdowns are tight, so give the label every pixel: a smaller right
-   inset keeps the full "Weight by Volume" text visible. The arrow lives
-   within 22px of the right edge, so 26px still clears it. */
-.row-card select {
-  padding-left: 8px;
-  padding-right: 26px;
+.row-measure > * { flex: 1 1 92px; min-width: 76px; max-width: 160px; }
+.row-measure > [data-unit="kg"] { flex-basis: 112px; min-width: 112px; }
+.row-measure > [data-unit="kg/m"] { flex-basis: 100px; min-width: 100px; }
+.row-measure > [data-unit="kg/m3"] { flex-basis: 104px; min-width: 104px; }
+.row-measure > [data-unit="m"],
+.row-measure > [data-unit="m3"] { flex-basis: 76px; min-width: 76px; }
+
+/* The result wins by weight and position, not by size or colour. */
+.line-total {
+  flex: 0 0 auto;
+  min-width: 110px;
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 3px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text);
 }
 
-.row-card:hover { border-color: var(--border-strong); }
+.line-total.empty { color: var(--faint); font-weight: 500; }
 
-.line-total {
-  text-align: right;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+.line-total .total-unit {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* The add control is a quiet dashed row, not the loudest thing in the card. */
+.btn.add {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--border-strong);
+  color: var(--muted);
+}
+
+.btn.add:hover {
   color: var(--text);
-  white-space: nowrap;
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
 }
 
 .empty {
@@ -681,118 +767,6 @@ select option { background: var(--surface-2); }
   text-align: center;
   color: var(--faint);
   font-size: 12.5px;
-}
-
-
-/* --- load / tackle rows -------------------------------------------------- */
-
-/* The measurement box is fixed at 122px, the same size as the tackle row's
-   weight-each box, so stretching the window only widens the description. */
-.rows-head.load-head,
-.load-row {
-  grid-template-columns: minmax(96px, 1.2fr) 160px 54px 122px 88px 26px;
-}
-
-/* A per-metre or per-volume line reads two boxes. They stack at every width,
-   so each box keeps room for its unit instead of splitting 122px in half. */
-.load-row.two-measure .row {
-  flex-direction: column;
-  align-items: stretch;
-}
-
-.rows-head.tackle-head,
-.tackle-row {
-  grid-template-columns: minmax(120px, 1.6fr) 54px 122px 88px 26px;
-}
-
-/* When the card itself is narrow (a tiled half-screen window), both rows
-   reflow onto two lines with the same geometry:
-     line 1:  description ................................ | remove
-     line 2:  qty | measured by | weight box | subtotal            */
-.card-body { container-type: inline-size; }
-
-@container (max-width: 620px) {
-  .rows-head { display: none; }
-
-  .load-row,
-  .tackle-row {
-    position: relative; /* the remove button parks at the row's top right */
-    column-gap: 6px;
-    row-gap: 8px;
-  }
-
-  /* The description ends above the weight box so their right edges line up,
-     the measured-by box sits beside the weight box, and the quantity stays at
-     the left of line 2, exactly like the tackle line. */
-  .load-row {
-    grid-template-columns: minmax(0, 1fr) 156px var(--wbox) 96px;
-    grid-template-areas:
-      "desc desc desc ."
-      "qty type weight total";
-  }
-
-  .load-row > *:nth-child(1) { grid-area: desc; }
-  .load-row > *:nth-child(2) { grid-area: type; }
-  .load-row > *:nth-child(3) { grid-area: qty; justify-self: start; width: 62px; }
-  .load-row > *:nth-child(4) {
-    grid-area: weight;
-    /* The measurement cell's two inputs stack, so each keeps room for its unit. */
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
-  }
-  .load-row > *:nth-child(5) { grid-area: total; align-self: center; }
-  .load-row > *:nth-child(6) { position: absolute; top: 10px; right: 10px; }
-
-  /* Per metre and per volume carry two value boxes, so they read on two
-     lines: the "Measured by" dropdown beside the first box (kg/m or m3), then
-     the quantity beside the second (m or kg/m3), with the subtotal at the
-     end. The label never shares its line with the quantity. */
-  .load-row.two-measure {
-    grid-template-columns: minmax(0, 1fr) 122px 96px;
-    grid-template-areas:
-      "desc desc desc"
-      "type first ."
-      "qty second total";
-  }
-
-  /* Let the two value boxes take separate grid areas instead of sharing the
-     measurement cell. */
-  .load-row.two-measure .row { display: contents; }
-
-  .load-row.two-measure > *:nth-child(2) { grid-area: type; width: 100%; }
-  .load-row.two-measure > *:nth-child(3) {
-    grid-area: qty;
-    justify-self: start;
-    width: 62px;
-  }
-  .load-row.two-measure > *:nth-child(4) > *:nth-child(1) { grid-area: first; }
-  .load-row.two-measure > *:nth-child(4) > *:nth-child(2) { grid-area: second; }
-  .load-row.two-measure > *:nth-child(5) { grid-area: total; align-self: center; }
-
-  .tackle-row {
-    grid-template-columns: minmax(0, 1fr) var(--wbox) 96px;
-    grid-template-areas:
-      "desc desc ."
-      "qty weight total";
-  }
-
-  .tackle-row > *:nth-child(1) { grid-area: desc; }
-  .tackle-row > *:nth-child(2) { grid-area: qty; justify-self: start; width: 62px; }
-  .tackle-row > *:nth-child(3) { grid-area: weight; }
-  .tackle-row > *:nth-child(4) { grid-area: total; align-self: center; }
-  .tackle-row > *:nth-child(5) { position: absolute; top: 10px; right: 10px; }
-}
-
-/* With the rail expanded beside a small window the card can shrink below the
-   width the two-line fixed row needs. The old row kept the dropdown at 156px
-   and let the quantity's flexible column collapse under it. Below 485px the
-   quantity gets its own 62px column and the dropdown takes the space that is
-   left, so it sits between the quantity and the value box on the same line. */
-@container (max-width: 485px) {
-  .load-row:not(.two-measure) {
-    grid-template-columns: 62px minmax(0, 1fr) var(--wbox) 96px;
-  }
 }
 
 /* ---------- key/value rows ----------------------------------------------- */

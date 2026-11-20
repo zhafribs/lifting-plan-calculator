@@ -1,3 +1,16 @@
+## [Unreleased]
+
+### Changed
+
+- **Load and tackle lines are ledger rows.** Each line leads with its identity
+  and its result — description on the left, subtotal on the right, sharing one
+  edge down the card — and carries the working underneath: the measured-by
+  choice, the quantity, and the measurement (one box for fixed weight, two side
+  by side for per-metre and per-volume). Rows are separated by hairlines
+  instead of nested cards; the measured-by keeps its full label at its own
+  width; the add button is a quiet dashed row. Nothing is clipped at the 720px
+  window with the rail expanded.
+
 ## [2.17.6] - 2026-11-20
 
 ### Fixed

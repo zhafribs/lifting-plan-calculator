@@ -9,7 +9,8 @@
   and its result — description on the left, subtotal on the right, sharing one
   edge down the card — and carries the working underneath: the measured-by
   choice, the quantity, and the measurement (one box for fixed weight, two side
-  by side for per-metre and per-volume). Rows are separated by hairlines
+  by side for per-metre and per-volume), each box sized to the figure it holds:
+  `00.0` for metres, `0000.0` for the per-unit figures. Rows are separated by hairlines
   instead of nested cards; the measured-by keeps its full label at its own
   width; the description keeps a soft field edge so it reads as typeable, and
   the add row is dashed in the accent colour. Nothing is clipped at the 720px

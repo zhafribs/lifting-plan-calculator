@@ -38,9 +38,11 @@ Weight by Volume ▾   ×   1   [ 12.5 m3 ]   [ 2,400 kg/m3 ]
   Every subtotal in the card shares one right edge.
 - **Tier 2** is the working: measured-by at 12px in the muted colour (its full
   label always fits), a faint `×`, a 46px quantity, then one or two value
-  boxes. The two boxes have unit-aware minimum widths (kg 112, kg/m 100,
-  kg/m3 104, m/m3 76) and stay side by side; if a line is ever too narrow they
-  wrap rather than clip.
+  boxes. Each box is fixed to the figure it holds — measured from the bundled
+  Inter at 13.5px: `00.0` for m/m3, `0000.0` for kg/m and kg/m3 — plus the
+  input padding and the unit's reserved width (m 69, m3 76, kg/m 107,
+  kg/m3 114, kg 96). They never stretch; if a line is too narrow the pair
+  moves to its own line rather than clip.
 - The subtotal renders its unit at 11px muted, so the figure, not the unit,
   carries the weight.
 - The add control is a dashed accent row, no longer the loudest filled button in

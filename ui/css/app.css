@@ -718,12 +718,15 @@ select option { background: var(--surface-2); }
   flex: 1 1 auto;
 }
 
-.row-measure > * { flex: 1 1 92px; min-width: 76px; max-width: 160px; }
-.row-measure > [data-unit="kg"] { flex-basis: 112px; min-width: 112px; }
-.row-measure > [data-unit="kg/m"] { flex-basis: 100px; min-width: 100px; }
-.row-measure > [data-unit="kg/m3"] { flex-basis: 104px; min-width: 104px; }
-.row-measure > [data-unit="m"],
-.row-measure > [data-unit="m3"] { flex-basis: 76px; min-width: 76px; }
+/* Measured from the bundled Inter at 13.5px: "00.0" is 28.8px, "0000.0" is
+   45.8px. Each box is exactly that text plus the input padding, the unit's
+   reserved width and the border: no stretching, no clipping. */
+.row-measure > * { flex: 0 0 auto; min-width: 0; }
+.row-measure > [data-unit="m"] { width: 69px; }
+.row-measure > [data-unit="m3"] { width: 76px; }
+.row-measure > [data-unit="kg/m"] { width: 107px; }
+.row-measure > [data-unit="kg/m3"] { width: 114px; }
+.row-measure > [data-unit="kg"] { width: 96px; }
 
 /* The result wins by weight and position, not by size or colour. */
 .line-total {

@@ -654,18 +654,18 @@ select option { background: var(--surface-2); }
   padding-right: 36px;
 }
 
-/* The description is the line's name, not a labelled form field. */
+/* The description is the line's name, but it still has to look typeable. */
 .row-card .row-name {
   flex: 1 1 auto;
   min-width: 0;
-  padding: 4px 6px;
-  border-color: transparent;
-  background: transparent;
+  padding: 4px 8px;
+  border-color: var(--border-soft);
+  background: var(--surface-2);
   font-weight: 500;
 }
 
-.row-card .row-name:hover { background: var(--surface-3); }
-.row-card .row-name:focus { background: var(--surface-2); }
+.row-card .row-name:hover { border-color: var(--border-strong); }
+.row-card .row-name:focus { border-color: var(--accent-line); }
 
 .row-working {
   display: flex;
@@ -746,17 +746,18 @@ select option { background: var(--surface-2); }
   color: var(--muted);
 }
 
-/* The add control is a quiet dashed row, not the loudest thing in the card. */
+/* The add control is a dashed accent row: visible enough to invite a click,
+   quieter than a filled bar so the subtotals keep the hierarchy. */
 .btn.add {
   background: transparent;
   border-style: dashed;
-  border-color: var(--border-strong);
-  color: var(--muted);
+  border-color: var(--accent-line);
+  color: var(--accent);
 }
 
 .btn.add:hover {
   color: var(--text);
-  border-color: var(--accent-line);
+  border-color: var(--accent);
   background: var(--accent-soft);
 }
 

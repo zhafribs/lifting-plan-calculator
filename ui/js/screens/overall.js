@@ -135,8 +135,8 @@ export function createOverallScreen(ctx) {
     };
     if (item.load_type === "per_metre") {
       return [
-        num("kg_per_metre", "kg/m", "Weight per metre"),
         num("length_m", "m", "Length"),
+        num("kg_per_metre", "kg/m", "Weight per metre"),
       ];
     }
     if (item.load_type === "per_volume") {

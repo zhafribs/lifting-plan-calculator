@@ -32,8 +32,8 @@ steel plate                                          30,000.00 kg   ×
 Weight by Volume ▾   ×   1   [ 12.5 m3 ]   [ 2,400 kg/m3 ]
 ```
 
-- **Tier 1** is the identity: the description is the line's name (borderless
-  until hovered), the subtotal is the result at a fixed 110px column and 600
+- **Tier 1** is the identity: the description carries a soft field edge so it
+  reads as typeable, the subtotal is the result at a fixed 110px column and 600
   weight against the 400-weight inputs, and the remove sits in a 30px gutter.
   Every subtotal in the card shares one right edge.
 - **Tier 2** is the working: measured-by at 12px in the muted colour (its full
@@ -43,7 +43,7 @@ Weight by Volume ▾   ×   1   [ 12.5 m3 ]   [ 2,400 kg/m3 ]
   wrap rather than clip.
 - The subtotal renders its unit at 11px muted, so the figure, not the unit,
   carries the weight.
-- The add control is a dashed ghost row, no longer the loudest filled button in
+- The add control is a dashed accent row, no longer the loudest filled button in
   the card.
 - The Lifting tackle card uses the same ledger with one value box (`Weight
   each`) and no measured-by, so its right edge matches the load card.

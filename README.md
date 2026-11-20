@@ -66,6 +66,14 @@ of the person who approves it.
 All files, their checksums and their release notes are on the
 [**Releases page**](https://github.com/zhafribs/lifting-plan-calculator/releases/latest).
 
+The Windows install is small on purpose. `C:\Program Files\Lifting Plan
+Calculator` holds the executable, the uninstaller, the licence and the
+third-party notices. The frontend, KaTeX and the PDF viewer are compiled into
+the executable, and the C runtime is linked statically, so there is no runtime
+folder to break. The one shared component is Microsoft's WebView2, which
+Windows 10 (1803 or later) and Windows 11 keep with Edge; the installer carries
+its bootstrapper for a machine that does not have it yet.
+
 ```bash
 # Linux: one file, nothing to install
 chmod +x Lifting-Plan-Calculator-<version>-linux-x86_64.AppImage

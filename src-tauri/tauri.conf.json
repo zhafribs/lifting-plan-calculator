@@ -29,6 +29,10 @@
       "appimage"
     ],
     "category": "Utility",
+    "publisher": "Zhafri Syazwi",
+    "copyright": "Copyright © 2026 Zhafri Syazwi",
+    "homepage": "https://github.com/zhafribs/lifting-plan-calculator",
+    "license": "GPL-3.0-or-later",
     "shortDescription": "Lifting plan calculator for rigging and crane lifts",
     "longDescription": "Plan crane lifts: overall weight, crane capacity against an imported load chart, uniform and nonuniform sling arrangements, tandem lifts, and a printable calculation report.",
     "icon": [
@@ -38,10 +42,18 @@
       "icons/icon.ico",
       "icons/icon.png"
     ],
-    "resources": [],
+    "resources": {
+      "../LICENSE": "LICENSE",
+      "../COPYRIGHT": "COPYRIGHT",
+      "../THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md",
+      "../licenses": "licenses"
+    },
     "windows": {
       "nsis": {
         "installMode": "perMachine"
+      },
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
       }
     }
   }

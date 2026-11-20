@@ -5,6 +5,15 @@
 - `SKILLS.md` gains a `humanizer` mode, adapted from `blader/humanizer` (MIT):
   the prose rules for docs, release notes and replies.
 
+### Changed
+
+- **The Windows install is a normal per-machine install.** It registers the
+  publisher in Add/Remove Programs and puts the licence and the third-party
+  notices beside the executable. The frontend, KaTeX and the PDF viewer are
+  inside the executable and the C runtime is linked statically, so a small
+  folder is the complete app, not a partial one. The installer now carries the
+  WebView2 bootstrapper, so a machine without the runtime can still install.
+
 ### Fixed
 
 - **The page-margin unit no longer covers the number spinner.** On Linux the

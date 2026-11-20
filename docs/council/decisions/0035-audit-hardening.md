@@ -5,8 +5,10 @@
 **Release:** v2.17.1 (no new tag; hardening on `main`)
 **Change:** `src-tauri/src/update.rs`, `src-tauri/src/commands.rs`,
 `AGENTS.md`, `SKILLS.md`, `CHANGELOG.md`
-**Seats:** Safety & QA, Security & Build, Design & Steward (three-seat gate, bar
-8/10). The implementer did not score.
+**Seats:** three seats, each covering charter roles: Safety & QA (Domain Safety
+Engineer, QA & Test Engineer), Security & Build (Application Security Engineer,
+Build & Platform Engineer), Design & Steward (Technical Writer, Product Manager,
+Maintainer). Bar 8/10 per seat. The implementer did not score.
 
 ## Proposal
 

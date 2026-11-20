@@ -267,7 +267,7 @@ cd src-tauri
 cargo test
 ```
 
-246 tests, including the Kotlin unit suite's own expected values (`CalcTest`,
+268 tests, including the Kotlin unit suite's own expected values (`CalcTest`,
 `CraneTest`, `CraneManualEntryTest`, `SlingTest`, `NonuniformTest`,
 `ExcelImportTest`, `ReportTest`, `ReportUniformTest`, `ReportCapacityTest`,
 `ReportNonuniformTest`), plus tests of the Rust port itself (load figures, model
@@ -307,6 +307,8 @@ docs/video/         the short walkthrough video
 docs/examples/      example charts and the BS 8004 ground table workbook
 docs/adr/           architecture decisions, one file per decision
 docs/council/       the review charter, the seats, and the decision records
+AGENTS.md           how a change is reviewed and landed
+SKILLS.md           the working modes those reviews use
 build-appimage.sh            host AppImage build (+ .zsync sidecar)
 build-appimage-portable.sh   Ubuntu 22.04 userspace build (widest compatibility)
 packaging/check-release-notes.sh    validates every tag's notes

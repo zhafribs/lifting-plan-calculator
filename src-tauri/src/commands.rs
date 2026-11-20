@@ -430,8 +430,16 @@ pub async fn save_report(
         "vendor/katex/",
         &format!("{asset_folder}/katex/"),
     );
-    std::fs::write(&target, rewritten)
-        .map_err(|error| format!("The report could not be saved: {error}"))?;
+    // The page is written beside the target and moved into place only when it
+    // is complete, so a failed save never truncates the previous report.
+    sweep_stale_attempts(&target);
+    let staging = staged_path(&target);
+    let _ = std::fs::remove_file(&staging);
+    std::fs::write(&staging, rewritten).map_err(|error| {
+        let _ = std::fs::remove_file(&staging);
+        format!("The report could not be saved: {error}")
+    })?;
+    move_into_place(&staging, &target, "report")?;
 
     let resolver = app.asset_resolver();
     let katex_dir = parent.join(&asset_folder).join("katex");
@@ -713,7 +721,7 @@ fn render_pdf(
     let _ = std::fs::remove_file(&staging);
     let rendered = render_pdf_into(app, html, &staging, footer, margins);
     match rendered {
-        Ok(()) => move_into_place(&staging, target),
+        Ok(()) => move_into_place(&staging, target, "PDF"),
         Err(error) => {
             let _ = std::fs::remove_file(&staging);
             Err(error)
@@ -762,7 +770,7 @@ fn render_pdf_into(
         let _ = std::fs::remove_file(&stamped);
         let outcome = crate::pdf::stamp_to(&printed, &stamped, footer, margins)
             .and_then(|()| check_pdf(&stamped))
-            .and_then(|()| move_into_place(&stamped, target));
+            .and_then(|()| move_into_place(&stamped, target, "PDF"));
         if outcome.is_err() {
             let _ = std::fs::remove_file(&stamped);
         }
@@ -875,7 +883,7 @@ fn write_bytes(bytes: &[u8], target: &Path) -> Result<(), String> {
             let _ = std::fs::remove_file(&staging);
             format!("The PDF could not be written to that folder: {error}")
         })?;
-    move_into_place(&staging, target)
+    move_into_place(&staging, target, "PDF")
 }
 
 /// Retry a file operation a few times: on Windows a just-written PDF can be
@@ -947,9 +955,11 @@ fn sweep_stale_attempts(target: &Path) {
 /// Move the finished PDF to the path the operator chose. On both platforms a
 /// rename replaces an existing file in one step, so the previous plan is never
 /// deleted before the new one is ready.
-fn move_into_place(staging: &Path, target: &Path) -> Result<(), String> {
+fn move_into_place(staging: &Path, target: &Path, what: &str) -> Result<(), String> {
     if !staging.is_file() {
-        return Err("The PDF was not written, so the chosen file was left as it was.".to_string());
+        return Err(format!(
+            "The {what} was not written, so the chosen file was left as it was."
+        ));
     }
     match retry_io(|| std::fs::rename(staging, target)) {
         Ok(()) => Ok(()),
@@ -962,7 +972,7 @@ fn move_into_place(staging: &Path, target: &Path) -> Result<(), String> {
                 _ => "another program may still have the file open",
             };
             Err(format!(
-                "The PDF could not be saved as {}: {reason} ({error}).",
+                "The {what} could not be saved as {}: {reason} ({error}).",
                 target.display()
             ))
         }
@@ -1352,7 +1362,7 @@ mod pdf_export_tests {
 
         std::fs::write(&target, b"previous plan").unwrap();
         std::fs::write(&staging, b"new plan").unwrap();
-        move_into_place(&staging, &target).unwrap();
+        move_into_place(&staging, &target, "PDF").unwrap();
 
         assert_eq!(std::fs::read(&target).unwrap(), b"new plan");
         assert!(!staging.exists());
@@ -1368,7 +1378,7 @@ mod pdf_export_tests {
         let target = dir.join("plan.pdf");
         std::fs::write(&target, b"previous plan").unwrap();
 
-        let error = move_into_place(&staged_path(&target), &target)
+        let error = move_into_place(&staged_path(&target), &target, "PDF")
             .expect_err("a missing staging file must not replace the target");
         assert!(error.contains("left as it was"), "{error}");
         assert_eq!(std::fs::read(&target).unwrap(), b"previous plan");

@@ -509,11 +509,9 @@ pub fn thickness_for(
             min_mm = 40.0;
             governing = "Steel plate width".to_string();
         }
+        // The report's Stiffeners row already states the requirement; this
+        // prose repeated it two lines below.
         stiffeners = true;
-        notes.push(
-            "A steel plate wider than 1.2 m × 1.2 m needs at least 40–50 mm, or welded stiffening ribs."
-                .to_string(),
-        );
     }
 
     ThicknessResult {

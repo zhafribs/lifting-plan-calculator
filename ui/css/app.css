@@ -648,6 +648,13 @@ select option { background: var(--surface-2); }
   grid-template-columns: minmax(96px, 1.2fr) 160px 54px 122px 88px 26px;
 }
 
+/* A per-metre or per-volume line reads two boxes. They stack at every width,
+   so each box keeps room for its unit instead of splitting 122px in half. */
+.load-row.two-measure .row {
+  flex-direction: column;
+  align-items: stretch;
+}
+
 .rows-head.tackle-head,
 .tackle-row {
   grid-template-columns: minmax(120px, 1.6fr) 54px 122px 88px 26px;
@@ -691,6 +698,26 @@ select option { background: var(--surface-2); }
   }
   .load-row > *:nth-child(5) { grid-area: total; align-self: center; }
   .load-row > *:nth-child(6) { position: absolute; top: 10px; right: 10px; }
+
+  /* Per metre and per volume carry two value boxes, so they take one more
+     line: the "Measured by" dropdown spans the row (no clipped label), then
+     the quantity, the two boxes and the subtotal share the last line. */
+  .load-row.two-measure {
+    grid-template-columns: 62px minmax(0, 1fr) 96px;
+    grid-template-areas:
+      "desc desc desc"
+      "type type type"
+      "qty weight total";
+  }
+
+  .load-row.two-measure > *:nth-child(2) { grid-area: type; width: 100%; }
+  .load-row.two-measure > *:nth-child(3) { grid-area: qty; }
+  .load-row.two-measure > *:nth-child(4) {
+    grid-area: weight;
+    justify-self: start;
+    width: var(--wbox);
+  }
+  .load-row.two-measure > *:nth-child(5) { grid-area: total; }
 
   .tackle-row {
     grid-template-columns: minmax(0, 1fr) var(--wbox) 96px;

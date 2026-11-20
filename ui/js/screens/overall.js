@@ -168,7 +168,14 @@ export function createOverallScreen(ctx) {
     state.load_items.forEach((item, index) => {
       const total = el("span", { class: "line-total", text: "—" });
       const measure = el("div", { class: "row", style: { gap: "8px" } });
-      const paintMeasure = () => measure.replaceChildren(...measurementFields(item, index));
+      const rowCard = el("div", { class: "row-card load-row" });
+      const paintMeasure = () => {
+        const fields = measurementFields(item, index);
+        // Per metre and per volume read two boxes. The narrow layout gives
+        // their dropdown a line of its own, so the label is never clipped.
+        rowCard.classList.toggle("two-measure", fields.length > 1);
+        measure.replaceChildren(...fields);
+      };
       paintMeasure();
       const remove = el(
         "button",
@@ -182,40 +189,37 @@ export function createOverallScreen(ctx) {
         },
         svgIcon("close", 14),
       );
-      loadRows.append(
-        el(
-          "div",
-          { class: "row-card load-row" },
-          textInput({
-            value: item.name,
-            placeholder: "e.g. steel plate",
-            onInput: (value) =>
-              store.update((s) => {
-                s.load_items[index].name = value;
-              }),
-          }),
-          selectInput({
-            options: catalog.load_types.map((type) => ({ key: type.key, label: type.label })),
-            value: item.load_type,
-            onChange: (value) => {
-              store.update((s) => {
-                s.load_items[index].load_type = value;
-              });
-              paintMeasure();
-            },
-          }),
-          numberInput({
-            value: item.qty,
-            placeholder: "qty",
-            onInput: (value) =>
-              store.update((s) => {
-                s.load_items[index].qty = Math.max(1, Math.round(value ?? 1));
-              }),
-          }),
-          measure,
-          total,
-          remove,
-        ),
+      loadRows.append(rowCard);
+      rowCard.append(
+        textInput({
+          value: item.name,
+          placeholder: "e.g. steel plate",
+          onInput: (value) =>
+            store.update((s) => {
+              s.load_items[index].name = value;
+            }),
+        }),
+        selectInput({
+          options: catalog.load_types.map((type) => ({ key: type.key, label: type.label })),
+          value: item.load_type,
+          onChange: (value) => {
+            store.update((s) => {
+              s.load_items[index].load_type = value;
+            });
+            paintMeasure();
+          },
+        }),
+        numberInput({
+          value: item.qty,
+          placeholder: "qty",
+          onInput: (value) =>
+            store.update((s) => {
+              s.load_items[index].qty = Math.max(1, Math.round(value ?? 1));
+            }),
+        }),
+        measure,
+        total,
+        remove,
       );
       loadTotalNodes.push(total);
     });

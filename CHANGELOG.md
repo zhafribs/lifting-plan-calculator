@@ -1,4 +1,4 @@
-## [Unreleased]
+## [2.17.3] - 2026-11-20
 
 ### Added
 
@@ -7,6 +7,14 @@
   and back, keeps the name and version in the footer, and leaves the choice
   alone when the window is resized. Until it is clicked, the rail still follows
   the window width across the 1100px breakpoint.
+
+### Fixed
+
+- **A per-metre or per-volume load line reads its two boxes on separate
+  lines.** "kg/m" and its number used to share a 122px cell, so the unit took
+  the width the figure needed. The pair stacks at every window size; below
+  620px the "Measured by" dropdown takes a full-width line of its own and the
+  quantity moves beneath it, so "Weight by Volume" is never clipped.
 
 ## [2.17.2] - 2026-11-20
 

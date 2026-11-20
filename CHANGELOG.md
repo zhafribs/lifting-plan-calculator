@@ -1,3 +1,13 @@
+## [2.17.4] - 2026-11-20
+
+### Fixed
+
+- **A per-metre or per-volume line now reads in the order it is used.** 2.17.3
+  put "Measured by" on a full-width line with the two value boxes below it. The
+  row is "Weight by Metre" beside "kg/m", then the quantity beside "m"; per
+  volume, "Weight by Volume" beside "m3", then the quantity beside "kg/m3". The
+  subtotal closes the row.
+
 ## [2.17.3] - 2026-11-20
 
 ### Added

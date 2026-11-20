@@ -699,25 +699,31 @@ select option { background: var(--surface-2); }
   .load-row > *:nth-child(5) { grid-area: total; align-self: center; }
   .load-row > *:nth-child(6) { position: absolute; top: 10px; right: 10px; }
 
-  /* Per metre and per volume carry two value boxes, so they take one more
-     line: the "Measured by" dropdown spans the row (no clipped label), then
-     the quantity, the two boxes and the subtotal share the last line. */
+  /* Per metre and per volume carry two value boxes, so they read on two
+     lines: the "Measured by" dropdown beside the first box (kg/m or m3), then
+     the quantity beside the second (m or kg/m3), with the subtotal at the
+     end. The label never shares its line with the quantity. */
   .load-row.two-measure {
-    grid-template-columns: 62px minmax(0, 1fr) 96px;
+    grid-template-columns: minmax(0, 1fr) 122px 96px;
     grid-template-areas:
       "desc desc desc"
-      "type type type"
-      "qty weight total";
+      "type first ."
+      "qty second total";
   }
 
+  /* Let the two value boxes take separate grid areas instead of sharing the
+     measurement cell. */
+  .load-row.two-measure .row { display: contents; }
+
   .load-row.two-measure > *:nth-child(2) { grid-area: type; width: 100%; }
-  .load-row.two-measure > *:nth-child(3) { grid-area: qty; }
-  .load-row.two-measure > *:nth-child(4) {
-    grid-area: weight;
+  .load-row.two-measure > *:nth-child(3) {
+    grid-area: qty;
     justify-self: start;
-    width: var(--wbox);
+    width: 62px;
   }
-  .load-row.two-measure > *:nth-child(5) { grid-area: total; }
+  .load-row.two-measure > *:nth-child(4) > *:nth-child(1) { grid-area: first; }
+  .load-row.two-measure > *:nth-child(4) > *:nth-child(2) { grid-area: second; }
+  .load-row.two-measure > *:nth-child(5) { grid-area: total; align-self: center; }
 
   .tackle-row {
     grid-template-columns: minmax(0, 1fr) var(--wbox) 96px;

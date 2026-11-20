@@ -1,4 +1,4 @@
-## [Unreleased]
+## [2.17.7] - 2026-11-21
 
 ### Changed
 
@@ -9,15 +9,15 @@
   and its result — description on the left, subtotal on the right, sharing one
   edge down the card — and carries the working underneath: the measured-by
   choice, the quantity, and the measurement (one box for fixed weight, two side
-  by side for per-metre and per-volume), each box sized to the figure it holds:
-  `00.0` for metres, `0000.0` for the per-unit figures. Rows are separated by hairlines
-  instead of nested cards; the measured-by keeps its full label at its own
-  width; the description keeps a soft field edge so it reads as typeable, and
-  the add row is dashed in the accent colour. Nothing is clipped at the 720px
-  window with the rail expanded. Every result list in the app follows the same
-  scale — 600-weight figures with a small muted unit — so the overall weight
-  stays the one coloured hero figure and the crane, sling, outrigger and tandem
-  figures read the same as the item rows.
+  by side for per-metre and per-volume). Each box is sized to the figure it
+  holds: `00.0` for metres, `0000.0` for the per-unit figures. Rows are
+  separated by hairlines instead of nested cards; the description keeps a soft
+  field edge so it reads as typeable, and the add row is dashed in the accent
+  colour.
+- **Every result list uses the same figure scale.** Values are 600 weight with
+  a small muted unit, so the overall weight stays the one coloured hero figure
+  and the crane, sling, outrigger and tandem figures read the same as the item
+  rows.
 
 ### Fixed
 

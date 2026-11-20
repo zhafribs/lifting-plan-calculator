@@ -117,7 +117,7 @@ export function createReportScreen(ctx) {
   // the app's own origin, no inline script and no inline handler. A `sandbox`
   // attribute was tried and rejected: an opaque origin makes `script-src 'self'`
   // match nothing, so the report's own KaTeX pass would not run.
-  const frame = el("iframe", { title: "Report preview" });
+  const frame = el("iframe", { "aria-label": "Report preview" });
   const frameWrap = el("div", { class: "report-frame" }, frame);
 
   // The frame reports its KaTeX pass by message: an opaque-origin document
@@ -211,6 +211,7 @@ export function createReportScreen(ctx) {
     { class: "margin-grid" },
     ...marginSides.map(([key, label]) => {
       const input = el("input", {
+        class: "num",
         type: "number",
         min: String(MARGIN_MIN),
         max: String(MARGIN_MAX),

@@ -7,6 +7,17 @@
 
 ### Fixed
 
+- **The page-margin unit no longer covers the number spinner.** On Linux the
+  native arrows were drawn under the "mm" suffix in the Summary tab's margins
+  panel; the spinner is hidden on every platform now, as it already was on
+  Windows.
+- **Tooltips are small and app-drawn.** Hovering a rail tab opened a large
+  black window with the label against one edge. The app draws its own bubble,
+  on hover and on keyboard focus; the report preview keeps its accessible name
+  without a hover hint.
+- **The rail footer fits the minimum window.** Below 1100px the contact line
+  broke the address mid-word, and at 720×540 it ran past the bottom edge. It is
+  hidden there; the About screen prints it in full.
 - **An update download is bounded.** The installer or AppImage is capped at
   512 MiB and hashed in chunks, so a broken or hostile release endpoint can no
   longer exhaust memory by sending an endless body.

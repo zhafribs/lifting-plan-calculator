@@ -456,13 +456,8 @@
   box-shadow: none;
 }
 
-/* Fluent number fields carry no native spinner; hiding it also keeps the
-   control clean next to the unit suffix. */
-:root[data-platform="windows"] input[type="number"]::-webkit-inner-spin-button,
-:root[data-platform="windows"] input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
+/* Fluent number fields carry no native spinner; the shared stylesheet hides it
+   on every platform for the same reason — the unit suffix sits there. */
 
 /* The shared input rule above resets the base select chevron and its right
    padding, which left a dropdown looking exactly like a text field. Put the

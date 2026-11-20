@@ -28,6 +28,88 @@ import { createReportScreen } from "./screens/report.js";
 import { createAboutScreen } from "./screens/about.js";
 import { createSettingsScreen } from "./screens/settings.js";
 
+// WebKitGTK draws a native `title` tooltip as one large black window. Replace
+// it with a small bubble of our own; the text is moved to `data-tip` on first
+// hover so the native one never gets the chance to open.
+function installTooltips() {
+  const tip = el("div", { class: "app-tip" });
+  document.body.append(tip);
+  let current = null;
+  let timer = 0;
+
+  function hide() {
+    clearTimeout(timer);
+    tip.classList.remove("show");
+    current = null;
+  }
+
+  function show(target) {
+    const text = target.dataset.tip;
+    if (!text) return;
+    current = target;
+    tip.textContent = text;
+    tip.classList.add("show");
+    const box = target.getBoundingClientRect();
+    const size = tip.getBoundingClientRect();
+    if (target.closest(".rail")) {
+      tip.style.left = `${box.right + 10}px`;
+      tip.style.top = `${Math.max(8, box.top + box.height / 2 - size.height / 2)}px`;
+      return;
+    }
+    const above = box.top - size.height - 6;
+    tip.style.left = `${Math.min(
+      Math.max(8, box.left + box.width / 2 - size.width / 2),
+      window.innerWidth - size.width - 8,
+    )}px`;
+    tip.style.top = `${above < 8 ? box.bottom + 6 : above}px`;
+  }
+
+  const owner = (event) => {
+    const node = event.target instanceof Element
+      ? event.target.closest("[title], [data-tip]")
+      : null;
+    return node && node.tagName !== "IFRAME" ? node : null;
+  };
+
+  // Take the text away from the platform as soon as the control is met:
+  // WebKitGTK opens its own tooltip on a title that is still present.
+  function adopt(target) {
+    if (!target.hasAttribute("title")) return;
+    target.dataset.tip = target.getAttribute("title");
+    target.removeAttribute("title");
+  }
+
+  document.addEventListener("pointerover", (event) => {
+    const target = owner(event);
+    if (!target) {
+      hide();
+      return;
+    }
+    adopt(target);
+    if (target === current) return;
+    clearTimeout(timer);
+    timer = setTimeout(() => show(target), 250);
+  });
+  document.addEventListener("pointerout", (event) => {
+    const target = owner(event);
+    if (!target) return;
+    if (event.relatedTarget instanceof Node && target.contains(event.relatedTarget)) return;
+    hide();
+  });
+  document.addEventListener("pointerdown", hide);
+  // Keyboard users get the same hint: focus shows it at once, like the buttons
+  // in the collapsed rail that have no visible label.
+  document.addEventListener("focusin", (event) => {
+    const target = owner(event);
+    if (!target) return;
+    adopt(target);
+    show(target);
+  });
+  document.addEventListener("focusout", hide);
+  window.addEventListener("scroll", hide, true);
+  window.addEventListener("blur", hide);
+}
+
 const NAV = [
   {
     group: "Lift",
@@ -82,6 +164,7 @@ const SPLIT_KEYS = new Set([
 
 async function main() {
   window.uilog && window.uilog("app main start");
+  installTooltips();
   const rail = document.getElementById("rail");
   const topbar = document.getElementById("topbar");
   const screenEl = document.getElementById("screen");
@@ -336,13 +419,15 @@ async function main() {
   for (const group of NAV) {
     railNav.append(el("div", { class: "nav-group", text: group.group }));
     for (const item of group.items) {
+      const tipText = item.shortcut ? `${item.label} (Ctrl+${item.shortcut})` : item.label;
       const button = el(
         "button",
         {
           class: "nav-item",
           onClick: () => go(item.key),
-          // Also the hover tooltip when the rail is collapsed to icons.
-          title: item.shortcut ? `${item.label} (Ctrl+${item.shortcut})` : item.label,
+          // The hover tooltip, and the name the rail keeps when collapsed.
+          title: tipText,
+          "aria-label": tipText,
         },
         svgIcon(item.icon),
         el("span", { text: item.label }),

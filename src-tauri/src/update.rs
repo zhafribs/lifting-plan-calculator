@@ -23,6 +23,11 @@ const USER_AGENT: &str = "lifting-plan-calculator";
 const CHECK_TIMEOUT: Duration = Duration::from_secs(12);
 const DOWNLOAD_TIMEOUT: Duration = Duration::from_secs(300);
 
+/// A checksum manifest is a few hundred bytes; anything near this is not one.
+const MAX_MANIFEST_BYTES: u64 = 1024 * 1024;
+/// The largest release asset accepted. The AppImage is the biggest of them.
+const MAX_ASSET_BYTES: u64 = 512 * 1024 * 1024;
+
 /// What the app tells the operator about the newest release.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct UpdateInfo {
@@ -266,6 +271,7 @@ pub fn check(current: &str) -> Result<UpdateInfo, String> {
 }
 
 /// The SHA-256 of some bytes, lowercase hex.
+#[cfg(test)]
 fn digest(bytes: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
@@ -387,18 +393,76 @@ fn manifest_url(asset_url: &str) -> Option<String> {
 
 /// Fetch a small release file (the manifest or its signature).
 fn fetch_bytes(url: &str, timeout: Duration) -> Result<Vec<u8>, String> {
-    use std::io::Read;
-
-    let mut bytes = Vec::new();
-    ureq::get(url)
+    let response = ureq::get(url)
         .set("User-Agent", USER_AGENT)
         .timeout(timeout)
         .call()
-        .map_err(|error| format!("The release file could not be read: {error}"))?
-        .into_reader()
-        .read_to_end(&mut bytes)
         .map_err(|error| format!("The release file could not be read: {error}"))?;
+    let mut reader = response.into_reader();
+    read_capped(&mut reader, MAX_MANIFEST_BYTES, "The release's checksum file")
+}
+
+/// A reader that stops after `remaining` bytes. `Read::take` needs a sized
+/// receiver, and a network body is a boxed trait object, so this does the same
+/// job for both.
+struct Capped<R> {
+    inner: R,
+    remaining: u64,
+}
+
+impl<R: std::io::Read> std::io::Read for Capped<R> {
+    fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+        if self.remaining == 0 {
+            return Ok(0);
+        }
+        let allowed = buffer.len().min(self.remaining as usize);
+        let read = self.inner.read(&mut buffer[..allowed])?;
+        self.remaining -= read as u64;
+        Ok(read)
+    }
+}
+
+/// Read a response body, refusing one larger than `cap` instead of growing a
+/// buffer until the machine runs out of memory.
+fn read_capped(reader: impl std::io::Read, cap: u64, what: &str) -> Result<Vec<u8>, String> {
+    use std::io::Read;
+
+    let mut limited = Capped {
+        inner: reader,
+        remaining: cap + 1,
+    };
+    let mut bytes = Vec::new();
+    limited
+        .read_to_end(&mut bytes)
+        .map_err(|error| format!("{what} could not be read: {error}"))?;
+    if bytes.len() as u64 > cap {
+        return Err(format!(
+            "{what} is larger than the {cap} bytes this app accepts."
+        ));
+    }
     Ok(bytes)
+}
+
+/// The SHA-256 of a file, in chunks, so a large download is never held in
+/// memory a second time just to check it.
+fn digest_file(path: &std::path::Path) -> std::io::Result<String> {
+    use std::io::Read;
+
+    let mut hasher = Sha256::new();
+    let mut file = std::fs::File::open(path)?;
+    let mut buffer = [0u8; 64 * 1024];
+    loop {
+        let read = file.read(&mut buffer)?;
+        if read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..read]);
+    }
+    Ok(hasher
+        .finalize()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect())
 }
 
 /// Download an asset into `target`, proving the release manifest and digest
@@ -426,29 +490,40 @@ fn verified_download(asset: &InstallerAsset, target: &std::path::Path) -> Result
     let expected = expected_digest(&manifest, &name)
         .ok_or_else(|| "That file is not listed in its release's checksums.".to_string())?;
 
-    let mut reader = ureq::get(&asset.url)
+    let source = ureq::get(&asset.url)
         .set("User-Agent", USER_AGENT)
         .timeout(DOWNLOAD_TIMEOUT)
         .call()
         .map_err(|error| format!("The update could not be downloaded: {error}"))?
         .into_reader();
+    let mut reader = Capped {
+        inner: source,
+        remaining: MAX_ASSET_BYTES + 1,
+    };
     let mut file = std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
         .open(target)
         .map_err(|error| format!("The update could not be saved: {error}"))?;
-    let copied = std::io::copy(&mut reader, &mut file);
+    let written = std::io::copy(&mut reader, &mut file);
     drop(file);
-    copied.map_err(|error| {
+    let written = written.map_err(|error| {
         let _ = std::fs::remove_file(target);
         format!("The update could not be saved: {error}")
     })?;
+    if written > MAX_ASSET_BYTES {
+        let _ = std::fs::remove_file(target);
+        return Err(format!(
+            "That download is larger than the {MAX_ASSET_BYTES} bytes this app accepts. \
+             It was not installed."
+        ));
+    }
 
-    let bytes = std::fs::read(target).map_err(|error| {
+    let actual = digest_file(target).map_err(|error| {
         let _ = std::fs::remove_file(target);
         format!("The downloaded update could not be read back: {error}")
     })?;
-    if digest(&bytes) != expected {
+    if actual != expected {
         let _ = std::fs::remove_file(target);
         return Err("The downloaded update does not match its release checksum. \
                     It was not installed."
@@ -1112,5 +1187,27 @@ mod tests {
         assert!(!is_newer("2.3.0", "not-a-version"));
         assert!(!is_newer("", "2.4.0"));
         assert!(!is_newer("2.3.0", ""));
+    }
+
+    #[test]
+    fn a_body_over_the_cap_is_refused_instead_of_buffered() {
+        let body = [7u8; 32];
+        assert_eq!(read_capped(&body[..], 32, "body").unwrap().len(), 32);
+        let error = read_capped(&body[..], 31, "body").unwrap_err();
+        assert!(error.contains("larger than"), "{error}");
+    }
+
+    #[test]
+    fn a_file_is_hashed_in_chunks_to_the_same_digest() {
+        let path = std::env::temp_dir().join(format!(
+            "lpc-digest-{}-{:?}",
+            std::process::id(),
+            std::thread::current().id()
+        ));
+        let bytes: Vec<u8> = (0..200_000u32).map(|n| (n % 251) as u8).collect();
+        std::fs::write(&path, &bytes).unwrap();
+        let chunked = digest_file(&path).unwrap();
+        let _ = std::fs::remove_file(&path);
+        assert_eq!(chunked, digest(&bytes));
     }
 }

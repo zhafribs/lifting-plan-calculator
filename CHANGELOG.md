@@ -1,3 +1,13 @@
+## [Unreleased]
+
+### Added
+
+- **The rail collapses to icons on Linux too.** The header button that Windows
+  already had is now on every platform: it folds the navigation to a 64px strip
+  and back, keeps the name and version in the footer, and leaves the choice
+  alone when the window is resized. Until it is clicked, the rail still follows
+  the window width across the 1100px breakpoint.
+
 ## [2.17.2] - 2026-11-20
 
 ### Added

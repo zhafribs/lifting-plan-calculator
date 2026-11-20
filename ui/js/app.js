@@ -169,6 +169,9 @@ async function main() {
   const topbar = document.getElementById("topbar");
   const screenEl = document.getElementById("screen");
   const toastBox = document.getElementById("toasts");
+  // Set once the operator picks a rail width by hand; from then on, resizing
+  // the window no longer overrides the choice.
+  let navPinned = false;
 
   let catalog;
   try {
@@ -267,10 +270,15 @@ async function main() {
   }
 
   function applyPlatform(info) {
-    document.documentElement.dataset.platform = platformScope(info || {});
-    if (document.documentElement.dataset.platform === "windows") {
-      setNavMode(initialNavMode(window.innerWidth));
-    }
+    const platform = platformScope(info || {});
+    document.documentElement.dataset.platform = platform;
+    // The rail starts collapsed in a narrow window. Windows keeps its 1000px
+    // rule; the Linux breakpoint matches the stylesheet's 1099px.
+    const compact =
+      platform === "windows"
+        ? initialNavMode(window.innerWidth) === "compact"
+        : window.innerWidth < 1100;
+    setNavMode(compact ? "compact" : "expanded");
   }
 
   darkQuery.addEventListener("change", () => {
@@ -394,7 +402,10 @@ async function main() {
     title: navToggleLabel("expanded"),
     "aria-label": navToggleLabel("expanded"),
     "aria-expanded": "true",
-    onClick: () => setNavMode(nextNavMode(document.documentElement.dataset.nav)),
+    onClick: () => {
+      navPinned = true;
+      setNavMode(nextNavMode(document.documentElement.dataset.nav));
+    },
   });
   railToggle.append(svgIcon("menu", 18));
   const railHeader = el(
@@ -413,6 +424,13 @@ async function main() {
     railToggle.setAttribute("aria-label", label);
     railToggle.setAttribute("aria-expanded", next === "expanded" ? "true" : "false");
   }
+
+  // Until the toggle is used, the rail follows the window, as it did before the
+  // button existed. Windows keeps the mode it chose at launch.
+  window.addEventListener("resize", () => {
+    if (navPinned || document.documentElement.dataset.platform === "windows") return;
+    setNavMode(window.innerWidth < 1100 ? "compact" : "expanded");
+  });
 
   const railNav = el("nav", { class: "rail-nav" });
   const navButtons = {};

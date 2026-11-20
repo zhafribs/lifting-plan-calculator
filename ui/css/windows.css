@@ -95,11 +95,8 @@
 
 /* ---------- shell ------------------------------------------------------- */
 
-/* The NavigationView header only exists in the Windows layer. Keeping it
-   hidden by default means the base Linux and macOS rail is untouched. */
-.rail-header {
-  display: none;
-}
+/* The header and the rail's compact state live in the base stylesheet now;
+   this layer gives them the Fluent metrics. */
 
 :root[data-platform="windows"] .rail {
   background: var(--bg-rail);

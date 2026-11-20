@@ -106,6 +106,49 @@ input, select, button, textarea { font: inherit; color: inherit; }
   overflow: hidden;
 }
 
+/* The NavigationView header: the app name and the button that collapses the
+   rail to icons. The Windows layer gives it its Fluent metrics; this is the
+   shape both platforms share. */
+.rail-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 4px 10px;
+  flex: 0 0 auto;
+}
+
+.rail-toggle {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.rail-toggle:hover { background: var(--surface-2); }
+
+.rail-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.rail-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
 /* The nav list is the only part that scrolls, so the footer below it stays
    pinned and visible in every window size. */
 .rail-nav {
@@ -1179,16 +1222,53 @@ table.grid td.num { text-align: right; }
    with another window, so every pixel counts. The rail collapses to a
    64px icon strip: group labels, shortcut chips and the footer step aside,
    the topbar and screen paddings tighten, and the content column keeps
-   almost the whole width. Tooltips (title attributes on the nav buttons)
-   carry the labels while collapsed.
+   almost the whole width. Tooltips carry the labels while collapsed.
 
-   Pure media queries, so widening the window restores the full rail and
-   nothing about the state is persisted between launches. */
+   The rule below is the first-paint fallback; the header's toggle sets
+   `data-nav`, and the state rules own the layout from then on. */
+
+/* The rail's own state. Compact is the icon strip; expanded restores every
+   label even inside the 1099px breakpoint, so an explicit expansion wins. */
+:root[data-nav="compact"] { --rail-w: 64px; }
+
+:root[data-nav="compact"] .rail { padding: 14px 5px 12px; }
+
+:root[data-nav="compact"] .rail-header {
+  justify-content: center;
+  padding: 0 0 8px;
+}
+
+:root[data-nav="compact"] .rail-title,
+:root[data-nav="compact"] .nav-group,
+:root[data-nav="compact"] .nav-item > span:not(.key),
+:root[data-nav="compact"] .nav-item .key {
+  display: none;
+}
+
+:root[data-nav="compact"] .nav-item {
+  justify-content: center;
+  padding: 10px 0;
+  gap: 0;
+}
+
+/* The footer keeps the name and version; the contact line would break the
+   address mid-word at 54px and lives on the About screen. */
+:root[data-nav="compact"] .rail-foot {
+  padding: 8px 1px 0;
+  font-size: 8.5px;
+  line-height: 1.25;
+  text-align: center;
+  gap: 4px;
+}
+
+:root[data-nav="compact"] .rail-foot > div:last-child { display: none; }
 
 @media (max-width: 1099px) {
   :root { --rail-w: 64px; }
 
   .rail { padding: 14px 5px 12px; }
+
+  .rail-title { display: none; }
 
   .nav-group { display: none; }
 
@@ -1218,6 +1298,37 @@ table.grid td.num { text-align: right; }
   .topbar { padding: 0 14px; gap: 12px; }
   .screen { padding: 14px 14px 40px; }
 }
+
+/* An expanded rail keeps its labels at any width: the user asked for them. */
+:root[data-nav="expanded"] { --rail-w: 236px; }
+
+:root[data-nav="expanded"] .rail { padding: 18px 12px 14px; }
+
+:root[data-nav="expanded"] .rail-header {
+  justify-content: flex-start;
+  padding: 0 4px 10px;
+}
+
+:root[data-nav="expanded"] .rail-title { display: inline; }
+
+:root[data-nav="expanded"] .nav-group { display: block; }
+
+:root[data-nav="expanded"] .nav-item {
+  justify-content: flex-start;
+  padding: 9px 10px;
+  gap: 11px;
+}
+
+:root[data-nav="expanded"] .nav-item span { display: inline; }
+
+:root[data-nav="expanded"] .rail-foot {
+  padding: 10px 10px 0;
+  line-height: normal;
+  text-align: left;
+  gap: 6px;
+}
+
+:root[data-nav="expanded"] .rail-foot > div:last-child { display: block; }
 
 /* Page-margin popover: an anchored panel, not a modal, so the page view behind
    it stays visible while the numbers are typed. */

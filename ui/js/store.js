@@ -25,6 +25,7 @@ export function blankLoadItem() {
   return {
     id: newId(),
     name: "",
+    lift: "Lift 1",
     load_type: "fixed",
     qty: 1,
     weight_kg: 0,

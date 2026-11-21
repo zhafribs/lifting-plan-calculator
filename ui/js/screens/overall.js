@@ -38,7 +38,10 @@ export function createOverallScreen(ctx) {
       class: "btn add wide",
       onClick: () =>
         store.update((state) => {
-          state.load_items.push(blankLoadItem());
+          state.load_items.push({
+            ...blankLoadItem(),
+            lift: state.load_items.at(-1)?.lift?.trim() || "Lift 1",
+          });
         }),
     },
     svgIcon("plus", 15),
@@ -220,6 +223,16 @@ export function createOverallScreen(ctx) {
       });
       nameInput.className = "row-name";
       nameInput.setAttribute("aria-label", "Description");
+      const liftInput = textInput({
+        value: item.lift ?? "Lift 1",
+        placeholder: "Lift 1",
+        onInput: (value) =>
+          store.update((s) => {
+            s.load_items[index].lift = value;
+          }),
+      });
+      liftInput.className = "row-lift";
+      liftInput.setAttribute("aria-label", "Lift group");
       const typeSelect = selectInput({
         options: catalog.load_types.map((type) => ({ key: type.key, label: type.label })),
         value: item.load_type,
@@ -246,7 +259,7 @@ export function createOverallScreen(ctx) {
         el(
           "div",
           { class: "row-card load-row" },
-          el("div", { class: "row-identity" }, nameInput, total),
+          el("div", { class: "row-identity" }, liftInput, nameInput, total),
           el(
             "div",
             { class: "row-working" },
@@ -362,31 +375,50 @@ export function createOverallScreen(ctx) {
     );
 
     const totals = solved.totals;
+    const lifts = totals.lifts || [];
+    const governing = lifts.reduce(
+      (best, lift) => (best === null || lift.weight > best.weight ? lift : best),
+      null,
+    );
     summaryBox.replaceChildren(
-      kvRows([
-        ["Total load weight", fmt(totals.load, 2, "kg"), "", "one-line"],
-        ["Lifting tackle weight", fmt(totals.tackle, 2, "kg"), "", "one-line"],
-        [
-          "Overall weight",
-          fmt(totals.gross, 2, "kg"),
-          totals.gross > 0 ? "accent" : "",
-          "big one-line",
-        ],
-        [
-          "Min. crane rating (75%)",
-          fmt(totals.required_chart_capacity, 2, "kg"),
-          totals.required_chart_capacity > 0 ? "caution" : "",
-          "big one-line",
-        ],
-      ]),
-      el("p", {
-        class: "faint small",
-        style: { margin: "10px 2px 0" },
-        text:
-          totals.gross > 0
-            ? "Look the crane's load chart up at the working radius and make sure it rates at least this figure."
-            : "Add a load to size the crane.",
-      }),
+      ...[
+        kvRows([
+          [
+            lifts.length > 1 ? "Heaviest lift" : "Total load weight",
+            fmt(totals.load, 2, "kg"),
+            "",
+            "one-line",
+          ],
+          ["Lifting tackle weight", fmt(totals.tackle, 2, "kg"), "", "one-line"],
+          [
+            "Overall weight",
+            fmt(totals.gross, 2, "kg"),
+            totals.gross > 0 ? "accent" : "",
+            "big one-line",
+          ],
+          [
+            "Min. crane rating (75%)",
+            fmt(totals.required_chart_capacity, 2, "kg"),
+            totals.required_chart_capacity > 0 ? "caution" : "",
+            "big one-line",
+          ],
+        ]),
+        lifts.length > 1 && governing
+          ? el("p", {
+              class: "faint small",
+              style: { margin: "8px 2px 0" },
+              text: `Heaviest lift: ${governing.name} — ${fmt(governing.weight, 2, "kg")}`,
+            })
+          : null,
+        el("p", {
+          class: "faint small",
+          style: { margin: "10px 2px 0" },
+          text:
+            totals.gross > 0
+              ? "Look the crane's load chart up at the working radius and make sure it rates at least this figure."
+              : "Add a load to size the crane.",
+        }),
+      ].filter(Boolean),
     );
   }
 

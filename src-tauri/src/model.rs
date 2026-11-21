@@ -39,6 +39,9 @@ pub trait LoadMeasurements {
 pub struct LoadItem {
     pub id: u64,
     pub name: String,
+    /// The lift this line belongs to. Lines with the same name are lifted
+    /// together and add up; the plan's overall weight is the heaviest lift.
+    pub lift: String,
     pub load_type: LoadType,
     pub qty: i64,
     pub weight_kg: f64,
@@ -53,6 +56,7 @@ impl Default for LoadItem {
         Self {
             id: next_line_id(),
             name: String::new(),
+            lift: "Lift 1".to_string(),
             load_type: LoadType::Fixed,
             qty: 1,
             weight_kg: 0.0,
@@ -124,9 +128,17 @@ impl TackleItem {
     }
 }
 
+/// One lift's own total: the lines that are lifted together.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct LiftGroup {
+    pub name: String,
+    pub weight: f64,
+}
+
 /// The Overall Weight figures, in the order the result card renders them.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct LiftTotals {
+    /// The heaviest lift's total, not the sum of every line on the sheet.
     pub load: f64,
     pub tackle: f64,
     pub gross: f64,
@@ -139,6 +151,9 @@ pub struct LiftTotals {
     /// stays; changing the rule here would make this the only place the two
     /// differ.
     pub over_limit: bool,
+    /// Every lift and its own total, in the order the lines were entered.
+    #[serde(default)]
+    pub lifts: Vec<LiftGroup>,
 }
 
 impl LiftTotals {
@@ -147,7 +162,25 @@ impl LiftTotals {
     /// `required_chart_capacity` is the one figure here that is not a sum of
     /// the others: it is the crane capacity the lift needs under the 75% rule.
     pub fn of(load_items: &[LoadItem], tackle_items: &[TackleItem]) -> LiftTotals {
-        let load: f64 = load_items.iter().map(LoadItem::weight).sum();
+        // Lines under one lift are lifted together and add up. Different lifts
+        // are alternatives, so the plan is sized by the heaviest one rather
+        // than by everything on the sheet.
+        let mut lifts: Vec<LiftGroup> = Vec::new();
+        for item in load_items {
+            let raw = item.lift.trim();
+            let name = if raw.is_empty() { "Lift 1" } else { raw };
+            match lifts.iter_mut().find(|group| group.name == name) {
+                Some(group) => group.weight += item.weight(),
+                None => lifts.push(LiftGroup {
+                    name: name.to_string(),
+                    weight: item.weight(),
+                }),
+            }
+        }
+        let load = lifts
+            .iter()
+            .map(|group| group.weight)
+            .fold(0.0, f64::max);
         let tackle: f64 = tackle_items.iter().map(TackleItem::subtotal).sum();
         let gross = calc::gross_lift_weight(load, tackle).unwrap_or(0.0);
         let required = calc::required_chart_capacity(gross, calc::CRANE_USAGE_RATIO).unwrap_or(0.0);
@@ -157,6 +190,7 @@ impl LiftTotals {
             gross,
             required_chart_capacity: required,
             over_limit: required > 0.0 && gross > required,
+            lifts,
         }
     }
 }
@@ -201,6 +235,30 @@ mod tests {
         assert_eq!(totals.gross, 1200.0);
         assert_eq!(totals.required_chart_capacity, 1600.0);
         assert!(!totals.over_limit);
+    }
+
+    #[test]
+    fn the_overall_weight_is_the_heaviest_lift() {
+        let steel = LoadItem {
+            lift: "Steel".to_string(),
+            weight_kg: 800.0,
+            ..LoadItem::default()
+        };
+        let concrete = LoadItem {
+            lift: "Concrete".to_string(),
+            weight_kg: 1500.0,
+            ..LoadItem::default()
+        };
+        let bucket = LoadItem {
+            lift: "Concrete".to_string(),
+            weight_kg: 80.0,
+            ..LoadItem::default()
+        };
+        let totals = LiftTotals::of(&[steel, concrete, bucket], &[]);
+        assert!((totals.load - 1580.0).abs() < 1e-9);
+        assert_eq!(totals.lifts.len(), 2);
+        assert_eq!(totals.lifts[0].name, "Steel");
+        assert!((totals.lifts[1].weight - 1580.0).abs() < 1e-9);
     }
 
     #[test]

@@ -2,6 +2,13 @@
 
 ### Added
 
+- **Load lines are grouped by lift.** Every load line carries a "Lift" field.
+  Lines with the same lift are lifted together and add up; different lifts are
+  alternatives, and the plan uses the **heaviest lift** instead of summing the
+  whole sheet. A concrete pour and its bucket can share one lift, while steel,
+  scaffold and the rest stay separate. The summary names the heaviest lift, and
+  the printed list prefixes each item with its lift and says which one sets the
+  overall weight.
 - **The Overall Weight tab has an Actions card.** Load example fills a 1,500 kg
   steel plate and an 80 kg 2-leg chain sling; Show report opens the plan with
   the crane section; Clear returns both lists to one blank line.

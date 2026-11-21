@@ -97,6 +97,8 @@ pub const REPORT_CSS: &str = r#"
 .report table.line-pairs > tbody > tr > td { width: 50%; vertical-align: top;
     border: 0; padding: 0 7pt 0 0; }
 .report table.line-pairs > tbody > tr > td + td { padding: 0 0 0 7pt; }
+.report .line-note { font-size: 6.5pt; color: #5d6b7a; margin: 2pt 0 4pt;
+    text-align: left; }
 .report .line-pair-title { font-size: 5.5pt; font-weight: bold;
     letter-spacing: 0.3pt; text-transform: uppercase; color: #6d7a88;
     margin: 0 0 1pt; }

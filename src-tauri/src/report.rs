@@ -660,6 +660,16 @@ fn plan_lines(load_items: &[LoadItem], tackle_items: &[TackleItem]) -> String {
         return String::new();
     }
 
+    let multiple_lifts = {
+        let mut names: Vec<&str> = loads
+            .iter()
+            .map(|item| item.lift.trim())
+            .collect();
+        names.sort_unstable();
+        names.dedup();
+        names.len() > 1
+    };
+
     let column = |title: &str, rows: &[String]| -> String {
         if rows.is_empty() {
             return String::new();
@@ -672,12 +682,35 @@ fn plan_lines(load_items: &[LoadItem], tackle_items: &[TackleItem]) -> String {
         )
     };
 
+    let mut lifts: Vec<(String, f64)> = Vec::new();
+    for item in &loads {
+        let lift = if item.lift.trim().is_empty() {
+            "Lift 1"
+        } else {
+            item.lift.trim()
+        };
+        match lifts.iter_mut().find(|(name, _)| name == lift) {
+            Some((_, weight)) => *weight += item.weight(),
+            None => lifts.push((lift.to_string(), item.weight())),
+        }
+    }
+
     let load_rows: Vec<String> = loads
         .iter()
         .map(|item| {
+            let lift = if item.lift.trim().is_empty() {
+                "Lift 1"
+            } else {
+                item.lift.trim()
+            };
+            let name = if multiple_lifts {
+                format!("{lift} — {}", item.name.trim())
+            } else {
+                item.name.trim().to_string()
+            };
             format!(
                 "<tr><td>{}</td><td class=\"n\">{}</td></tr>",
-                escape(item.name.trim()),
+                escape(&name),
                 fmt(Some(item.weight()), 2, "kg")
             )
         })
@@ -693,11 +726,21 @@ fn plan_lines(load_items: &[LoadItem], tackle_items: &[TackleItem]) -> String {
         })
         .collect();
 
-    format!(
+    let mut out = format!(
         "<table class=\"line-pairs\"><tbody><tr><td>{}</td><td>{}</td></tr></tbody></table>",
         column("Load items", &load_rows),
         column("Lifting tackle", &tackle_rows)
-    )
+    );
+    if lifts.len() > 1 {
+        if let Some((name, weight)) = lifts.iter().max_by(|a, b| a.1.total_cmp(&b.1)) {
+            out.push_str(&format!(
+                "<div class=\"line-note\">Overall weight uses {} ({}).</div>",
+                escape(name),
+                fmt(Some(*weight), 2, "kg")
+            ));
+        }
+    }
+    out
 }
 
 /// The reference and credit line every printed page carries, with the defaults
@@ -1486,6 +1529,37 @@ mod tests {
         assert!(html.contains("1,000.00 kg"));
         assert!(html.contains("4-leg chain sling"));
         assert!(html.contains("50.00 kg"));
+    }
+
+    #[test]
+    fn the_plan_names_the_lift_that_sets_the_overall_weight() {
+        let inputs = ReportInputs {
+            load_items: vec![
+                LoadItem {
+                    name: "Steel plate".to_string(),
+                    lift: "Steel".to_string(),
+                    weight_kg: 800.0,
+                    ..LoadItem::default()
+                },
+                LoadItem {
+                    name: "Concrete".to_string(),
+                    lift: "Concrete".to_string(),
+                    weight_kg: 1500.0,
+                    ..LoadItem::default()
+                },
+                LoadItem {
+                    name: "Concrete bucket".to_string(),
+                    lift: "Concrete".to_string(),
+                    weight_kg: 80.0,
+                    ..LoadItem::default()
+                },
+            ],
+            ..ReportInputs::default()
+        };
+        let html = build_report_html(&inputs, &[]);
+        assert!(html.contains("Steel — Steel plate"));
+        assert!(html.contains("Concrete — Concrete"));
+        assert!(html.contains("Overall weight uses Concrete (1,580.00 kg)."));
     }
 
     #[test]

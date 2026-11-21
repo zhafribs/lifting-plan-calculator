@@ -22,8 +22,8 @@ from under the figure to the label line, where it fits at the printed size.
 
 - `ReportInputs` carries the load and tackle lines from the Overall Weight
   state (`build_report` clones them from `AppState`).
-- `plan_head` prints two compact tables after the diagram (or after the crane
-  working when there is no diagram):
+- `plan_head` prints one compact table after the diagram (or after the crane
+  working when there is no diagram), with a group row for each list:
   - **Load items:** description, measured by, quantity, measurement (the
     per-metre/per-volume pair as `value × value`), weight.
   - **Lifting tackle:** description, quantity, weight each, subtotal.

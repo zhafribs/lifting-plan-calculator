@@ -2,24 +2,28 @@
 
 ### Added
 
-- **The plan lists the load and tackle lines.** Section 1 now prints the load
-  items (description, measured by, quantity, measurement, weight) and the
-  lifting tackle (description, quantity, weight each, subtotal) after the
-  required-capacity/usage working, or below the working range diagram when that
-  is printed.
+- **The plan lists the load and tackle lines in one table.** Section 1 prints a
+  "Load items" group and a "Lifting tackle" group — description, measured by,
+  quantity, measurement and weight — after the required-capacity/usage working,
+  or below the working range diagram when that is printed.
 
 ### Changed
 
 - **The chart-capacity note sits beside its label.** "at this radius / boom
   angle" moved from under the figure to the label line, wrapping only when the
   cell cannot hold both.
-
-- **The square-pad line carries both its exact and rounded side.** The report
-  prints `Side = √A = 1.396 m ≈ 1.40 m` and no longer repeats it as a separate
-  "Minimum pad" sentence.
+- **The square pad is one line.** "Minimum square pad" and
+  `Side = √A = 1.396 m ≈ 1.40 m` share a line, and the separate "Minimum pad"
+  sentence is gone.
 - **The plan-details usage cell no longer repeats "of chart capacity".** The
   figure and the band already say it; the caution case keeps "past the 75%
   target".
+
+### Fixed
+
+- **Long dropdown lists scroll.** The arrangement list closed whenever its own
+  wheel scroll fired; scrolling inside the list no longer closes it, while
+  scrolling the page still does.
 
 ## [2.17.7] - 2026-11-21
 

@@ -629,8 +629,9 @@ fn plan_head(
     out
 }
 
-/// The load and tackle lines, as two compact tables. A line with no name is a
-/// blank row the operator has not used yet, so it is left out of the plan.
+/// The load and tackle lines, as one compact table with a group row for each.
+/// A line with no name is a blank row the operator has not used yet, so it is
+/// left out of the plan.
 fn plan_lines(load_items: &[LoadItem], tackle_items: &[TackleItem]) -> String {
     let loads: Vec<&LoadItem> = load_items
         .iter()
@@ -645,13 +646,14 @@ fn plan_lines(load_items: &[LoadItem], tackle_items: &[TackleItem]) -> String {
     }
 
     let mut out = String::new();
+    out.push_str(
+        "<table class=\"line-list\"><thead><tr>\
+         <th>Description</th><th>Measured by</th><th class=\"n\">Qty</th>\
+         <th>Measurement</th><th class=\"n\">Weight</th></tr></thead><tbody>",
+    );
+
     if !loads.is_empty() {
-        out.push_str("<div class=\"line-list-title\">Load items</div>");
-        out.push_str(
-            "<table class=\"line-list\"><thead><tr>\
-             <th>Description</th><th>Measured by</th><th class=\"n\">Qty</th>\
-             <th>Measurement</th><th class=\"n\">Weight</th></tr></thead><tbody>",
-        );
+        out.push_str("<tr class=\"group\"><td colspan=\"5\">Load items</td></tr>");
         for item in loads {
             let measurement = match item.load_type {
                 LoadType::PerMetre => format!(
@@ -676,29 +678,23 @@ fn plan_lines(load_items: &[LoadItem], tackle_items: &[TackleItem]) -> String {
                 fmt(Some(item.weight()), 2, "kg")
             ));
         }
-        out.push_str("</tbody></table>");
     }
 
     if !tackle.is_empty() {
-        out.push_str("<div class=\"line-list-title\">Lifting tackle</div>");
-        out.push_str(
-            "<table class=\"line-list\"><thead><tr><th>Description</th>\
-             <th class=\"n\">Qty</th><th class=\"n\">Weight each</th>\
-             <th class=\"n\">Subtotal</th></tr></thead><tbody>",
-        );
+        out.push_str("<tr class=\"group\"><td colspan=\"5\">Lifting tackle</td></tr>");
         for item in tackle {
             out.push_str(&format!(
-                "<tr><td>{}</td><td class=\"n\">{}</td><td class=\"n\">{}</td>\
-                 <td class=\"n\">{}</td></tr>",
+                "<tr><td>{}</td><td>\u{2014}</td><td class=\"n\">{}</td>\
+                 <td>{}</td><td class=\"n\">{}</td></tr>",
                 escape(item.description.trim()),
                 item.qty,
                 fmt(Some(item.weight_kg), 2, "kg"),
                 fmt(Some(item.subtotal()), 2, "kg")
             ));
         }
-        out.push_str("</tbody></table>");
     }
 
+    out.push_str("</tbody></table>");
     out
 }
 

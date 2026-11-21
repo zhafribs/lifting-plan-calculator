@@ -219,7 +219,15 @@ function ensureSelectMenu() {
     true,
   );
   window.addEventListener("resize", closeSelectMenu);
-  window.addEventListener("scroll", closeSelectMenu, true);
+  // Scrolling the list itself must not close it; only the page around it.
+  window.addEventListener(
+    "scroll",
+    (event) => {
+      if (selectMenu.contains(event.target)) return;
+      closeSelectMenu();
+    },
+    true,
+  );
   return selectMenu;
 }
 

@@ -12,6 +12,7 @@ import {
   numberInput,
   reportButton,
   selectInput,
+  attachSelectMenu,
   statusBadge,
 } from "../components.js";
 import { fmt } from "../format.js";
@@ -41,6 +42,7 @@ export function createOutriggerScreen(ctx) {
   // The description list is rebuilt when the category changes. A fixed-size
   // select would show every row at once and lose the category grouping.
   const groundSelect = el("select");
+  attachSelectMenu(groundSelect);
   groundSelect.addEventListener("change", () => {
     const ground = catalog.ground_types.find((item) => item.key === groundSelect.value);
     if (!ground) return;

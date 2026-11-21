@@ -1,3 +1,13 @@
+## [2.17.11] - 2026-11-21
+
+### Fixed
+
+- **The soil / rock description list matches every other dropdown.** It was the
+  one control still opening the platform's own list, which renders as a large
+  box under XWayland and did not look like the rest of the app. It now uses the
+  same drawn list, keyboard control and highlight as the ground category, pad
+  shape and every other picker.
+
 ## [2.17.10] - 2026-11-21
 
 ### Changed

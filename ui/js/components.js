@@ -122,10 +122,15 @@ export function selectInput({ options, value, onChange, disabled = false }) {
   select.addEventListener("change", () => {
     if (onChange) onChange(select.value);
   });
+  attachSelectMenu(select);
+  return select;
+}
 
-  // The platform's dropdown is a separate window that renders as a huge box
-  // over the control under XWayland. The <select> still holds the value,
-  // focus and keyboard state; only its list is drawn here.
+// Give an existing <select> the app's own dropdown, including a select whose
+// options are rebuilt later. The platform's dropdown is a separate window that
+// renders as a huge box over the control under XWayland. The <select> still
+// holds the value, focus and keyboard state; only its list is drawn here.
+export function attachSelectMenu(select) {
   select.setAttribute("aria-haspopup", "listbox");
   select.setAttribute("aria-expanded", "false");
   select.addEventListener("pointerdown", (event) => {
@@ -166,7 +171,6 @@ export function selectInput({ options, value, onChange, disabled = false }) {
       closeSelectMenu();
     }
   });
-  return select;
 }
 
 let selectMenu = null;

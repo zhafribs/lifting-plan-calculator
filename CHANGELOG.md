@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+### Fixed
+
+- **The working range diagram scales both ways.** The image carried a
+  `max-height` that pinned its height, so a scale changed only the width; the
+  height now follows the width and the capture keeps its own ratio.
+
 ### Changed
 
 - **The diagram scale is typed, not picked.** The Report sections card takes a

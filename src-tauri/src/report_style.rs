@@ -161,7 +161,10 @@ pub const REPORT_CSS: &str = r#"
 /* The diagram keeps the height it always had; the capture is what makes it
    sharp (3x, with its palette turned over, so no CSS filter softens it). */
 .report .working-diagram img { display: block; margin: 0 auto;
-    width: auto; height: auto; max-width: 100%; max-height: 78mm;
+    /* Width is set by the scale; height stays auto so the capture keeps its
+       own ratio. A max-height here used to pin the height and stretch the
+       diagram horizontally. */
+    width: auto; height: auto; max-width: 100%;
     border: 0.5pt solid #d9e1e9; border-radius: 3pt; background: #fff; }
 .report .metric-k { display: block; font-size: 5.5pt; letter-spacing: 0.3pt;
     text-transform: uppercase; color: #6d7a88; }

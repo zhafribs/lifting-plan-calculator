@@ -21,7 +21,8 @@ keep the diagram's ratio.
 - Input is clamped to 25–100 while typing and normalised on blur, so the field
   shows the value the report used.
 - The report sets only the image's width; its height stays auto, so the diagram
-  keeps its own aspect ratio at every scale.
+  keeps its own aspect ratio at every scale. The old `max-height: 78mm` on the
+  image pinned the height and made the scale horizontal-only; it is gone.
 
 ## Evidence
 

@@ -1,3 +1,11 @@
+## [2.17.10] - 2026-11-21
+
+### Changed
+
+- **The working range diagram starts at 50%.** A new plan prints the diagram at
+  half width instead of full width, which leaves the plan details above it
+  room to breathe. The scale field still takes any value from 25 to 100.
+
 ## [2.17.9] - 2026-11-21
 
 ### Added

@@ -94,9 +94,9 @@ export function createReportScreen(ctx) {
 
   const diagramInput = el("input", { type: "checkbox" });
   diagramInput.checked = true;
-  let diagramScale = 100;
+  let diagramScale = 50;
   const diagramScaleInput = numberInput({
-    value: 100,
+    value: 50,
     onInput: (value) => {
       const parsed = Number(value);
       if (Number.isFinite(parsed) && parsed > 0) {
@@ -112,7 +112,7 @@ export function createReportScreen(ctx) {
   // value the report actually used.
   diagramScaleInput.addEventListener("blur", () => {
     const parsed = Number(diagramScaleInput.value);
-    const next = Number.isFinite(parsed) ? Math.min(100, Math.max(25, parsed)) : 100;
+    const next = Number.isFinite(parsed) ? Math.min(100, Math.max(25, parsed)) : 50;
     diagramScaleInput.value = String(next);
     diagramScale = next;
     schedulePreview(0);

@@ -50,18 +50,10 @@ pub fn outrigger_section(result: &OutriggerResult) -> String {
     } else {
         out.push(subheading("Minimum square pad"));
         out.push(equation(&format!(
-            "\\text{{Side}} = \\sqrt{{A}} = {}\\ \\text{{m}}",
-            tex_num(Some(result.recommended_square_m), 3)
+            "\\text{{Side}} = \\sqrt{{A}} = {}\\ \\text{{m}} \\approx {}\\ \\text{{m}}",
+            tex_num(Some(result.recommended_square_m), 3),
+            tex_num(Some(result.recommended_square_rounded_m), 2)
         )));
-        out.push(p(
-            &format!(
-                "<b>Minimum pad:</b> {} × {} m, rounded up from {} m.",
-                fmt(Some(result.recommended_square_rounded_m), 2, ""),
-                fmt(Some(result.recommended_square_rounded_m), 2, ""),
-                fmt(Some(result.recommended_square_m), 3, "")
-            ),
-            "",
-        ));
     }
 
     let thickness = &result.thickness;
@@ -140,7 +132,8 @@ mod tests {
         assert!(html.contains("OUTRIGGER PAD SIZE"));
         assert!(html.contains("0.65 \\times (CM + L)"));
         assert!(html.contains("1.950"));
-        assert!(html.contains("1.40 × 1.40 m"));
+        assert!(html.contains("\\approx 1.40"));
+        assert!(!html.contains("Minimum pad:"));
         assert!(html.contains("Pad thickness"));
         assert!(!html.contains("Utilisation"));
         assert!(!html.contains("at 50 mm increments"));
@@ -150,7 +143,7 @@ mod tests {
     fn the_ground_text_comes_after_the_pad_result() {
         let result = solve_outrigger(&example_outrigger_inputs()).unwrap();
         let html = outrigger_section(&result);
-        let pad = html.find("Minimum pad:").unwrap();
+        let pad = html.find("Minimum square pad").unwrap();
         let ground = html.find("<b>Ground:</b>").unwrap();
         assert!(pad < ground);
     }

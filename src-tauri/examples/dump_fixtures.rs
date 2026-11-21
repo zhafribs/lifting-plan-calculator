@@ -143,6 +143,8 @@ fn main() {
             tandem: tandem_result,
             tandem_error: solved.tandem.error.clone(),
             crane_error: solved.crane.error.clone(),
+            load_items: Vec::new(),
+            tackle_items: Vec::new(),
             signoff: Default::default(),
             issued_at: None,
             working_diagram: None,

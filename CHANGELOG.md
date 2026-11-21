@@ -1,3 +1,26 @@
+## [Unreleased]
+
+### Added
+
+- **The plan lists the load and tackle lines.** Section 1 now prints the load
+  items (description, measured by, quantity, measurement, weight) and the
+  lifting tackle (description, quantity, weight each, subtotal) after the
+  required-capacity/usage working, or below the working range diagram when that
+  is printed.
+
+### Changed
+
+- **The chart-capacity note sits beside its label.** "at this radius / boom
+  angle" moved from under the figure to the label line, wrapping only when the
+  cell cannot hold both.
+
+- **The square-pad line carries both its exact and rounded side.** The report
+  prints `Side = √A = 1.396 m ≈ 1.40 m` and no longer repeats it as a separate
+  "Minimum pad" sentence.
+- **The plan-details usage cell no longer repeats "of chart capacity".** The
+  figure and the band already say it; the caution case keeps "past the 75%
+  target".
+
 ## [2.17.7] - 2026-11-21
 
 ### Changed

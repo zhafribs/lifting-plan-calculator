@@ -8,10 +8,10 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::calc::{crane_usage_band, UsageState};
+use crate::calc::{crane_usage_band, LoadType, UsageState};
 use crate::crane::{CraneResult, DESIGN_LOAD_RATIO};
 use crate::dto::PlanSignoff;
-use crate::model::LiftTotals;
+use crate::model::{LiftTotals, LoadItem, TackleItem};
 use crate::nonuniform::{NonuniformResult, TandemResult};
 use crate::outrigger::OutriggerResult;
 use crate::report_capacity::{capacity_section, notes_section, shows_notes, factors_section};
@@ -328,6 +328,10 @@ pub struct ReportInputs {
     pub signoff: PlanSignoff,
     /// When the plan was produced, as the client reported it.
     pub issued_at: Option<String>,
+    /// The load lines and tackle the plan was built from, in the order the
+    /// Overall Weight tab lists them.
+    pub load_items: Vec<LoadItem>,
+    pub tackle_items: Vec<TackleItem>,
     /// The Graph tab's working-range diagram, as a PNG data URL, or None.
     pub working_diagram: Option<String>,
     /// The centre text of every printed page's footer; None uses the default.
@@ -394,6 +398,19 @@ fn metric_cell_html(key: &str, value: &str, note_html: &str) -> String {
     }
     out.push_str("</td>");
     out
+}
+
+/// A metric whose note sits beside the label, wrapping under it only when the
+/// cell cannot hold both.
+fn metric_cell_aside(key: &str, value: &str, note: &str) -> String {
+    format!(
+        "<td><span class=\"metric-head\"><span class=\"metric-k\">{}</span>\
+         <span class=\"metric-aside\">{}</span></span>\
+         <span class=\"metric-v\">{}</span></td>",
+        escape(key),
+        escape(note),
+        escape(value)
+    )
 }
 
 /// Two workings side by side: a label and its formula in each cell.
@@ -491,11 +508,11 @@ fn metrics_table(crane: &CraneResult, gross: f64) -> String {
             ),
             Some(UsageState::Within) => (
                 "<span class=\"metric-band within\">WITHIN LIMIT</span>".to_string(),
-                "of chart capacity".to_string(),
+                String::new(),
             ),
             Some(UsageState::Caution) => (
                 "<span class=\"metric-band caution\">CAUTION</span>".to_string(),
-                "of chart capacity, past the 75% target".to_string(),
+                "past the 75% target".to_string(),
             ),
             None => {
                 let message = if crane.chart_capacity_kg.is_some() {
@@ -509,19 +526,23 @@ fn metrics_table(crane: &CraneResult, gross: f64) -> String {
                 )
             }
         };
+    let usage_sub = if usage_sub.is_empty() {
+        String::new()
+    } else {
+        format!("<span class=\"metric-sub\">{}</span>", escape(&usage_sub))
+    };
     let usage_cell = format!(
         "<td><span class=\"metric-k\">Usage at working radius</span>\
-         <span class=\"metric-line\"><span class=\"metric-v\">{}</span>{}</span>\
-         <span class=\"metric-sub\">{}</span></td>",
+         <span class=\"metric-line\"><span class=\"metric-v\">{}</span>{}</span>{}</td>",
         escape(&usage_value),
         usage_band,
-        escape(&usage_sub)
+        usage_sub
     );
 
     format!(
         "<table class=\"metrics\"><tr>{}{}{}</tr><tr>{}{}{}</tr></table>",
         metric_cell("Gross load at hook", &fmt(Some(gross), 2, "kg"), ""),
-        metric_cell(
+        metric_cell_aside(
             "Chart capacity",
             &chart_value,
             "at this radius / boom angle",
@@ -542,6 +563,8 @@ fn plan_head(
     gross: f64,
     crane: Option<&CraneResult>,
     working_diagram: Option<&str>,
+    load_items: &[LoadItem],
+    tackle_items: &[TackleItem],
 ) -> String {
     let entry = |value: &str| {
         if value.trim().is_empty() {
@@ -598,7 +621,84 @@ fn plan_head(
         out.push_str("</div>");
     }
 
+    // The lines follow the working, or the diagram when it is printed: the
+    // figures are read first, then the things that produced them.
+    out.push_str(&plan_lines(load_items, tackle_items));
+
     out.push_str("</section>");
+    out
+}
+
+/// The load and tackle lines, as two compact tables. A line with no name is a
+/// blank row the operator has not used yet, so it is left out of the plan.
+fn plan_lines(load_items: &[LoadItem], tackle_items: &[TackleItem]) -> String {
+    let loads: Vec<&LoadItem> = load_items
+        .iter()
+        .filter(|item| !item.name.trim().is_empty())
+        .collect();
+    let tackle: Vec<&TackleItem> = tackle_items
+        .iter()
+        .filter(|item| !item.description.trim().is_empty())
+        .collect();
+    if loads.is_empty() && tackle.is_empty() {
+        return String::new();
+    }
+
+    let mut out = String::new();
+    if !loads.is_empty() {
+        out.push_str("<div class=\"line-list-title\">Load items</div>");
+        out.push_str(
+            "<table class=\"line-list\"><thead><tr>\
+             <th>Description</th><th>Measured by</th><th class=\"n\">Qty</th>\
+             <th>Measurement</th><th class=\"n\">Weight</th></tr></thead><tbody>",
+        );
+        for item in loads {
+            let measurement = match item.load_type {
+                LoadType::PerMetre => format!(
+                    "{} × {}",
+                    fmt(Some(item.kg_per_metre), 2, "kg/m"),
+                    fmt(Some(item.length_m), 2, "m")
+                ),
+                LoadType::PerVolume => format!(
+                    "{} × {}",
+                    fmt(Some(item.volume_m3), 2, "m3"),
+                    fmt(Some(item.density_kg_m3), 2, "kg/m3")
+                ),
+                LoadType::Fixed => fmt(Some(item.weight_kg), 2, "kg"),
+            };
+            out.push_str(&format!(
+                "<tr><td>{}</td><td>{}</td><td class=\"n\">{}</td><td>{}</td>\
+                 <td class=\"n\">{}</td></tr>",
+                escape(item.name.trim()),
+                escape(item.load_type.label()),
+                item.qty,
+                escape(&measurement),
+                fmt(Some(item.weight()), 2, "kg")
+            ));
+        }
+        out.push_str("</tbody></table>");
+    }
+
+    if !tackle.is_empty() {
+        out.push_str("<div class=\"line-list-title\">Lifting tackle</div>");
+        out.push_str(
+            "<table class=\"line-list\"><thead><tr><th>Description</th>\
+             <th class=\"n\">Qty</th><th class=\"n\">Weight each</th>\
+             <th class=\"n\">Subtotal</th></tr></thead><tbody>",
+        );
+        for item in tackle {
+            out.push_str(&format!(
+                "<tr><td>{}</td><td class=\"n\">{}</td><td class=\"n\">{}</td>\
+                 <td class=\"n\">{}</td></tr>",
+                escape(item.description.trim()),
+                item.qty,
+                fmt(Some(item.weight_kg), 2, "kg"),
+                fmt(Some(item.subtotal()), 2, "kg")
+            ));
+        }
+        out.push_str("</tbody></table>");
+    }
+
     out
 }
 
@@ -678,6 +778,8 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
             gross,
             crane_for_head,
             working_diagram,
+            &inputs.load_items,
+            &inputs.tackle_items,
         ),
     ];
 
@@ -1013,6 +1115,7 @@ mod tests {
             "<h1>Lifting Plan",
             "<span class=\"plan-crane\"> - Kobelco CKE90G-2</span>",
             "<span class=\"metric-k\">Chart capacity</span>\
+             <span class=\"metric-aside\">at this radius / boom angle</span></span>\
              <span class=\"metric-v\">16,000.00 kg</span>",
             "<span class=\"metric-k\">Gross load at hook</span>\
              <span class=\"metric-v\">2,000.00 kg</span>",
@@ -1095,6 +1198,7 @@ mod tests {
         ));
         assert!(html.contains(
             "<span class=\"metric-k\">Chart capacity</span>\
+             <span class=\"metric-aside\">at this radius / boom angle</span></span>\
              <span class=\"metric-v\">Not evaluated</span>"
         ));
         assert!(html.contains(
@@ -1361,6 +1465,55 @@ mod tests {
     }
 
     #[test]
+    fn the_plan_lists_the_load_and_tackle_lines() {
+        let inputs = ReportInputs {
+            load_items: vec![LoadItem {
+                name: "Steel plate".to_string(),
+                qty: 2,
+                weight_kg: 500.0,
+                ..LoadItem::default()
+            }],
+            tackle_items: vec![TackleItem {
+                description: "4-leg chain sling".to_string(),
+                qty: 2,
+                weight_kg: 25.0,
+                ..TackleItem::default()
+            }],
+            ..ReportInputs::default()
+        };
+        let html = build_report_html(&inputs, &[]);
+        assert!(html.contains("Load items"));
+        assert!(html.contains("Steel plate"));
+        assert!(html.contains("1,000.00 kg"));
+        assert!(html.contains("4-leg chain sling"));
+        assert!(html.contains("50.00 kg"));
+    }
+
+    #[test]
+    fn the_line_lists_follow_the_working_diagram_when_one_is_printed() {
+        let inputs = ReportInputs {
+            load_items: vec![LoadItem {
+                name: "Steel plate".to_string(),
+                weight_kg: 500.0,
+                ..LoadItem::default()
+            }],
+            working_diagram: Some("data:image/png;base64,AAAA".to_string()),
+            ..ReportInputs::default()
+        };
+        let html = build_report_html(&inputs, &[]);
+        assert!(html.find("Working range diagram") < html.find("Load items"));
+    }
+
+    #[test]
+    fn the_chart_capacity_note_sits_beside_the_label() {
+        let html = report(example_crane(), &["crane"]);
+        assert!(html.contains(
+            "<span class=\"metric-head\"><span class=\"metric-k\">Chart capacity</span>"
+        ));
+        assert!(html.contains("metric-aside"));
+    }
+
+    #[test]
     fn the_print_copy_drops_the_margin_boxes_but_keeps_the_page() {
         let html = build_report_html(
             &ReportInputs {
@@ -1374,6 +1527,8 @@ mod tests {
                 tandem: None,
                 tandem_error: None,
                 crane_error: None,
+                load_items: Vec::new(),
+                tackle_items: Vec::new(),
                 signoff: PlanSignoff::default(),
                 issued_at: None,
                 working_diagram: None,

@@ -92,6 +92,19 @@ pub const REPORT_CSS: &str = r#"
 .report table.input-grid td { border: 0; padding: 3.5pt 5pt; background: #f2f6fa;
     border-radius: 3pt; vertical-align: top; }
 .report table.input-grid .input-v { font-size: 8pt; }
+.report .line-list-title { font-size: 6pt; font-weight: bold;
+    letter-spacing: 0.3pt; text-transform: uppercase; color: #6d7a88;
+    margin: 6pt 0 1.5pt; }
+.report table.line-list { width: 100%; border-collapse: collapse;
+    table-layout: auto; margin: 0 0 3pt; font-size: 7pt; }
+.report table.line-list th { border: 0; border-bottom: 0.5pt solid #ccd6e0;
+    padding: 1.5pt 3pt; text-align: left; font-size: 5.5pt;
+    letter-spacing: 0.2pt; text-transform: uppercase; color: #6d7a88;
+    font-weight: normal; }
+.report table.line-list td { border: 0; border-bottom: 0.5pt solid #e4eaf1;
+    padding: 2pt 3pt; color: #1b2733; vertical-align: top; }
+.report table.line-list .n { text-align: right; white-space: nowrap; }
+.report table.line-list tr:last-child td { border-bottom: 0; }
 .report .working-wrap { padding: 0; margin-top: 6pt; }
 .report table.working { width: 100%; border-collapse: collapse; margin: 4pt 0 4pt;
     /* Auto, not fixed: the divider sits at the true centre when both sides fit,
@@ -153,6 +166,10 @@ pub const REPORT_CSS: &str = r#"
 .report .metric-line .metric-band { margin: 0; }
 .report .metric-n { display: block; font-size: 5.5pt; color: #5d6b7a;
     margin-top: 1pt; line-height: 1.2; }
+.report .metric-head { display: flex; align-items: baseline; gap: 3pt;
+    flex-wrap: wrap; }
+.report .metric-aside { font-size: 5.5pt; letter-spacing: 0;
+    text-transform: none; color: #6d7a88; font-weight: normal; }
 .report .metric-band { display: block; font-size: 8pt; font-weight: bold;
     letter-spacing: 0.3pt; line-height: 1.1; margin-top: 1pt; }
 .report .metric-sub { display: block; font-size: 6pt; color: #5d6b7a;

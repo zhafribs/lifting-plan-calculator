@@ -375,6 +375,8 @@ pub fn build_report(
         tandem,
         tandem_error: solved.tandem.error,
         crane_error: solved.crane.error,
+        load_items: state.load_items.clone(),
+        tackle_items: state.tackle_items.clone(),
         signoff,
         issued_at: Some(issued_at).filter(|value| !value.is_empty()),
         working_diagram,

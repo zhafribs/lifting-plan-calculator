@@ -2,7 +2,7 @@
 
 **Status:** accepted
 **Date:** 2026-11-21
-**Release:** next tag
+**Release:** v2.17.9
 **Change:** `src-tauri/src/model.rs`, `src-tauri/src/report.rs`,
 `ui/js/store.js`, `ui/js/screens/overall.js`, `ui/js/screens/report.js`,
 `ui/css/app.css`, `CHANGELOG.md`

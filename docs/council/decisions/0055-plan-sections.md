@@ -2,7 +2,7 @@
 
 **Status:** accepted
 **Date:** 2026-11-21
-**Release:** next tag
+**Release:** v2.17.9
 **Change:** `src-tauri/src/report.rs`, `ui/js/screens/report.js`,
 `CHANGELOG.md`
 **Seats:** three seats, each covering charter roles: Safety & QA (Domain Safety

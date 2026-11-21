@@ -21,10 +21,10 @@ Two printed lines repeated what the line above them already said:
 
 ## What changed
 
-- The square-pad equation now carries both figures on one line with its
-  label: `Minimum square pad  Side = √A = 1.396 m ≈ 1.40 m`. The `Minimum pad`
-  sentence is gone. The formula keeps `√A`: the side of a square is the square
-  root of its area.
+- The square pad is a centred rule between two hairlines: the bold
+  `Minimum square pad` and `Side = √A = 1.396 m ≈ 1.40 m` on one line. The
+  `Minimum pad` sentence is gone. The formula keeps `√A`: the side of a square
+  is the square root of its area.
 - The plan-details usage sub-line drops `of chart capacity`; the caution case
   keeps `past the 75% target`, and an empty sub-line no longer renders a blank
   row element.

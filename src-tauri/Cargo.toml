@@ -1,6 +1,6 @@
 [package]
 name = "lifting-plan-calculator"
-version = "2.17.7"
+version = "2.17.8"
 description = "Lifting plan calculator for rigging and crane lifts"
 authors = ["Zhafri Syazwi"]
 edition = "2021"

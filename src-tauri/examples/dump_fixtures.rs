@@ -148,6 +148,7 @@ fn main() {
             signoff: Default::default(),
             issued_at: None,
             working_diagram: None,
+            diagram_scale: None,
             footer_center: None,
         page_breaks: Vec::new(),
         },

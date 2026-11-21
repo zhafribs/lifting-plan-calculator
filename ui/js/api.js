@@ -17,7 +17,17 @@ export const api = {
   pickChartFile: () => invoke("pick_chart_file"),
   importChart: (state, path) => invoke("import_chart", { state, path }),
   chartUpdate: (crane, action) => invoke("chart_update", { crane, action }),
-  buildReport: (state, include, issuedAt, signoff, workingDiagram, footerCenter, margins, pageBreaks) =>
+  buildReport: (
+    state,
+    include,
+    issuedAt,
+    signoff,
+    workingDiagram,
+    footerCenter,
+    margins,
+    pageBreaks,
+    diagramScale,
+  ) =>
     invoke("build_report", {
       state,
       include,
@@ -27,6 +37,7 @@ export const api = {
       footerCenter,
       margins,
       pageBreaks,
+      diagramScale,
     }),
   saveReport: (html, suggestedName) => invoke("save_report", { html, suggestedName }),
   savePdf: (html, suggestedName, footer, margins) =>

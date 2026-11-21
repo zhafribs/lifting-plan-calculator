@@ -355,6 +355,7 @@ pub fn build_report(
     issued_at: String,
     signoff: PlanSignoff,
     working_diagram: Option<String>,
+    diagram_scale: Option<f64>,
     footer_center: Option<String>,
     margins: Option<crate::report::PageMargins>,
     page_breaks: Option<Vec<String>>,
@@ -380,6 +381,7 @@ pub fn build_report(
         signoff,
         issued_at: Some(issued_at).filter(|value| !value.is_empty()),
         working_diagram,
+        diagram_scale: Some(diagram_scale.unwrap_or(100.0).clamp(25.0, 100.0)),
         footer_center,
         page_breaks: page_breaks.unwrap_or_default(),
     };

@@ -334,6 +334,8 @@ pub struct ReportInputs {
     pub tackle_items: Vec<TackleItem>,
     /// The Graph tab's working-range diagram, as a PNG data URL, or None.
     pub working_diagram: Option<String>,
+    /// The diagram's width as a percentage of its column; None is 100.
+    pub diagram_scale: Option<f64>,
     /// The centre text of every printed page's footer; None uses the default.
     pub footer_center: Option<String>,
     /// Sections the operator wants to start on a new page: "crane",
@@ -557,12 +559,14 @@ fn metrics_table(crane: &CraneResult, gross: f64) -> String {
 /// The plan's head: title and model, the plan's own lines, then the figures
 /// and the verdict. Printed even when no crane section is selected — a plan is
 /// signed on paper, and a blank line is what gets a name written on it.
+#[allow(clippy::too_many_arguments)]
 fn plan_head(
     signoff: &PlanSignoff,
     issued_at: Option<&str>,
     gross: f64,
     crane: Option<&CraneResult>,
     working_diagram: Option<&str>,
+    diagram_scale: Option<f64>,
     load_items: &[LoadItem],
     tackle_items: &[TackleItem],
 ) -> String {
@@ -614,8 +618,9 @@ fn plan_head(
     if let Some(source) = working_diagram {
         out.push_str("<div class=\"working-diagram\">");
         out.push_str("<div class=\"diagram-title\">Working range diagram</div>");
+        let scale = diagram_scale.unwrap_or(100.0).clamp(25.0, 100.0);
         out.push_str(&format!(
-            "<img src=\"{}\" alt=\"Working range diagram\">",
+            "<img src=\"{}\" alt=\"Working range diagram\" style=\"width: {scale:.0}%;\">",
             escape(source)
         ));
         out.push_str("</div>");
@@ -761,6 +766,7 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
             gross,
             crane_for_head,
             working_diagram,
+            inputs.diagram_scale,
             &inputs.load_items,
             &inputs.tackle_items,
         ),
@@ -1488,6 +1494,17 @@ mod tests {
     }
 
     #[test]
+    fn the_diagram_scale_reaches_the_image() {
+        let inputs = ReportInputs {
+            working_diagram: Some("data:image/png;base64,AAAA".to_string()),
+            diagram_scale: Some(50.0),
+            ..ReportInputs::default()
+        };
+        let html = build_report_html(&inputs, &[]);
+        assert!(html.contains("style=\"width: 50%;\""));
+    }
+
+    #[test]
     fn the_chart_capacity_note_sits_beside_the_label() {
         let html = report(example_crane(), &["crane"]);
         assert!(html.contains(
@@ -1515,6 +1532,7 @@ mod tests {
                 signoff: PlanSignoff::default(),
                 issued_at: None,
                 working_diagram: None,
+                diagram_scale: None,
                 footer_center: None,
                 page_breaks: Vec::new(),
             },

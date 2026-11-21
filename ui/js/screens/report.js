@@ -2,7 +2,7 @@
 
 import { el, svgIcon, debounce, escapeHtml } from "../dom.js";
 import { api, errorText } from "../api.js";
-import { card, field, textInput } from "../components.js";
+import { card, field, selectInput, textInput } from "../components.js";
 import { captureWorkingDiagram } from "../graph/snapshot.js";
 import { createPdfViewer } from "../pdf-viewer.js";
 
@@ -83,7 +83,23 @@ export function createReportScreen(ctx) {
   }
 
   const diagramInput = el("input", { type: "checkbox" });
+  let diagramScale = 100;
+  const diagramScaleInput = selectInput({
+    options: [
+      { key: "50", label: "50%" },
+      { key: "75", label: "75%" },
+      { key: "100", label: "100%" },
+    ],
+    value: "100",
+    disabled: true,
+    onChange: (value) => {
+      diagramScale = Number(value);
+      schedulePreview(0);
+      schedulePdf(0);
+    },
+  });
   diagramInput.addEventListener("change", () => {
+    diagramScaleInput.disabled = !diagramInput.checked;
     if (!diagramInput.checked) {
       schedulePreview(0);
       schedulePdf(0);
@@ -92,6 +108,7 @@ export function createReportScreen(ctx) {
     const url = captureWorkingDiagram();
     if (!url) {
       diagramInput.checked = false;
+      diagramScaleInput.disabled = true;
       toast(
         "The working range diagram could not be drawn; check the Graph tab inputs.",
         "error",
@@ -110,6 +127,12 @@ export function createReportScreen(ctx) {
       {},
       el("div", { class: "t", text: "Working range diagram" }),
       el("div", { class: "d", text: "The current crane and jib configuration" }),
+    ),
+    el(
+      "span",
+      { class: "diagram-scale" },
+      el("span", { class: "d", text: "Scale" }),
+      diagramScaleInput,
     ),
   );
 
@@ -604,6 +627,7 @@ export function createReportScreen(ctx) {
         footerText,
         margins,
         [...pageBreaks],
+        diagramScale,
       );
       lastHtml = html;
       // srcdoc pages do not resolve the wrapper's relative asset paths, so the

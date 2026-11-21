@@ -1,7 +1,10 @@
-## [Unreleased]
+## [2.17.8] - 2026-11-21
 
 ### Added
 
+- **The working range diagram scales in the report.** The Report sections card
+  carries a 50 / 75 / 100% scale beside the diagram tick; the chosen width
+  shows in the preview, the saved HTML and the PDF.
 - **The plan lists the load and tackle lines side by side.** Section 1 prints
   two small lists — description and subtotal only — with the load items on the
   left and the lifting tackle on the right, after the required-capacity/usage

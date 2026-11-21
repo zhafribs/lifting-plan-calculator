@@ -1,17 +1,17 @@
 # Graph Report - lifting-plan-calculator  (2026-11-21)
 
 ## Corpus Check
-- 234 files · ~237,851 words
+- 238 files · ~237,446 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 43 file(s) not represented in the graph (top: .woff2 22, (none) 8, .xml 3)
 
 ## Summary
-- 6757 nodes · 11928 edges · 556 communities (247 shown, 309 thin omitted)
-- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 706 edges (avg confidence: 0.84)
+- 6784 nodes · 11956 edges · 530 communities (245 shown, 285 thin omitted)
+- Extraction: 94% EXTRACTED · 6% INFERRED · 0% AMBIGUOUS · INFERRED: 708 edges (avg confidence: 0.84)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `c8d27986`
+- Built from commit: `9945ced8`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -27,9 +27,9 @@
 - Uniform Load Report
 - Sling Calculations
 - Formatting & Update Check
-- excel.rs
+- CellValue
 - Excel Load Chart Parsing
-- Capacity Report Blocks
+- calc.rs
 - TemplateNamespace
 - LoadChartData
 - CI Workflow
@@ -47,7 +47,7 @@
 - Feature Request Issue Form
 - Fixture Dump Example
 - UI Store & Actions
-- Chart Holder Commands
+- BaseFullReader
 - Nonuniform Result Types
 - KaTeX Spacing
 - KaTeX Parse Nodes
@@ -61,7 +61,7 @@
 - Solve Section State
 - KaTeX Text Nodes
 - KaTeX Escaping Helpers
-- KaTeX Node Markup A
+- ChartRow
 - appearance.rs
 - Lifting Plan Calculator: a practical tutorial
 - KaTeX Node Markup C
@@ -75,9 +75,9 @@
 - dt
 - parse
 - j
-- read_chart
-- AppState
-- ChartError
+- excel.rs
+- dto.rs
+- stamp
 - AnnotationEditor
 - executeOpTree
 - Q
@@ -86,7 +86,7 @@
 - XFAObject
 - lifting-plan-calculator
 - 0002 — A human-friendly plan head
-- windows-theme.js
+- Review Focus
 - 0005 — Print the plan with the app's own web view
 - Lifting Plan Calculator 2.5.2
 - Lifting Plan Calculator 2.5.3
@@ -113,14 +113,14 @@
 - env
 - Windows 11 Fluent design
 - .[r.$toHTML]
-- ariaLabel
-- figures.rs
+- PopupElement
+- PageMargins
 - update-signing-key.sh
 - createPdfViewer
 - Lifting Plan Calculator 2.9.4
 - sign-manifest
-- LoadItem
-- ObjectId
+- StampAnnotation
+- MeshStreamReader
 - Lifting Plan Calculator 2.9.3
 - InkEditor
 - AESBaseCipher
@@ -131,13 +131,13 @@
 - CanvasGraphics
 - 0013 — An update must be newer, and nothing is read from a path the app did not grant
 - Lifting Plan Calculator 2.11.0
-- ChartHolder
-- is_newer
+- window_theme
+- UpdateInfo
 - Text
 - checkAndRepair
 - FreeTextEditor
 - create
-- BaseFullReader
+- PDFNetworkStreamRangeRequestReader
 - AnnotationEditorUIManager
 - ExclGroup
 - constructor
@@ -155,7 +155,7 @@
 - JpxError
 - CMap
 - WidgetAnnotationElement
-- PDFNetworkStreamRangeRequestReader
+- 0033 — A small curated palette set
 - WorkerTransport
 - Subform
 - MeshShading
@@ -182,7 +182,7 @@
 - BaseStream
 - XMLParserBase
 - .createDocumentHandler
-- Caption
+- 0036 — Margins, tooltips and the small-window rail
 - CanvasExtraState
 - ChunkedStream
 - PDFImage
@@ -192,6 +192,7 @@
 - BaseShadingPattern
 - io.github.zhafribs.LiftingPlanCalculator.yml
 - Dict
+- 0057 — The working range diagram starts at half width
 - CalRGBCS
 - ColorSpace
 - .getTextContent
@@ -199,7 +200,7 @@
 - InternalRenderTask
 - CFFDict
 - ContentObject
-- XFAParser
+- 0058 — The ground description list uses the drawn dropdown
 - 0006 — The report preview is the PDF
 - XFAFactory
 - DOMFilterFactory
@@ -215,7 +216,7 @@
 - verified_download
 - FakeUnicodeFont
 - ImageResizer
-- SimpleDOMNode
+- Lifting Plan Calculator 2.17.10
 - XFAObjectArray
 - verified_manifest
 - ImageManager
@@ -225,13 +226,12 @@
 - LabCS
 - Stream
 - XFAAttribute
-- Nr
+- Lifting Plan Calculator 2.17.11
 - AGENTS.md
 - CachedCanvases
 - .save
 - ._parse
 - BinaryCMapStream
-- .p
 - Lifting Plan Calculator 2.7.0
 - FontInfo
 - fetch
@@ -240,7 +240,7 @@
 - RefSetCache
 - PDFObjects
 - .setBorderStyle
-- compileCharString
+- .buildFormXObject
 - .compile
 - OpenTypeFileBuilder
 - PageArea
@@ -251,7 +251,7 @@
 - PageViewport
 - digest_file
 - TilingPattern
-- build
+- Signature
 - Transform
 - Xdp
 - Datasets
@@ -262,13 +262,14 @@
 - BaseCanvasFactory
 - BaseFilterFactory
 - Architecture
+- FreeTextAnnotation
 - Br
 - CalGrayCS
 - Lifting Plan Calculator 2.13.0
 - Lifting Plan Calculator 2.15.0
 - DeviceCmykCS
 - DeviceRgbCS
-- FlateStream
+- Z
 - IndexedCS
 - LocaleSetNamespace
 - Lifting Plan Calculator 2.17.9
@@ -298,7 +299,7 @@
 - 0037 — The Windows install layout, and 2.17.2
 - Packets
 - PageRange
-- Picture
+- Stylesheet
 - Range
 - Record
 - Relevant
@@ -307,13 +308,12 @@
 - Validate
 - ValidateApprovalSignatures
 - Window
-- ContentArea
+- LocaleSet
 - Font
-- Html
-- Items
-- Linear
+- P
+- setIfIdle
+- CalendarSymbols
 - NameOrNumberTree
-- Stipple
 - Variables
 - .getId
 - 0051 — A typed diagram scale
@@ -329,7 +329,7 @@
 - BatchOutput
 - Lifting Plan Calculator 2.13.3
 - Cache
-- Calculate
+- SoapAction
 - Lifting Plan Calculator 2.17.8
 - Cmd
 - Common
@@ -428,7 +428,7 @@
 - 0056 — Tackle belongs to a lift, and every line control is boxed
 - Lifting Plan Calculator 2.14.0
 - Lifting Plan Calculator 2.15.1
-- Filter
+- CurrencySymbol
 - fingerprints
 - Lifting Plan Calculator 2.16.0
 - Lifting Plan Calculator 2.17.0
@@ -437,8 +437,8 @@
 - check-vendored.sh
 - Lifting Plan Calculator 2.17.3
 - Lifting Plan Calculator 2.17.7
-- createUniformScreen
-- outside_the_appimage
+- CurrencySymbols
+- DatePattern
 - ADR-0006 — Outrigger pad sizing uses the presumed bearing area
 - 0015 — Windows prints without a window
 - 0016 — The diagram has to be readable on the plan
@@ -483,39 +483,40 @@
 - Lifting Plan Calculator 2.17.6
 - ExData
 - PageSet
+- DatePatterns
 - Lifting Plan Calculator 2.16.10
 - Lifting Plan Calculator 2.16.11
 - Lifting Plan Calculator 2.16.4
 - Lifting Plan Calculator 2.16.5
 - Lifting Plan Calculator 2.16.6
 - Lifting Plan Calculator 2.16.8
-- Traverse
-- writeDict
+- DateTimeSymbols
+- Day
 - linux-distro-packages
 - windows-installers
 - tauri.windows.conf.json
 - K
-- Assist
-- Button
+- DayNames
+- Era
 - Message
 - Fill
 - ImageEdit
-- LockDocument
-- LZWStream
-- Margin
+- EraNames
+- MeridiemNames
+- Month
 - Occur
-- Para
-- Pattern
+- MonthNames
+- NumberPattern
 - Radial
-- Solid
+- NumberPatterns
 - SubjectDN
 - AstVariable
-- Bind
-- Bookend
-- Break
-- Certificate
-- Certificates
-- Comb
+- NumberSymbol
+- NumberSymbols
+- TimePattern
+- TimePatterns
+- TypeFace
+- TypeFaces
 - Debug
 - DocumentAssembly
 - Embed
@@ -525,34 +526,8 @@
 - Overprint
 - Pagination
 - Pdfa
-- Connect
-- DefaultUi
-- Desc
-- DigestMethod
-- DigestMethods
-- EncryptionMethod
-- EncryptionMethods
-- Extras
-- Format
-- Handler
-- Hyphenation
-- Issuers
-- Keep
-- Manifest
-- Mdp
-- Oid
-- Oids
-- PasswordEdit
-- Proto
-- Reason
-- Reasons
-- SetProperty
-- SignData
-- Speak
-- SubjectDNs
-- Submit
-- ToolTip
-- Traversal
+- SignatureWidgetAnnotation
+- PREVIEW_GENERATION
 - make-arch-package.sh
 - make-flatpak.sh
 
@@ -575,15 +550,15 @@
   docs/council/decisions/0043-load-lines-as-forms.md → ui/js/components.js
 - `What changed` --references--> `kvRows()`  [INFERRED]
   docs/council/decisions/0045-ledger-rebuild-and-2-17-7.md → ui/js/components.js
-- `Known limits` --references--> `measurementFields()`  [INFERRED]
-  docs/council/decisions/0039-load-line-two-boxes-and-2-17-3.md → ui/js/screens/overall.js
+- `What the council saw` --references--> `applyTheme()`  [INFERRED]
+  docs/council/decisions/0033-curated-palettes.md → ui/js/theme.js
 - `Proposal` --references--> `chooseJib()`  [INFERRED]
   docs/council/decisions/0014-csp-and-jib-chart-basis.md → ui/js/store.js
 
 ## Import Cycles
-- 2-file cycle: `src-tauri/src/report.rs -> src-tauri/src/report_outrigger.rs -> src-tauri/src/report.rs`
-- 2-file cycle: `src-tauri/src/report.rs -> src-tauri/src/report_capacity.rs -> src-tauri/src/report.rs`
 - 2-file cycle: `src-tauri/src/report.rs -> src-tauri/src/report_nonuniform.rs -> src-tauri/src/report.rs`
+- 2-file cycle: `src-tauri/src/report.rs -> src-tauri/src/report_capacity.rs -> src-tauri/src/report.rs`
+- 2-file cycle: `src-tauri/src/report.rs -> src-tauri/src/report_outrigger.rs -> src-tauri/src/report.rs`
 - 2-file cycle: `src-tauri/src/report.rs -> src-tauri/src/report_uniform.rs -> src-tauri/src/report.rs`
 - 2-file cycle: `src-tauri/src/calc.rs -> src-tauri/src/model.rs -> src-tauri/src/calc.rs`
 
@@ -595,7 +570,7 @@
 - **Per-Tag Release Notes Pipeline** — changelog_changelog, changelog_unreleased_section, contributing_release_process, docs_releases_readme_release_notes_process, docs_releases_readme_notes_file_shape, docs_council_decisions_0001_per_tag_release_notes_one_file_per_tag, docs_council_decisions_0001_per_tag_release_notes_release_gate, docs_council_decisions_0001_per_tag_release_notes_draft_first_publish [EXTRACTED 1.00]
 - **Safety Verdict Integrity (Band, Refusal, Booked Check, Scope)** — readme_seventy_five_percent_rule, readme_scope_of_use, docs_adr_0001_rated_capacity_envelope_out_of_chart_refusal, docs_adr_0001_rated_capacity_envelope_charted_point_principle, docs_adr_0002_booked_rating_check_booked_check, docs_council_roles_domain_safety_engineer [INFERRED 0.85]
 
-## Communities (556 total, 309 thin omitted)
+## Communities (530 total, 285 thin omitted)
 
 ### Community 0 - "createReportScreen"
 Cohesion: 0.18
@@ -603,7 +578,7 @@ Nodes (20): escapeHtml(), captureWorkingDiagram(), createReportScreen(), applyPa
 
 ### Community 2 - "KaTeX Parser Internals"
 Cohesion: 0.08
-Nodes (54): CalcException, a_hand_typed_line_carries_all_four_of_its_columns_into_the_result(), a_jib_angle_below_the_first_row_is_refused(), a_jib_angle_between_chart_rows_uses_the_lower_row(), a_jib_angle_is_implied_from_the_radius_for_the_lower_solution(), a_jib_angle_outside_the_jib_sheet_is_refused_with_its_own_range(), a_jib_configuration_derives_the_working_radius_from_the_boom_angle(), a_jib_configuration_is_checked_against_the_jib_table_at_the_boom_angle() (+46 more)
+Nodes (49): CalcException, a_hand_typed_line_carries_all_four_of_its_columns_into_the_result(), a_jib_angle_below_the_first_row_is_refused(), a_jib_angle_between_chart_rows_uses_the_lower_row(), a_jib_angle_is_implied_from_the_radius_for_the_lower_solution(), a_jib_angle_outside_the_jib_sheet_is_refused_with_its_own_range(), a_jib_configuration_derives_the_working_radius_from_the_boom_angle(), a_jib_configuration_is_checked_against_the_jib_table_at_the_boom_angle() (+41 more)
 
 ### Community 3 - "Working Range Diagram Geometry"
 Cohesion: 0.16
@@ -614,48 +589,48 @@ Cohesion: 0.06
 Nodes (53): Lifting Plan Calculator 2.1.0 release notes, Independent scroll panes on wide windows, Rail footer pinned beneath the icon rail, Scope of use — calculation aid, not a certified lift plan, Always-visible working range diagram (Graph tab), Lifting Plan Calculator 2.1.1 release notes, Lifting Plan Calculator 2.1.2 release notes, Overall Weight tab (+45 more)
 
 ### Community 5 - "el"
-Cohesion: 0.15
-Nodes (42): Evidence, card(), chooseSelectOption(), clearButton(), closeSelectMenu(), emptyState(), ensureSelectMenu(), exampleButton() (+34 more)
+Cohesion: 0.12
+Nodes (59): Evidence, What changed, attachSelectMenu(), card(), chooseSelectOption(), clearButton(), closeSelectMenu(), emptyState() (+51 more)
 
 ### Community 6 - "Release Workflow"
-Cohesion: 0.12
-Nodes (44): createGraphScreen(), apply(), applyWorkbook(), checkboxOption(), drawAngleArc(), drawAxesGround(), drawBoom(), drawCrane() (+36 more)
+Cohesion: 0.11
+Nodes (46): registerGraphCapture(), createGraphScreen(), apply(), applyWorkbook(), checkboxOption(), drawAngleArc(), drawAxesGround(), drawBoom() (+38 more)
 
 ### Community 7 - "HTML Report Builder"
-Cohesion: 0.09
-Nodes (44): HitchSpecDto, report_with(), solve(), a_bridle_is_rated_on_one_leg_fewer_than_it_has(), a_missing_shape_measurement_is_named_rather_than_treated_as_zero(), a_one_leg_sling_is_never_derated_by_a_leftover_tag_angle(), a_rectangular_choke_flare_must_stay_inside_the_vertical(), a_sling_too_short_for_the_wrap_names_the_length_it_needs() (+36 more)
+Cohesion: 0.10
+Nodes (38): report_with(), solve(), a_bridle_is_rated_on_one_leg_fewer_than_it_has(), a_missing_shape_measurement_is_named_rather_than_treated_as_zero(), a_one_leg_sling_is_never_derated_by_a_leftover_tag_angle(), a_rectangular_choke_flare_must_stay_inside_the_vertical(), a_sling_too_short_for_the_wrap_names_the_length_it_needs(), a_two_leg_sling_does_take_its_rated_angle() (+30 more)
 
 ### Community 8 - "Uniform Load Report"
-Cohesion: 0.06
-Nodes (70): CraneResult, DESIGN_LOAD_RATIO, PlanSignoff, a_blank_crane_says_not_entered_rather_than_zero(), a_chart_with_no_capacity_omits_the_usage_equation(), a_chosen_margin_reaches_the_page_that_is_printed(), a_crane_check_that_could_not_be_made_is_named_in_the_plan(), a_null_figure_is_not_a_zero() (+62 more)
+Cohesion: 0.05
+Nodes (74): CraneResult, PlanSignoff, example_outrigger_inputs(), a_blank_crane_says_not_entered_rather_than_zero(), a_chart_with_no_capacity_omits_the_usage_equation(), a_chosen_margin_reaches_the_page_that_is_printed(), a_crane_check_that_could_not_be_made_is_named_in_the_plan(), a_null_figure_is_not_a_zero() (+66 more)
 
 ### Community 9 - "Sling Calculations"
-Cohesion: 0.08
-Nodes (48): a_failed_export_leaves_the_chosen_file_alone(), a_finished_pdf_replaces_the_chosen_file(), a_newer_preview_supersedes_an_older_one(), a_report_key_changes_with_the_report_and_its_footer(), a_suggested_report_name_cannot_choose_a_folder(), an_interrupted_save_is_cleared_but_a_fresh_one_is_left_alone(), APPIMAGE_ENV, cached_preview() (+40 more)
+Cohesion: 0.07
+Nodes (53): a_failed_export_leaves_the_chosen_file_alone(), a_finished_pdf_replaces_the_chosen_file(), a_newer_preview_supersedes_an_older_one(), a_report_key_changes_with_the_report_and_its_footer(), a_suggested_report_name_cannot_choose_a_folder(), an_external_program_is_started_outside_the_appimage(), an_interrupted_save_is_cleared_but_a_fresh_one_is_left_alone(), app_info() (+45 more)
 
 ### Community 10 - "Formatting & Update Check"
-Cohesion: 0.05
-Nodes (25): _, A, ct(), $e(), handler(), Hr(), w(), htmlBuilder() (+17 more)
+Cohesion: 0.06
+Nodes (24): _, A, ct(), $e(), handler(), Hr(), w(), htmlBuilder() (+16 more)
 
-### Community 11 - "excel.rs"
-Cohesion: 0.08
-Nodes (46): a_column_workbook_parses_to_the_references_own_table(), a_crane_title_line_names_the_machine_and_its_rating(), a_sheet_that_claims_the_whole_grid_is_refused_instead_of_allocated(), a_small_sheet_is_read_with_its_cells_in_place(), CellValue, Number, Text, chart_number() (+38 more)
+### Community 11 - "CellValue"
+Cohesion: 0.16
+Nodes (27): CellValue, Number, Text, chart_number(), declared_unit(), detect_header_row(), detect_matrix(), detect_unit() (+19 more)
 
 ### Community 12 - "Excel Load Chart Parsing"
 Cohesion: 0.05
 Nodes (47): name, runs-on, steps, concurrency, cancel-in-progress, group, env, CARGO_TERM_COLOR (+39 more)
 
-### Community 13 - "Capacity Report Blocks"
-Cohesion: 0.16
-Nodes (25): a_zero_quantity_line_still_carries_its_weight_on_a_load_line_but_not_on_tackle(), CalcResult, chart_lookup_interpolates_between_charted_radii(), chart_lookup_refuses_a_radius_the_chart_does_not_rate(), chart_usage_percent(), clamp_qty(), crane_usage_band(), CRANE_USAGE_RATIO (+17 more)
+### Community 13 - "calc.rs"
+Cohesion: 0.06
+Nodes (43): a_zero_quantity_line_still_carries_its_weight_on_a_load_line_but_not_on_tackle(), CalcResult, chart_lookup_interpolates_between_charted_radii(), chart_lookup_refuses_a_radius_the_chart_does_not_rate(), chart_usage_percent(), ChartError, Empty, Negative (+35 more)
 
 ### Community 14 - "TemplateNamespace"
-Cohesion: 0.04
-Nodes (15): AppearanceFilter, Barcode, BindItems, Encoding, Encodings, EncryptData, Event, Execute (+7 more)
+Cohesion: 0.01
+Nodes (64): AppearanceFilter, Assist, Barcode, Bind, BindItems, Bookend, Break, Button (+56 more)
 
 ### Community 15 - "LoadChartData"
 Cohesion: 0.11
-Nodes (32): a_column_workbook_has_no_boom_to_select(), a_column_workbook_lists_its_own_three_columns_including_the_boom(), a_declined_suggestion_is_null_rather_than_zero(), a_matrix_workbook_lists_the_column_the_app_is_reading(), a_workbook_over_the_size_ceiling_is_refused_before_it_is_read(), applied(), available_booms(), capacity_at() (+24 more)
+Nodes (31): a_column_workbook_has_no_boom_to_select(), a_column_workbook_lists_its_own_three_columns_including_the_boom(), a_column_workbook_parses_to_the_references_own_table(), a_declined_suggestion_is_null_rather_than_zero(), a_matrix_workbook_lists_the_column_the_app_is_reading(), applied(), available_booms(), capacity_at() (+23 more)
 
 ### Community 16 - "CI Workflow"
 Cohesion: 0.15
@@ -667,31 +642,31 @@ Nodes (4): print(), SETTLE, TIMEOUT, UNAVAILABLE
 
 ### Community 18 - "report_capacity.rs"
 Cohesion: 0.11
-Nodes (44): a_nested_lift_names_both_slings_throughout(), a_single_leg_prints_no_tag_capacity_block(), capacity_section(), CHOKE_KEYS, count_h2(), direct_hook(), every_arrangement_carries_the_tag_rating_rule_when_it_has_more_than_one_leg(), factors_section() (+36 more)
+Nodes (42): HitchSpecDto, a_nested_lift_names_both_slings_throughout(), a_single_leg_prints_no_tag_capacity_block(), capacity_section(), CHOKE_KEYS, count_h2(), direct_hook(), every_arrangement_carries_the_tag_rating_rule_when_it_has_more_than_one_leg() (+34 more)
 
 ### Community 19 - "Nonuniform Sling Calculation"
-Cohesion: 0.11
-Nodes (31): next_section_number(), plain(), the_next_section_number_is_counted_not_assumed(), a_nested_input_section_names_its_piles_and_its_second_sling(), a_two_leg_nested_system_has_no_pile_row(), configuration_label(), dimension_rows(), every_arrangement_produces_a_geometry_section_of_its_own() (+23 more)
+Cohesion: 0.10
+Nodes (30): next_section_number(), the_next_section_number_is_counted_not_assumed(), a_nested_input_section_names_its_piles_and_its_second_sling(), a_two_leg_nested_system_has_no_pile_row(), configuration_label(), dimension_rows(), every_arrangement_produces_a_geometry_section_of_its_own(), geometry() (+22 more)
 
 ### Community 20 - "Workbook Fixtures & Jib Tests"
 Cohesion: 0.08
-Nodes (38): UsageState, Caution, Over, Within, ensure_nonuniform_variant_marker(), Asym2LegResult, governing_case_words(), NonuniformResult (+30 more)
+Nodes (39): crane_usage_band(), usage_bands_match_the_source(), UsageState, Caution, Over, Within, ensure_nonuniform_variant_marker(), Asym2LegResult (+31 more)
 
 ### Community 21 - "Load Chart Data Model"
 Cohesion: 0.01
-Nodes (64): #a(), addChildren(), addHex(), applyTransform(), BaseException(), bytesToString(), checkFirstPage(), checkHeader() (+56 more)
+Nodes (74): #a(), addChildren(), addHex(), _addNamespacePrefix(), applyTransform(), BaseException(), build(), bytesToString() (+66 more)
 
 ### Community 22 - "Tauri Configuration"
 Cohesion: 0.06
 Nodes (32): app, security, windows, withGlobalTauri, build, frontendDist, bundle, active (+24 more)
 
 ### Community 23 - "KaTeX DOM Building"
-Cohesion: 0.10
-Nodes (43): TandemMethodDto, a_blank_form_is_refused_by_name_rather_than_by_division(), a_four_leg_tag_is_rated_on_three_but_a_one_leg_tag_on_one(), a_single_leg_tag_ignores_its_leftover_angle(), a_step_can_lift_a_pick_point_above_hook_level(), asym(), each_crane_is_booked_against_its_own_rating(), effective_tag_angle() (+35 more)
+Cohesion: 0.12
+Nodes (41): a_blank_form_is_refused_by_name_rather_than_by_division(), a_four_leg_tag_is_rated_on_three_but_a_one_leg_tag_on_one(), a_single_leg_tag_ignores_its_leftover_angle(), a_step_can_lift_a_pick_point_above_hook_level(), asym(), each_crane_is_booked_against_its_own_rating(), effective_tag_angle(), err() (+33 more)
 
 ### Community 24 - "Bug Report Issue Form"
 Cohesion: 0.02
-Nodes (60): addNativeFontFace(), #Ae(), applyTransform(), BaseException(), bind(), bytesToString(), CMYK_HTML(), CMYK_RGB() (+52 more)
+Nodes (55): addNativeFontFace(), #Ae(), applyTransform(), BaseException(), bind(), bytesToString(), CMYK_HTML(), CMYK_RGB() (+47 more)
 
 ### Community 26 - "Dependabot Config"
 Cohesion: 0.12
@@ -702,8 +677,8 @@ Cohesion: 0.29
 Nodes (6): 0009 — Taking the dependency refresh, Consequences, Decision, Problem, Proposal, What was reviewed
 
 ### Community 28 - "Feature Request Issue Form"
-Cohesion: 0.20
-Nodes (13): a_half_typed_line_weighs_zero(), ids_are_unique_and_survive_a_copy(), lift_name(), LiftGroup, next_line_id(), NEXT_LINE_ID, shared_tackle_counts_on_the_lift_it_rides_with(), tackle_rides_with_its_own_lift() (+5 more)
+Cohesion: 0.11
+Nodes (21): DEFAULT_DENSITY_KG_M3, solve_all(), solve_all_internal(), AppState, SolveAll, a_half_typed_line_weighs_zero(), ids_are_unique_and_survive_a_copy(), lift_name() (+13 more)
 
 ### Community 29 - "Fixture Dump Example"
 Cohesion: 0.12
@@ -713,9 +688,9 @@ Nodes (16): patterns, prefix, actions, rust-dependencies, dependency-name, patte
 Cohesion: 0.27
 Nodes (12): case_(), download_section(), fail(), main(), self_test(), check-release-notes.sh script, tag_case(), validate_file() (+4 more)
 
-### Community 31 - "Chart Holder Commands"
-Cohesion: 0.22
-Nodes (5): LoadType, Fixed, .ORDER, PerMetre, PerVolume
+### Community 31 - "BaseFullReader"
+Cohesion: 0.09
+Nodes (5): BaseFullReader, getFullReader(), PDFDataTransportStreamReader, PDFNodeStreamFsFullReader, PDFNodeStreamFullReader
 
 ### Community 32 - "Nonuniform Result Types"
 Cohesion: 0.14
@@ -730,8 +705,8 @@ Cohesion: 0.29
 Nodes (7): with, if-no-files-found, key, name, path, persist-credentials, workspaces
 
 ### Community 35 - "update.rs"
-Cohesion: 0.10
-Nodes (14): APPIMAGE_UPDATE_SCRIPT, Capped, CHECK_TIMEOUT, DOWNLOAD_TIMEOUT, MAX_ASSET_BYTES, MAX_MANIFEST_BYTES, quit_app(), RELEASES_API (+6 more)
+Cohesion: 0.09
+Nodes (22): a_suffix_does_not_count_as_a_version(), APPIMAGE_UPDATE_SCRIPT, Capped, CHECK_TIMEOUT, DOWNLOAD_TIMEOUT, is_newer(), latest_tag_from_atom(), MAX_ASSET_BYTES (+14 more)
 
 ### Community 36 - "AppImage Build Scripts"
 Cohesion: 0.20
@@ -750,12 +725,12 @@ Cohesion: 0.33
 Nodes (8): Council Review Requirement for Pull Requests, Standing Vetoes (Domain Safety and Application Security), 8-of-10 Council Review Bar, Engineering Council Charter, Solo-Maintainer Review Path, Council Decision Record Template, Domain Safety Engineer Seat, Release Notes File Shape
 
 ### Community 40 - "KaTeX Strict Mode"
-Cohesion: 0.11
-Nodes (30): a_contents_reference_to_an_array_keeps_its_pages(), a_real_webkit_print_keeps_every_page_and_gains_the_footer(), a_rotated_page_is_refused_rather_than_misplaced(), baseline_pt(), BASELINE_SHARE, be16(), be32(), document() (+22 more)
+Cohesion: 0.10
+Nodes (37): attach_font(), baseline(), baseline_pt(), BASELINE_SHARE, be16(), be32(), embed_font(), finish() (+29 more)
 
 ### Community 41 - "fmt"
-Cohesion: 0.10
-Nodes (37): kvRows(), statusBadge(), fmt(), fmtDeg(), fmtKg(), fmtM(), fmtPct(), groupDigits() (+29 more)
+Cohesion: 0.13
+Nodes (23): updateChips(), fmt(), fmtDeg(), fmtKg(), fmtM(), fmtPct(), groupDigits(), grouped() (+15 more)
 
 ### Community 42 - "Solve Section State"
 Cohesion: 0.18
@@ -764,6 +739,10 @@ Nodes (16): Release Cut Process, Draft-First Publish with Immutable Assets, One 
 ### Community 44 - "KaTeX Escaping Helpers"
 Cohesion: 0.25
 Nodes (8): publish, permissions, contents, if, name, needs, permissions, runs-on
+
+### Community 45 - "ChartRow"
+Cohesion: 0.18
+Nodes (11): ChartAction, Boom, Forget, Jib, Manual, Radius, a_zero_boom_angle_is_not_entered_rather_than_zero_degrees(), ChartRow (+3 more)
 
 ### Community 46 - "appearance.rs"
 Cohesion: 0.07
@@ -801,21 +780,21 @@ Nodes (7): Changelog, Keep a Changelog + Semantic Versioning, Unreleased Changel
 Cohesion: 0.04
 Nodes (51): x(), v(), accept(), buildComponentData(), buildHuffmanTable(), CFF, CFFCharset, CFFEncoding (+43 more)
 
-### Community 59 - "read_chart"
-Cohesion: 0.13
-Nodes (30): a_boom_table_lists_only_its_own_charted_radii(), a_boom_with_no_charted_rows_blanks_the_mirror_instead_of_keeping_the_old_one(), a_chart_that_declares_nothing_still_falls_back_to_its_figures(), a_column_chart_takes_the_unit_from_its_title_when_the_header_is_silent(), a_declared_kg_chart_is_not_read_as_tonnes(), a_declared_ton_chart_keeps_tonnes_even_when_the_figures_are_large(), a_file_that_is_not_a_workbook_is_refused_in_words_an_operator_can_act_on(), a_workbook_carries_its_position_and_jib_tables_into_the_chart() (+22 more)
+### Community 59 - "excel.rs"
+Cohesion: 0.08
+Nodes (51): JibOption, a_boom_table_lists_only_its_own_charted_radii(), a_boom_with_no_charted_rows_blanks_the_mirror_instead_of_keeping_the_old_one(), a_chart_that_declares_nothing_still_falls_back_to_its_figures(), a_column_chart_takes_the_unit_from_its_title_when_the_header_is_silent(), a_crane_title_line_names_the_machine_and_its_rating(), a_declared_kg_chart_is_not_read_as_tonnes(), a_declared_ton_chart_keeps_tonnes_even_when_the_figures_are_large() (+43 more)
 
-### Community 60 - "AppState"
-Cohesion: 0.23
-Nodes (8): build_report(), solve_all(), solve_all_internal(), AppState, Section, Section<T>, SolveAll, LiftTotals
+### Community 60 - "dto.rs"
+Cohesion: 0.08
+Nodes (24): main(), solve_all(), catalog(), build_catalog(), Catalog, ChartColumnDto, GroundTypeDto, KATEX_FILES (+16 more)
 
-### Community 61 - "ChartError"
-Cohesion: 0.22
-Nodes (5): ChartError, Empty, Negative, NonPositiveCapacity, Outside
+### Community 61 - "stamp"
+Cohesion: 0.33
+Nodes (11): copy_tree(), main(), a_contents_reference_to_an_array_keeps_its_pages(), a_real_webkit_print_keeps_every_page_and_gains_the_footer(), a_rotated_page_is_refused_rather_than_misplaced(), document(), every_page_carries_the_reference_credit_and_counter(), save() (+3 more)
 
 ### Community 63 - "executeOpTree"
-Cohesion: 0.07
-Nodes (57): addFontStyle(), beginText(), clip(), closeEOFillStroke(), closeFillStroke(), closePath(), closeStroke(), constructPath() (+49 more)
+Cohesion: 0.06
+Nodes (62): addFontStyle(), beginText(), clip(), closeEOFillStroke(), closeFillStroke(), closePath(), closeStroke(), constructPath() (+54 more)
 
 ### Community 65 - "ADR-0001 Rated Capacity Comes Only from a Charted Point"
 Cohesion: 0.21
@@ -825,9 +804,9 @@ Nodes (8): v2.5.0 Entry: Booked Rating Check and Rated Envelope, ADR-0001 Rated 
 Cohesion: 0.12
 Nodes (15): 0002 — A human-friendly plan head, Consequences, Decision, Proposal, Re-score, Required changes, Scores — first pass, What the council saw (+7 more)
 
-### Community 73 - "windows-theme.js"
-Cohesion: 0.14
-Nodes (23): Global Constraints, Review Focus, Self-Review, Task 1: Theme helpers, platform preview and accent plumbing, Task 2: Windows token layer and light/dark themes, Task 3: Mica window configuration, Task 4: Fluent NavigationView shell, Task 5: Fluent shell and control surfaces (+15 more)
+### Community 73 - "Review Focus"
+Cohesion: 0.22
+Nodes (8): Global Constraints, Review Focus, Task 2: Windows token layer and light/dark themes, Task 3: Mica window configuration, Task 5: Fluent shell and control surfaces, Task 6: Screen QA and responsive fixes, Task 7: Windows QA, docs and screenshots, Windows 11 Fluent Implementation Plan
 
 ### Community 74 - "0005 — Print the plan with the app's own web view"
 Cohesion: 0.12
@@ -846,12 +825,12 @@ Cohesion: 0.33
 Nodes (5): Compatibility and upgrade notes, Download, Highlights, Lifting Plan Calculator 2.5.4, Notes
 
 ### Community 78 - "app.js"
-Cohesion: 0.14
-Nodes (19): 0025 — One page for the controls, Known limits, Proposal, Scores, What the council saw, api, errorText(), NAV (+11 more)
+Cohesion: 0.16
+Nodes (16): 0025 — One page for the controls, Known limits, Proposal, Scores, What the council saw, api, errorText(), createSettingsScreen() (+8 more)
 
 ### Community 79 - "pdf_print.rs"
-Cohesion: 0.11
-Nodes (9): copy_tree(), main(), begin_print(), begin_print_with(), finish(), Job, print_to_pdf(), start() (+1 more)
+Cohesion: 0.13
+Nodes (7): begin_print(), begin_print_with(), finish(), Job, print_to_pdf(), start(), TIMEOUT
 
 ### Community 80 - "Lifting Plan Calculator 2.6.0"
 Cohesion: 0.33
@@ -926,16 +905,12 @@ Cohesion: 0.09
 Nodes (22): A. Custom Windows token layer plus authored Fluent shell (chosen), Accent colour, Approaches considered, Approval, Architecture, B. Vendor Fluent UI Web Components, C. Visual skin only, Components (+14 more)
 
 ### Community 99 - ".[r.$toHTML]"
-Cohesion: 0.09
-Nodes (12): applyAssist(), BreakAfter, BreakBefore, getBorderDims(), handleBreak(), handleOverflow(), Overflow, setFirstUnsplittable() (+4 more)
+Cohesion: 0.05
+Nodes (18): applyAssist(), ariaLabel(), BreakAfter, BreakBefore, CheckButton, ChoiceList, DateTimeEdit, getBorderDims() (+10 more)
 
-### Community 100 - "ariaLabel"
-Cohesion: 0.12
-Nodes (6): ariaLabel(), CheckButton, ChoiceList, DateTimeEdit, isRequired(), NumericEdit
-
-### Community 101 - "figures.rs"
-Cohesion: 0.33
-Nodes (9): fixed(), fixed_has_no_grouping(), fmt(), grouped(), NOTHING, nothing_is_an_em_dash(), plain(), thousands_are_separated() (+1 more)
+### Community 101 - "PageMargins"
+Cohesion: 0.31
+Nodes (6): build_report(), stamp_to(), print_to_pdf(), PageMargins, the_page_margin_defaults_to_one_inch_and_clamps_what_it_is_given(), wrap_katex_with()
 
 ### Community 103 - "createPdfViewer"
 Cohesion: 0.10
@@ -944,10 +919,6 @@ Nodes (37): 0018 — The diagram keeps its old size, and the print palette is ba
 ### Community 104 - "Lifting Plan Calculator 2.9.4"
 Cohesion: 0.29
 Nodes (6): Compatibility and upgrade notes, Download, Fixes, Lifting Plan Calculator 2.9.4, Notes, What this does and does not prove
-
-### Community 107 - "ObjectId"
-Cohesion: 0.25
-Nodes (16): attach_font(), baseline(), embed_font(), finish(), font_file(), font_home(), FontHome, Dict (+8 more)
 
 ### Community 108 - "Lifting Plan Calculator 2.9.3"
 Cohesion: 0.33
@@ -959,15 +930,15 @@ Nodes (10): AES128Cipher, AES256Cipher, AESBaseCipher, ARCFourCipher, calculateS
 
 ### Community 112 - "Jbig2Error"
 Cohesion: 0.08
-Nodes (17): ContextCache, decodeBitmap(), decodeIAID(), decodeInteger(), decodeMMRBitmap(), decodeRefinement(), decodeTextRegion(), DecodingContext (+9 more)
+Nodes (20): ContextCache, decodeBitmap(), decodeIAID(), decodeInteger(), decodeMMRBitmap(), decodeRefinement(), decodeTextRegion(), DecodingContext (+12 more)
 
 ### Community 113 - "matrix_chart"
-Cohesion: 0.10
-Nodes (30): chart_update(), ChartAction, Boom, Forget, Jib, Manual, Radius, ChartUpdate (+22 more)
+Cohesion: 0.12
+Nodes (29): a_workbook_can_only_be_imported_from_the_granted_path(), chart_update(), ChartHolder, ChartUpdate, claim_grant(), import_chart(), pick_chart_file(), CraneInputs (+21 more)
 
 ### Community 114 - "main"
-Cohesion: 0.05
-Nodes (47): 0023 — Read the shell that is actually theming the desktop, Known limits, Proposal, Scores, What the council saw, 0033 — A small curated palette set, Decision, Known limits (+39 more)
+Cohesion: 0.07
+Nodes (52): 0023 — Read the shell that is actually theming the desktop, Known limits, Proposal, Scores, What the council saw, Self-Review, Task 1: Theme helpers, platform preview and accent plumbing, Task 4: Fluent NavigationView shell (+44 more)
 
 ### Community 115 - "SKILLS.md"
 Cohesion: 0.11
@@ -981,33 +952,33 @@ Nodes (6): 0013 — An update must be newer, and nothing is read from a path the
 Cohesion: 0.33
 Nodes (5): Compatibility and upgrade notes, Download, Lifting Plan Calculator 2.11.0, Notes, Security
 
-### Community 120 - "ChartHolder"
-Cohesion: 0.12
-Nodes (12): a_scheme_name_maps_to_the_native_window_theme(), a_workbook_can_only_be_imported_from_the_granted_path(), app_info(), AppInfo, CachedPreview, ChartHolder, claim_grant(), pick_chart_file() (+4 more)
+### Community 120 - "window_theme"
+Cohesion: 0.40
+Nodes (3): a_scheme_name_maps_to_the_native_window_theme(), set_window_theme(), window_theme()
 
-### Community 121 - "is_newer"
-Cohesion: 0.18
-Nodes (16): a_suffix_does_not_count_as_a_version(), check(), check_api(), check_feed(), check_update(), installed_from_package(), is_newer(), latest_tag_from_atom() (+8 more)
+### Community 121 - "UpdateInfo"
+Cohesion: 0.43
+Nodes (8): check(), check_api(), check_feed(), check_update(), installed_from_package(), the_atom_fallback_builds_the_release_assets(), update_from_tag(), UpdateInfo
 
 ### Community 123 - "Text"
 Cohesion: 0.05
 Nodes (9): BooleanElement, DateElement, DateTime, Decimal, Float, Integer, Text, Time (+1 more)
 
 ### Community 124 - "checkAndRepair"
-Cohesion: 0.11
-Nodes (22): adjustMapping(), adjustWidths(), checkAndRepair(), readNameTable(), readTableEntry(), readTables(), sanitizeGlyph(), convert() (+14 more)
+Cohesion: 0.09
+Nodes (23): adjustMapping(), adjustWidths(), checkAndRepair(), readNameTable(), readTableEntry(), readTables(), sanitizeGlyph(), convert() (+15 more)
 
 ### Community 126 - "create"
-Cohesion: 0.06
-Nodes (28): _cache(), CaretAnnotation, CircleAnnotation, create(), createFromArray(), FileAttachmentAnnotation, FreeTextAnnotation, generateImages() (+20 more)
+Cohesion: 0.09
+Nodes (20): CaretAnnotation, CircleAnnotation, create(), FileAttachmentAnnotation, _getPageIndex(), getPdfColorArray(), getQuadPoints(), HighlightAnnotation (+12 more)
 
-### Community 127 - "BaseFullReader"
-Cohesion: 0.05
-Nodes (12): BaseFullReader, BaseRangeReader, createRequestOptions(), getFullReader(), getRangeReader(), PDFDataTransportStreamRangeReader, PDFDataTransportStreamReader, PDFFetchStreamRangeReader (+4 more)
+### Community 127 - "PDFNetworkStreamRangeRequestReader"
+Cohesion: 0.08
+Nodes (7): BaseRangeReader, createRequestOptions(), getRangeReader(), PDFDataTransportStreamRangeReader, PDFNetworkStreamRangeRequestReader, PDFNodeStreamFsRangeReader, PDFNodeStreamRangeReader
 
 ### Community 129 - "ExclGroup"
-Cohesion: 0.10
-Nodes (3): ExclGroup, Image, Value
+Cohesion: 0.06
+Nodes (7): Caption, Draw, ExclGroup, Field, Image, _setValue(), Value
 
 ### Community 130 - "constructor"
 Cohesion: 0.08
@@ -1018,8 +989,8 @@ Cohesion: 0.17
 Nodes (4): AstArgument, AstMin, AstNode, AstVariableDefinition
 
 ### Community 132 - "XhtmlObject"
-Cohesion: 0.07
-Nodes (11): B, I, Li, mapStyle(), Ol, Span, Sub, Sup (+3 more)
+Cohesion: 0.06
+Nodes (12): B, Html, I, Li, mapStyle(), Ol, Span, Sub (+4 more)
 
 ### Community 134 - "c"
 Cohesion: 0.06
@@ -1034,8 +1005,12 @@ Cohesion: 0.07
 Nodes (9): AlwaysEmbed, ConfigNamespace, DuplexOption, EncryptionLevel, ExcludeNS, GroupParent, Part, ViewerPreferences (+1 more)
 
 ### Community 138 - ".i"
-Cohesion: 0.05
-Nodes (19): ConnectionSet, ConnectionSetNamespace, EffectiveInputPolicy, EffectiveOutputPolicy, getMeasurement(), Operation, parseExpression(), RootElement (+11 more)
+Cohesion: 0.06
+Nodes (14): ConnectionSet, ConnectionSetNamespace, EffectiveInputPolicy, EffectiveOutputPolicy, getMeasurement(), Operation, parseExpression(), RootElement (+6 more)
+
+### Community 139 - "Annotation"
+Cohesion: 0.13
+Nodes (3): Annotation, getRgbColor(), PopupAnnotation
 
 ### Community 140 - "AnnotationElement"
 Cohesion: 0.04
@@ -1046,19 +1021,19 @@ Cohesion: 0.09
 Nodes (22): buildCodeblocks(), buildPackets(), buildPrecincts(), calculateComponentDimensions(), calculateTileGrids(), ComponentPositionResolutionLayerIterator(), copyCoefficients(), createPacket() (+14 more)
 
 ### Community 144 - "WidgetAnnotationElement"
-Cohesion: 0.14
-Nodes (6): CheckboxWidgetAnnotationElement, ChoiceWidgetAnnotationElement, RadioButtonWidgetAnnotationElement, SignatureWidgetAnnotationElement, TextWidgetAnnotationElement, WidgetAnnotationElement
+Cohesion: 0.12
+Nodes (7): CheckboxWidgetAnnotationElement, ChoiceWidgetAnnotationElement, PushButtonWidgetAnnotationElement, RadioButtonWidgetAnnotationElement, SignatureWidgetAnnotationElement, TextWidgetAnnotationElement, WidgetAnnotationElement
+
+### Community 145 - "0033 — A small curated palette set"
+Cohesion: 0.29
+Nodes (6): 0033 — A small curated palette set, Decision, Known limits, Proposal, Scores, What the council saw
 
 ### Community 147 - "Subform"
 Cohesion: 0.07
 Nodes (4): Area, getContainedChildren(), Subform, SubformSet
 
-### Community 148 - "MeshShading"
-Cohesion: 0.16
-Nodes (3): getB(), MeshShading, MeshStreamReader
-
 ### Community 149 - "WidgetAnnotation"
-Cohesion: 0.15
+Cohesion: 0.14
 Nodes (3): ChoiceWidgetAnnotation, TextWidgetAnnotation, WidgetAnnotation
 
 ### Community 150 - "Parser"
@@ -1074,8 +1049,8 @@ Cohesion: 0.08
 Nodes (7): Arc, Border, Corner, Edge, hasMargin(), Line, Rectangle
 
 ### Community 156 - "PDFFetchStreamReader"
-Cohesion: 0.09
-Nodes (10): BaseStandardFontDataFactory, createFetchOptions(), createHeaders(), DOMCMapReaderFactory, DOMStandardFontDataFactory, fetchData(), isValidFetchUrl(), NodeCMapReaderFactory (+2 more)
+Cohesion: 0.08
+Nodes (11): BaseStandardFontDataFactory, createFetchOptions(), createHeaders(), DOMCMapReaderFactory, DOMStandardFontDataFactory, fetchData(), isValidFetchUrl(), NodeCMapReaderFactory (+3 more)
 
 ### Community 157 - "_requestChunks"
 Cohesion: 0.09
@@ -1086,20 +1061,20 @@ Cohesion: 0.05
 Nodes (10): constructor(), getArrayBuffer(), getHash(), hasInitialVisibility(), NetworkManager, _onProgressiveDone(), _onReceiveData(), OptionalContentGroup (+2 more)
 
 ### Community 160 - ".ensureBuffer"
-Cohesion: 0.12
-Nodes (6): Ascii85Stream, AsciiHexStream, CCITTFaxStream, PredictorStream, readBlock(), RunLengthStream
+Cohesion: 0.07
+Nodes (9): Ascii85Stream, AsciiHexStream, CCITTFaxStream, FlateStream, JpxStream, LZWStream, PredictorStream, readBlock() (+1 more)
 
 ### Community 161 - "parseCMap"
-Cohesion: 0.11
-Nodes (20): compileGlyf(), createBuiltInCMap(), expectInt(), expectString(), extendCMap(), getFloat214(), getInt16(), getInt8() (+12 more)
+Cohesion: 0.13
+Nodes (19): compileGlyf(), createBuiltInCMap(), expectInt(), expectString(), extendCMap(), getFloat214(), getInt16(), getInt8() (+11 more)
 
 ### Community 162 - "Glyph"
 Cohesion: 0.06
 Nodes (10): charsToGlyphs(), _charToGlyph(), CompositeGlyph, Contour, convertCidString(), Glyph, GlyphHeader, SimpleGlyph (+2 more)
 
 ### Community 164 - "getToken"
-Cohesion: 0.11
-Nodes (15): decrypt(), extractFontHeader(), extractFontProgram(), getNumber(), getToken(), isSpecial(), nextChar(), PostScriptToken (+7 more)
+Cohesion: 0.14
+Nodes (14): decrypt(), extractFontHeader(), extractFontProgram(), getNumber(), getToken(), isSpecial(), nextChar(), PostScriptToken (+6 more)
 
 ### Community 165 - ".getOperatorList"
 Cohesion: 0.11
@@ -1118,16 +1093,16 @@ Cohesion: 0.12
 Nodes (3): CFFCompiler, CFFIndex, CFFOffsetTracker
 
 ### Community 170 - "XMLParserBase"
-Cohesion: 0.21
-Nodes (5): isWhitespace(), onText(), parseFromString(), XMLParserBase, skipWs()
+Cohesion: 0.05
+Nodes (15): compileCharString(), CompiledFont, getSubroutineBias(), isWhitespace(), lookupCmap(), onBeginElement(), onCdata(), onText() (+7 more)
 
 ### Community 171 - ".createDocumentHandler"
 Cohesion: 0.21
 Nodes (10): WorkerMessageHandler, ensureNotTerminated(), finishWorkerTask(), getPdfManager(), loadDocument(), onFailure(), onSuccess(), pdfManagerReady() (+2 more)
 
-### Community 172 - "Caption"
-Cohesion: 0.12
-Nodes (4): Caption, Draw, Field, _setValue()
+### Community 172 - "0036 — Margins, tooltips and the small-window rail"
+Cohesion: 0.29
+Nodes (6): 0036 — Margins, tooltips and the small-window rail, Evidence, Known limits, Proposal, Scores, What was wrong
 
 ### Community 175 - "PDFImage"
 Cohesion: 0.19
@@ -1145,6 +1120,10 @@ Nodes (7): applyBoundingBox(), BaseShadingPattern, drawFigure(), drawTriangle(),
 Cohesion: 0.14
 Nodes (13): app-id, command, finish-args, modules, build-commands, buildsystem, name, sources (+5 more)
 
+### Community 182 - "0057 — The working range diagram starts at half width"
+Cohesion: 0.29
+Nodes (6): 0057 — The working range diagram starts at half width, Evidence, Known limits, Proposal, Scores, What changed
+
 ### Community 185 - ".getTextContent"
 Cohesion: 0.32
 Nodes (12): addFakeSpaces(), appendEOL(), applyInverseRotation(), buildTextContentItem(), compareWithLastPosition(), ensureTextContentItem(), flushTextContentItem(), getCurrentTextTransform() (+4 more)
@@ -1161,6 +1140,10 @@ Nodes (3): CFFDict, CFFPrivateDict, CFFTopDict
 Cohesion: 0.14
 Nodes (4): ContentObject, IntegerObject, OptionObject, StringObject
 
+### Community 190 - "0058 — The ground description list uses the drawn dropdown"
+Cohesion: 0.33
+Nodes (5): 0058 — The ground description list uses the drawn dropdown, Evidence, Known limits, Proposal, Scores
+
 ### Community 191 - "0006 — The report preview is the PDF"
 Cohesion: 0.08
 Nodes (22): 0006 — The report preview is the PDF, Consequences, Decision, Problem, Proposal, Required changes, Scores, What was reviewed (+14 more)
@@ -1170,28 +1153,28 @@ Cohesion: 0.23
 Nodes (13): bind(), _bindElement(), _bindItems(), _bindOccurrences(), _bindValue(), _createOccurrences(), createText(), _findDataByNameToConsume() (+5 more)
 
 ### Community 203 - "dto.rs"
-Cohesion: 0.08
-Nodes (43): main(), solve_all(), catalog(), build_catalog(), Catalog, ChartColumnDto, GroundTypeDto, KATEX_FILES (+35 more)
+Cohesion: 0.15
+Nodes (25): a_light_steel_pad_uses_the_light_steel_range(), a_missing_bearing_value_is_refused(), a_missing_crane_capacity_leaves_thickness_unset(), a_missing_crane_mass_is_refused(), a_rectangular_pad_gets_the_minimum_length_for_its_width(), a_rectangular_pad_without_a_width_is_refused(), a_weathered_rock_range_uses_its_lower_bound_by_default(), a_wide_steel_pad_raises_the_minimum_and_flags_stiffeners() (+17 more)
 
 ### Community 206 - "verified_download"
-Cohesion: 0.22
-Nodes (14): an_update_download_must_come_from_this_projects_releases(), install(), install_package(), install_package_update(), install_update(), InstallerAsset, is_release_asset_url(), launch_elevated() (+6 more)
+Cohesion: 0.31
+Nodes (9): an_update_download_must_come_from_this_projects_releases(), install(), install_update(), InstallerAsset, is_release_asset_url(), launch_elevated(), only_this_projects_release_urls_are_accepted(), the_appimage_updater_refuses_a_non_appimage() (+1 more)
 
-### Community 209 - "SimpleDOMNode"
-Cohesion: 0.20
-Nodes (3): onBeginElement(), onCdata(), SimpleDOMNode
+### Community 209 - "Lifting Plan Calculator 2.17.10"
+Cohesion: 0.33
+Nodes (5): Changed, Compatibility and upgrade notes, Download, Lifting Plan Calculator 2.17.10, Notes
 
 ### Community 211 - "verified_manifest"
 Cohesion: 0.20
 Nodes (12): a_malformed_signature_is_refused_not_panicked_on(), a_release_manifest_names_its_installer_by_digest(), a_signature_proves_the_manifest_came_from_the_key(), expected_digest(), manifest_url(), signing_required(), the_committed_key_verifies_the_manifest_that_signed_it(), the_manifest_for_an_asset_sits_beside_it() (+4 more)
 
 ### Community 215 - "AuthFailure"
-Cohesion: 0.17
-Nodes (12): a_cancelled_prompt_suggests_nothing_to_install(), a_missing_agent_gets_the_desktops_agent(), a_missing_polkit_is_names_and_installs(), auth_failure(), AuthFailure, Cancelled, Missing, NoAgent (+4 more)
+Cohesion: 0.14
+Nodes (17): a_cancelled_prompt_suggests_nothing_to_install(), a_missing_agent_gets_the_desktops_agent(), a_missing_polkit_is_names_and_installs(), auth_failure(), AuthFailure, Cancelled, Missing, NoAgent (+9 more)
 
-### Community 219 - "Nr"
-Cohesion: 0.22
-Nodes (3): Cr, Mn, Nr
+### Community 219 - "Lifting Plan Calculator 2.17.11"
+Cohesion: 0.33
+Nodes (5): Compatibility and upgrade notes, Download, Fixed, Lifting Plan Calculator 2.17.11, Notes
 
 ### Community 220 - "AGENTS.md"
 Cohesion: 0.18
@@ -1202,12 +1185,8 @@ Cohesion: 0.33
 Nodes (5): Compatibility and upgrade notes, Download, Highlights, Lifting Plan Calculator 2.7.0, Notes
 
 ### Community 229 - "fetch"
-Cohesion: 0.25
+Cohesion: 0.22
 Nodes (7): fetch(), fetchAsync(), fetchCompressed(), fetchIfRef(), fetchIfRefAsync(), fetchUncompressed(), getEntry()
-
-### Community 235 - "compileCharString"
-Cohesion: 0.18
-Nodes (5): compileCharString(), CompiledFont, getSubroutineBias(), lookupCmap(), Type2Compiled
 
 ### Community 236 - ".compile"
 Cohesion: 0.29
@@ -1221,13 +1200,13 @@ Nodes (4): OpenTypeFileBuilder, writeData(), writeInt16(), writeInt32()
 Cohesion: 0.29
 Nodes (6): Compatibility and upgrade notes, Download, Fixed, Lifting Plan Calculator 2.12.0, Notes, Security
 
+### Community 241 - "zn"
+Cohesion: 0.14
+Nodes (3): Cr, Mn, zn
+
 ### Community 244 - "digest_file"
 Cohesion: 0.20
 Nodes (8): a_body_over_the_cap_is_refused_instead_of_buffered(), a_digest_is_lowercase_sha256(), a_file_is_hashed_in_chunks_to_the_same_digest(), Capped<R>, digest(), digest_file(), fetch_bytes(), read_capped()
-
-### Community 246 - "build"
-Cohesion: 0.33
-Nodes (5): _addNamespacePrefix(), build(), Empty, _getNamespaceToUse(), _searchNamespace()
 
 ### Community 253 - "addNode"
 Cohesion: 0.28
@@ -1245,16 +1224,12 @@ Nodes (8): Added, Changed, Compatibility and upgrade notes, Download, Fixed, Hig
 Cohesion: 0.22
 Nodes (8): Added, Changed, Compatibility and upgrade notes, Download, Fixed, Lifting Plan Calculator 2.15.0, Not changed, Notes
 
-### Community 266 - "LocaleSetNamespace"
-Cohesion: 0.03
-Nodes (24): CalendarSymbols, CurrencySymbol, CurrencySymbols, DatePattern, DatePatterns, DateTimeSymbols, Day, DayNames (+16 more)
-
 ### Community 267 - "Lifting Plan Calculator 2.17.9"
 Cohesion: 0.22
 Nodes (8): Added, Changed, Compatibility and upgrade notes, Download, Fixed, Highlights, Lifting Plan Calculator 2.17.9, Notes
 
 ### Community 268 - "BaseShading"
-Cohesion: 0.25
+Cohesion: 0.29
 Nodes (4): BaseShading, DummyShading, parseShading(), RadialAxialShading
 
 ### Community 281 - "0034 — AGENTS.md for coding agents"
@@ -1264,6 +1239,10 @@ Nodes (7): 0034 — AGENTS.md for coding agents, Decision, Evidence, Known limit
 ### Community 292 - "0037 — The Windows install layout, and 2.17.2"
 Cohesion: 0.25
 Nodes (7): 0037 — The Windows install layout, and 2.17.2, Evidence, Known limits, Proposal, Scores, What changed, Why two files was the whole app
+
+### Community 307 - "setIfIdle"
+Cohesion: 1.00
+Nodes (3): setIfIdle(), sync(), syncTag()
 
 ### Community 313 - "0051 — A typed diagram scale"
 Cohesion: 0.25
@@ -1380,14 +1359,6 @@ Nodes (6): Added, Compatibility and upgrade notes, Download, Fixed, Lifting Plan
 ### Community 434 - "Lifting Plan Calculator 2.17.7"
 Cohesion: 0.29
 Nodes (6): Changed, Compatibility and upgrade notes, Download, Fixed, Lifting Plan Calculator 2.17.7, Notes
-
-### Community 435 - "createUniformScreen"
-Cohesion: 0.43
-Nodes (5): createUniformScreen(), fieldOf(), setIfIdle(), specFor(), sync()
-
-### Community 436 - "outside_the_appimage"
-Cohesion: 0.33
-Nodes (5): an_external_program_is_started_outside_the_appimage(), open_report_file(), open_with_desktop(), outside_the_appimage(), open_external()
 
 ### Community 437 - "ADR-0006 — Outrigger pad sizing uses the presumed bearing area"
 Cohesion: 0.33
@@ -1569,10 +1540,6 @@ Nodes (4): Changed, Download, Lifting Plan Calculator 2.16.6, Notes
 Cohesion: 0.40
 Nodes (4): Download, Fixed, Lifting Plan Calculator 2.16.8, Notes
 
-### Community 490 - "writeDict"
-Cohesion: 0.70
-Nodes (5): writeArray(), writeDict(), writeObject(), writeStream(), writeValue()
-
 ### Community 491 - "linux-distro-packages"
 Cohesion: 0.50
 Nodes (4): linux-distro-packages, name, needs, runs-on
@@ -1586,24 +1553,24 @@ Cohesion: 0.50
 Nodes (3): app, windows, $schema
 
 ## Knowledge Gaps
-- **38 isolated node(s):** `APPIMAGE_EXTRACT_AND_RUN`, `lifting-plan-calculator`, `Boom`, `Radius`, `Jib` (+33 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2632 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **309 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **38 isolated node(s):** `lifting-plan-calculator`, `sign-manifest`, `Number`, `Boom`, `Forget` (+33 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2653 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **285 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `c()` connect `c` to `Debug`, `DocumentAssembly`, `Embed`, `Equate`, `FormFieldFilling`, `Interactive`, `Formatting & Update Check`, `Overprint`, `Pagination`, `Pdfa`, `Load Chart Data Model`, `Bug Report Issue Form`, `m`, `constructor`, `XhtmlObject`, `OperatorList`, `ConfigNamespace`, `.i`, `JpxError`, `Subform`, `getToken`, `FontInfo`, `Transform`, `Xdp`, `addNode`, `LocaleSetNamespace`, `BehaviorOverride`, `Encrypt`, `Encryption`, `EquateRange`, `Exclude`, `Packets`, `PageRange`, `Picture`, `Range`, `Record`, `Relevant`, `Rename`, `Script`, `Validate`, `ValidateApprovalSignatures`, `Window`, `Acrobat`, `AddSilentPrint`, `AddViewerPreferences`, `AdobeExtensionLevel`, `Agent`, `Amd`, `AutoSave`, `Base`, `BatchOutput`, `Cache`, `Common`, `Compress`, `Compression`, `CompressLogicalStructure`, `CompressObjectStream`, `Config`, `Conformance`, `ContentCopy`, `Copies`, `Creator`, `DefaultTypeface`, `Destination`, `Driver`, `Enforce`, `FlipLabel`, `IfEmpty`, `IncludeXDPContent`, `IncrementalLoad`, `IncrementalMerge`, `Jog`, `LabelPrinter`, `Layout`, `Level`, `Linearized`, `Log`, `MapElement`, `Messaging`, `Mode`, `ModifyAnnots`, `MsgId`, `NameAttr`, `NeverEmbed`, `NumberOfCopies`, `OpenAction`, `Output`, `OutputBin`, `PageOffset`, `PaginationOverride`, `Pcl`, `Pdf`, `Permissions`, `PickTrayByPDFSize`, `PlaintextMetadata`, `Presence`, `Present`, `Print`, `PrinterName`, `PrintHighQuality`, `PrintScaling`, `Producer`, `Ps`, `RenderPolicy`, `RunScripts`, `ScriptModel`, `Severity`, `SilentPrint`, `Staple`, `StartNode`, `StartPage`, `SubmitFormat`, `SubmitUrl`, `SubsetBelow`, `SuppressBanner`, `Tagged`, `TemplateCache`, `Threshold`, `To`, `Trace`, `Type`, `ValidationMessaging`, `Version`, `VersionControl`, `WebClient`, `Xdc`, `Xsl`, `Zpl`, `Message`?**
-  _High betweenness centrality (0.198) - this node is a cross-community bridge._
+- **Why does `c()` connect `c` to `Debug`, `DocumentAssembly`, `Embed`, `Equate`, `FormFieldFilling`, `Interactive`, `Formatting & Update Check`, `Overprint`, `Pagination`, `Pdfa`, `TemplateNamespace`, `Load Chart Data Model`, `Bug Report Issue Form`, `m`, `checkAndRepair`, `constructor`, `XhtmlObject`, `OperatorList`, `ConfigNamespace`, `.i`, `JpxError`, `Subform`, `FontInfo`, `Transform`, `Xdp`, `addNode`, `BehaviorOverride`, `Encrypt`, `Encryption`, `EquateRange`, `Exclude`, `Packets`, `PageRange`, `Range`, `Record`, `Relevant`, `Rename`, `Script`, `Validate`, `ValidateApprovalSignatures`, `Window`, `LocaleSet`, `Acrobat`, `AddSilentPrint`, `AddViewerPreferences`, `AdobeExtensionLevel`, `Agent`, `Amd`, `AutoSave`, `Base`, `BatchOutput`, `Cache`, `Common`, `Compress`, `Compression`, `CompressLogicalStructure`, `CompressObjectStream`, `Config`, `Conformance`, `ContentCopy`, `Copies`, `Creator`, `DefaultTypeface`, `Destination`, `Driver`, `Enforce`, `FlipLabel`, `IfEmpty`, `IncludeXDPContent`, `IncrementalLoad`, `IncrementalMerge`, `Jog`, `LabelPrinter`, `Layout`, `Level`, `Linearized`, `Log`, `MapElement`, `Messaging`, `Mode`, `ModifyAnnots`, `MsgId`, `NameAttr`, `NeverEmbed`, `NumberOfCopies`, `OpenAction`, `Output`, `OutputBin`, `PageOffset`, `PaginationOverride`, `Pcl`, `Pdf`, `Permissions`, `PickTrayByPDFSize`, `PlaintextMetadata`, `Presence`, `Present`, `Print`, `PrinterName`, `PrintHighQuality`, `PrintScaling`, `Producer`, `Ps`, `RenderPolicy`, `RunScripts`, `ScriptModel`, `Severity`, `SilentPrint`, `Staple`, `StartNode`, `StartPage`, `SubmitFormat`, `SubmitUrl`, `SubsetBelow`, `SuppressBanner`, `Tagged`, `TemplateCache`, `Threshold`, `To`, `Trace`, `Type`, `ValidationMessaging`, `Version`, `VersionControl`, `WebClient`, `Xdc`, `Xsl`, `Zpl`, `Message`?**
+  _High betweenness centrality (0.191) - this node is a cross-community bridge._
 - **Are the 147 inferred relationships involving `c()` (e.g. with `pdf.min.js` and `pdf.worker.min.js`) actually correct?**
   _`c()` has 147 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `APPIMAGE_EXTRACT_AND_RUN`, `lifting-plan-calculator`, `Boom` to the rest of the system?**
+- **What connects `lifting-plan-calculator`, `sign-manifest`, `Number` to the rest of the system?**
   _38 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `KaTeX Parser Internals` be split into smaller, more focused modules?**
-  _Cohesion score 0.07688492063492064 - nodes in this community are weakly interconnected._
-- **Why does `m` connect `m` to `Formatting & Update Check`?**
-  _High betweenness centrality (0.088) - this node is a cross-community bridge._
+  _Cohesion score 0.08246753246753247 - nodes in this community are weakly interconnected._
+- **Why does `_` connect `Formatting & Update Check` to `Q`, `Rust Load & Capacity Engine`, `c`, `Z`, `KaTeX Text Nodes`, `K`, `KaTeX Node Markup C`, `zn`, `m`, `W`, `dt`, `Chart Radius Write-Through`, `j`, `Hn`, `parse`?**
+  _High betweenness centrality (0.090) - this node is a cross-community bridge._
 - **Should `Crane Chart Domain Model` be split into smaller, more focused modules?**
   _Cohesion score 0.06386066763425254 - nodes in this community are weakly interconnected._
-- **Should `el` be split into smaller, more focused modules?**
-  _Cohesion score 0.1494949494949495 - nodes in this community are weakly interconnected._
+- **Why does `m` connect `m` to `Formatting & Update Check`?**
+  _High betweenness centrality (0.088) - this node is a cross-community bridge._

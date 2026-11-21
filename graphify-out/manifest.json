@@ -66,9 +66,9 @@
     "semantic_hash": "b20dea1f31d5244bada45a9490f1f4ab"
   },
   "src-tauri/Cargo.toml": {
-    "mtime": 1795266652.4803212,
-    "seen": 1795267319.6684403,
-    "ast_hash": "a81596d6c607ac0036c46c30b3fbc1fb",
+    "mtime": 1795269228.5434566,
+    "seen": 1795273998.9363472,
+    "ast_hash": "04eb60a9acf633686adcf42f52d848f0",
     "semantic_hash": ""
   },
   "src-tauri/build.rs": {
@@ -186,9 +186,9 @@
     "semantic_hash": ""
   },
   "src-tauri/tauri.conf.json": {
-    "mtime": 1795266652.480445,
-    "seen": 1795267319.6684856,
-    "ast_hash": "a71d1c04a946ae540269c5934f43bccf",
+    "mtime": 1795269228.5435424,
+    "seen": 1795273998.9364002,
+    "ast_hash": "b3234d17997365941bda296a6c08ed69",
     "semantic_hash": ""
   },
   "ui/js/api.js": {
@@ -204,9 +204,9 @@
     "semantic_hash": ""
   },
   "ui/js/components.js": {
-    "mtime": 1795233323.594204,
-    "seen": 1795267319.668495,
-    "ast_hash": "54034e1e6082bb054ddcb7fb688173bc",
+    "mtime": 1795269030.821435,
+    "seen": 1795273998.9364107,
+    "ast_hash": "40676bf2b1ba4d2da238c220541bcb88",
     "semantic_hash": ""
   },
   "ui/js/dom.js": {
@@ -258,9 +258,9 @@
     "semantic_hash": ""
   },
   "ui/js/screens/report.js": {
-    "mtime": 1795265351.5723987,
-    "seen": 1795267319.6685236,
-    "ast_hash": "3ac37b245af37d6a87ab5cb0bebbda37",
+    "mtime": 1795267949.0714698,
+    "seen": 1795273998.9364424,
+    "ast_hash": "d2f701f2b68d53aeb209d5bf2a76c8cb",
     "semantic_hash": ""
   },
   "ui/js/screens/tandem.js": {
@@ -300,9 +300,9 @@
     "semantic_hash": "3a57d99448f802024d640c81af3341a8"
   },
   "CHANGELOG.md": {
-    "mtime": 1795266652.4824939,
-    "seen": 1795267319.6685486,
-    "ast_hash": "c61010503930d8261c40864ab826ef52",
+    "mtime": 1795269228.5428832,
+    "seen": 1795273998.9364712,
+    "ast_hash": "644cb0a6d0467cb9f0f8889d7686b561",
     "semantic_hash": ""
   },
   "CODE_OF_CONDUCT.md": {
@@ -318,9 +318,9 @@
     "semantic_hash": "2691ee38eaa721aa667575bc287ad225"
   },
   "README.md": {
-    "mtime": 1795163598.2682006,
-    "seen": 1795267319.668553,
-    "ast_hash": "0b9117c506311b73e4ce08336cccf495",
+    "mtime": 1795273055.404965,
+    "seen": 1795273998.9364765,
+    "ast_hash": "2d2cfbf9dde0010a19a867fcbbbda10c",
     "semantic_hash": ""
   },
   "SECURITY.md": {
@@ -486,45 +486,45 @@
     "semantic_hash": ""
   },
   "docs/screenshots/01-overall.png": {
-    "mtime": 1794879656.2013228,
-    "seen": 1795267319.668791,
-    "ast_hash": "e9953d238ca6dde5fe984d26a3467bfb",
+    "mtime": 1795272469.7422376,
+    "seen": 1795273998.9367578,
+    "ast_hash": "6794bdf6de8833393fc5c2491cf2af55",
     "semantic_hash": ""
   },
   "docs/screenshots/02-crane.png": {
-    "mtime": 1794879656.202323,
-    "seen": 1795267319.6687925,
-    "ast_hash": "fdc6b73e1f0980f7ac6b881a017c00a7",
+    "mtime": 1795272469.7437644,
+    "seen": 1795273998.9367592,
+    "ast_hash": "da93017cebe049a8449d4d980cd1f7e1",
     "semantic_hash": ""
   },
   "docs/screenshots/03-graph.png": {
-    "mtime": 1794879656.203323,
-    "seen": 1795267319.6687942,
-    "ast_hash": "3eb3e167d6bd2335cc3d80f2c487a162",
+    "mtime": 1795272469.7452314,
+    "seen": 1795273998.936761,
+    "ast_hash": "ae91419f86633877f99743847639faff",
     "semantic_hash": ""
   },
   "docs/screenshots/04-uniform.png": {
-    "mtime": 1794879656.204323,
-    "seen": 1795267319.6687956,
-    "ast_hash": "4071329a632d73015c88b83f4effc3ff",
+    "mtime": 1795272469.7467637,
+    "seen": 1795273998.9367623,
+    "ast_hash": "93b2cc1bca9dd7de1b060da0f465f885",
     "semantic_hash": ""
   },
   "docs/screenshots/05-nonuniform.png": {
-    "mtime": 1794879656.204323,
-    "seen": 1795267319.668797,
-    "ast_hash": "e43704753025cee393e3ebc19158ebb6",
+    "mtime": 1795272469.7481759,
+    "seen": 1795273998.9367638,
+    "ast_hash": "ad8dafa1b030a882f3174393994a4dd4",
     "semantic_hash": ""
   },
   "docs/screenshots/06-tandem.png": {
-    "mtime": 1794879656.205323,
-    "seen": 1795267319.6687984,
-    "ast_hash": "d70e29cb51e903f025e7448ea8621db9",
+    "mtime": 1795272469.7861981,
+    "seen": 1795273998.9367652,
+    "ast_hash": "7b91e34c27c1341711bc0591958343b0",
     "semantic_hash": ""
   },
   "docs/screenshots/07-summary.png": {
-    "mtime": 1794879656.2063231,
-    "seen": 1795267319.6688,
-    "ast_hash": "e50ed1fd3e0c4a5e33adfda45c6e6974",
+    "mtime": 1795272469.7875555,
+    "seen": 1795273998.9367666,
+    "ast_hash": "7abf163ce3c66be21ef4a9cb51f07275",
     "semantic_hash": ""
   },
   "src-tauri/icons/128x128.png": {
@@ -1236,9 +1236,9 @@
     "semantic_hash": ""
   },
   "ui/js/screens/outrigger.js": {
-    "mtime": 1794974292.0995235,
-    "seen": 1795267319.6685205,
-    "ast_hash": "6cdfe4293e25a2e276a48fd9edd417ef",
+    "mtime": 1795269030.8394353,
+    "seen": 1795273998.936439,
+    "ast_hash": "024e54a39ea6264fa138d4b69cfc0bad",
     "semantic_hash": ""
   },
   "ui/js/screens/settings.js": {
@@ -1812,63 +1812,87 @@
     "semantic_hash": ""
   },
   "docs/tutorial.md": {
-    "mtime": 1795052804.2863338,
-    "seen": 1795267319.6687696,
-    "ast_hash": "4ddee339e5046e8c8898c2593391e6bf",
+    "mtime": 1795273055.3999147,
+    "seen": 1795273998.9367337,
+    "ast_hash": "dedbc44eb2912645ee896ca47496c4ed",
     "semantic_hash": ""
   },
   "docs/screenshots/08-about.png": {
-    "mtime": 1794879656.207323,
-    "seen": 1795267319.6688013,
-    "ast_hash": "d58ae80a6c3cb6b59c3f7f59d80a3260",
+    "mtime": 1795272469.7888126,
+    "seen": 1795273998.9367683,
+    "ast_hash": "604836e3566d79052a79ac63413f84d4",
     "semantic_hash": ""
   },
   "docs/screenshots/09-crane-excel.png": {
-    "mtime": 1794879656.2083232,
-    "seen": 1795267319.6688027,
-    "ast_hash": "07032515d0e63704662a1e3c4df7df34",
+    "mtime": 1795273055.3848934,
+    "seen": 1795273998.93677,
+    "ast_hash": "3239c455c828a1707e59ba20f33815e0",
     "semantic_hash": ""
   },
   "docs/screenshots/10-crane-workbook.png": {
-    "mtime": 1794879656.2083232,
-    "seen": 1795267319.6688044,
-    "ast_hash": "7687c382e20e268f5e830370e9e27f00",
+    "mtime": 1795273055.386493,
+    "seen": 1795273998.9367716,
+    "ast_hash": "f3f90a689d224a643259947d5fc13e1a",
     "semantic_hash": ""
   },
   "docs/screenshots/11-outrigger.png": {
-    "mtime": 1794974292.0965233,
-    "seen": 1795267319.6688058,
-    "ast_hash": "dae8decd9968b26d1b3a8f13e6dd7768",
+    "mtime": 1795272469.7901485,
+    "seen": 1795273998.936773,
+    "ast_hash": "d14900eeeecfd117f5a6f5a4cb9addb6",
     "semantic_hash": ""
   },
   "docs/screenshots/12-outrigger-thickness.png": {
-    "mtime": 1794974292.0975235,
-    "seen": 1795267319.6688075,
-    "ast_hash": "d350fa2e543767fc5865717638752120",
+    "mtime": 1795272519.6370475,
+    "seen": 1795273998.936775,
+    "ast_hash": "9ad2a302532d03f9354357be0468412d",
     "semantic_hash": ""
   },
   "docs/screenshots/windows-11-compact.png": {
-    "mtime": 1795052804.283383,
-    "seen": 1795267319.668809,
-    "ast_hash": "1c181cab2b37b0d10b522b7128e77780",
+    "mtime": 1795273838.3898442,
+    "seen": 1795273998.9367764,
+    "ast_hash": "cfdbc5d828ecca9a15d01cd4600e2cd5",
     "semantic_hash": ""
   },
   "docs/screenshots/windows-11-dark.png": {
-    "mtime": 1795052804.284383,
-    "seen": 1795267319.6688106,
-    "ast_hash": "3361f67053841fb9fd58ea4c8b853a80",
+    "mtime": 1795273838.387254,
+    "seen": 1795273998.9367783,
+    "ast_hash": "ff7253c1f081679bb03663cccd61d763",
     "semantic_hash": ""
   },
   "docs/screenshots/windows-11-light.png": {
-    "mtime": 1795052804.285383,
-    "seen": 1795267319.6688118,
-    "ast_hash": "1f29776c4cb4d94386b56d533509c489",
+    "mtime": 1795273838.3886735,
+    "seen": 1795273998.9367797,
+    "ast_hash": "88bb2afe4167c78c021969bc4f363a76",
     "semantic_hash": ""
   },
   "docs/video/tutorial.mp4": {
     "mtime": 1794879656.2113233,
     "seen": 1795267319.6688876,
     "ast_hash": "677cbdd9f231a643091cf9bd8253e90e",
+    "semantic_hash": ""
+  },
+  "docs/council/decisions/0057-diagram-starts-at-half-width.md": {
+    "mtime": 1795267965.652683,
+    "seen": 1795273998.936614,
+    "ast_hash": "d29afda1c720c9a6647fd9240d230903",
+    "semantic_hash": ""
+  },
+  "docs/council/decisions/0058-ground-description-uses-the-drawn-list.md": {
+    "mtime": 1795269228.5478833,
+    "seen": 1795273998.936616,
+    "ast_hash": "6642ed591f960837ea65325097e9e1bd",
+    "semantic_hash": ""
+  },
+  "docs/releases/v2.17.10.md": {
+    "mtime": 1795267965.654683,
+    "seen": 1795273998.9366808,
+    "ast_hash": "053708f28cfc95350a5dab63d75415ff",
+    "semantic_hash": ""
+  },
+  "docs/releases/v2.17.11.md": {
+    "mtime": 1795269228.5488832,
+    "seen": 1795273998.9366825,
+    "ast_hash": "54f04aed51db8a57dd5fef40dec6ca95",
     "semantic_hash": ""
   }
 }

@@ -12,15 +12,16 @@
 - **The chart-capacity note sits beside its label.** "at this radius / boom
   angle" moved from under the figure to the label line, wrapping only when the
   cell cannot hold both.
-- **The square pad is one line.** "Minimum square pad" and
-  `Side = √A = 1.396 m ≈ 1.40 m` share a line, and the separate "Minimum pad"
-  sentence is gone.
+- **The square pad is one centred rule.** The bold "Minimum square pad" and
+  `Side = √A = 1.396 m ≈ 1.40 m` share a line between two hairlines, and the
+  separate "Minimum pad" sentence is gone.
 - **The plan-details usage cell no longer repeats "of chart capacity".** The
   figure and the band already say it; the caution case keeps "past the 75%
   target".
-- **The choke geometry reads two blocks per row.** Its label/formula pairs sit
-  in the same two-column working grid as the rest of the report, with the two
-  height workings kept together in one block.
+- **Every sling geometry reads two blocks per row.** The label/formula pairs
+  for all arrangements — direct, nested, round choke and rectangular choke —
+  sit in the report's two-column working grid. A following equation stays with
+  its label, and the formulas themselves are unchanged.
 
 ### Fixed
 

@@ -106,6 +106,11 @@ pub const REPORT_CSS: &str = r#"
     padding: 1.5pt 2pt; color: #1b2733; vertical-align: top; }
 .report table.line-pair-list .n { text-align: right; white-space: nowrap; }
 .report table.line-pair-list tr:last-child td { border-bottom: 0; }
+.report .pad-square-line { text-align: center; border-top: 0.5pt solid #ccd6e0;
+    border-bottom: 0.5pt solid #ccd6e0; padding: 2.5pt 0; margin: 4pt 0 3pt;
+    font-size: 7.5pt; color: #1b2733; }
+.report .pad-square-line b { font-weight: bold; }
+.report .pad-square-line .katex { font-size: 1em; }
 .report .working-wrap { padding: 0; margin-top: 6pt; }
 .report table.working { width: 100%; border-collapse: collapse; margin: 4pt 0 4pt;
     /* Auto, not fixed: the divider sits at the true centre when both sides fit,

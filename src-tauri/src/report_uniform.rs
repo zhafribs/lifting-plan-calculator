@@ -1,8 +1,7 @@
 //! The uniform-lift report sections, ported from `ReportUniform.kt`.
 
 use crate::report::{
-    card_grid, equation, fmt, heading, p, plain, subheading, tex_deg, tex_num, work_block,
-    working_grid,
+    card_grid, equation, fmt, heading, p, plain, subheading, tex_deg, tex_num, working_grid,
 };
 use crate::sling::{
     HitchSpec, SecondaryGroup, SlingResult, ANGLE_BASIS_EXTERNAL,
@@ -265,6 +264,55 @@ fn choke_height_equation(
 
 /// Section 2: the wrap, the free leg, the sling angle and the headroom.
 #[allow(clippy::too_many_lines)]
+/// Lay the section's label/formula pairs out two to a row. A following
+/// equation (such as the second height) stays with its label's block; prose
+/// becomes a block of its own. The report's working grid is a table, so this
+/// survives printing, where CSS columns do not.
+fn geometry_grid(mut parts: Vec<String>) -> String {
+    if parts.is_empty() {
+        return String::new();
+    }
+    let heading = parts.remove(0);
+    let mut blocks: Vec<String> = Vec::new();
+    let mut label: Option<String> = None;
+    for part in parts {
+        if part.starts_with("<h3>") {
+            if let Some(open) = label.take() {
+                blocks.push(format!("<div class=\"work-label\">{open}</div>"));
+            }
+            label = Some(
+                part.trim_start_matches("<h3>")
+                    .trim_end_matches("</h3>")
+                    .to_string(),
+            );
+        } else if part.starts_with("<div class=\"equation\">") {
+            match label.take() {
+                Some(open) => blocks.push(format!(
+                    "<div class=\"work-label\">{open}</div>{part}"
+                )),
+                None => {
+                    if let Some(last) = blocks.last_mut() {
+                        last.push_str(&part);
+                    } else {
+                        blocks.push(part);
+                    }
+                }
+            }
+        } else {
+            match label.take() {
+                Some(open) => blocks.push(format!(
+                    "<div class=\"work-label\">{open}</div>{part}"
+                )),
+                None => blocks.push(part),
+            }
+        }
+    }
+    if let Some(open) = label.take() {
+        blocks.push(format!("<div class=\"work-label\">{open}</div>"));
+    }
+    format!("{heading}{}", working_grid(&blocks))
+}
+
 pub fn geometry_section(result: &SlingResult, spec: &HitchSpec) -> String {
     let key = spec.key;
     let length = result.sling_length;
@@ -346,7 +394,7 @@ pub fn geometry_section(result: &SlingResult, spec: &HitchSpec) -> String {
             tex_num(Some(af), 3),
             tex_num(Some(headroom), 3)
         )));
-        return out.join("");
+        return geometry_grid(out);
     }
 
     // --- The nested systems ------------------------------------------------
@@ -544,7 +592,7 @@ pub fn geometry_section(result: &SlingResult, spec: &HitchSpec) -> String {
             tex_num(Some(af), 3),
             tex_num(Some(headroom), 3)
         )));
-        return out.join("");
+        return geometry_grid(out);
     }
 
     // --- The 2-leg direct bridle -------------------------------------------
@@ -577,7 +625,7 @@ pub fn geometry_section(result: &SlingResult, spec: &HitchSpec) -> String {
             tex_num(Some(af), 3),
             tex_num(Some(headroom), 3)
         )));
-        return out.join("");
+        return geometry_grid(out);
     }
 
     // --- The 2-leg chokes --------------------------------------------------
@@ -658,7 +706,7 @@ pub fn geometry_section(result: &SlingResult, spec: &HitchSpec) -> String {
             "\\text{{Lead}} = \\text{{Free Leg Length}} = {}\\ \\text{{m}}",
             tex_num(Some(lead), 3)
         )));
-        return out.join("");
+        return geometry_grid(out);
     }
 
     // --- The 2-leg baskets -------------------------------------------------
@@ -753,7 +801,7 @@ pub fn geometry_section(result: &SlingResult, spec: &HitchSpec) -> String {
              {height_suffix} = {height_terms} = {}\\ \\text{{m}}",
             tex_num(Some(headroom), 3)
         )));
-        return out.join("");
+        return geometry_grid(out);
     }
 
     // --- The single-leg direct hook ----------------------------------------
@@ -774,7 +822,7 @@ pub fn geometry_section(result: &SlingResult, spec: &HitchSpec) -> String {
             "\\text{{Height}}_{{Hook-Load}} = \\text{{Free Leg Length}} = {}\\ \\text{{m}}",
             tex_num(Some(free), 3)
         )));
-        return out.join("");
+        return geometry_grid(out);
     }
 
     // --- The single-leg round baskets --------------------------------------
@@ -830,7 +878,7 @@ pub fn geometry_section(result: &SlingResult, spec: &HitchSpec) -> String {
                 tex_num(Some(headroom), 3)
             )));
         }
-        return out.join("");
+        return geometry_grid(out);
     }
 
     // --- The single-leg rectangular baskets --------------------------------
@@ -887,7 +935,7 @@ pub fn geometry_section(result: &SlingResult, spec: &HitchSpec) -> String {
                 tex_num(Some(headroom), 3)
             )));
         }
-        return out.join("");
+        return geometry_grid(out);
     }
 
     // --- The single-leg round choke ----------------------------------------
@@ -897,80 +945,62 @@ pub fn geometry_section(result: &SlingResult, spec: &HitchSpec) -> String {
         let external = result.external_angle.unwrap_or(0.0);
         let lead = result.lead.unwrap_or(0.0);
         let gap = result.choke_to_load;
-        let mut blocks = vec![
-            work_block(
-                "Vertical Angle Outside Choke",
-                &equation(&format!(
-                    "\\text{{Choke External Angle}} = 180^\\circ - \\text{{Choke Internal Angle}} = \
-                     180^\\circ - {}^\\circ = {}^\\circ",
-                    tex_num(Some(internal), 0),
-                    tex_num(Some(external), 0)
-                )),
-            ),
-            work_block(
-                "Total Sling Perimeter Wrap",
-                &equation(&format!(
-                    "\\text{{Perimeter}} = \\pi \\times \\text{{Diameter}} = \\pi \\times \
-                     {} = {}\\ \\text{{m}}",
-                    tex_num(Some(result.diameter), 3),
-                    tex_num(Some(wrap), 3)
-                )),
-            ),
-        ];
+        out.push(subheading("Vertical Angle Outside Choke:"));
+        out.push(equation(&format!(
+            "\\text{{Choke External Angle}} = 180^\\circ - \\text{{Choke Internal Angle}} = \
+             180^\\circ - {}^\\circ = {}^\\circ",
+            tex_num(Some(internal), 0),
+            tex_num(Some(external), 0)
+        )));
+        out.push(subheading("Total Sling Perimeter Wrap:"));
+        out.push(equation(&format!(
+            "\\text{{Perimeter}} = \\pi \\times \\text{{Diameter}} = \\pi \\times \
+             {} = {}\\ \\text{{m}}",
+            tex_num(Some(result.diameter), 3),
+            tex_num(Some(wrap), 3)
+        )));
         if external < 90.0 {
-            blocks.push(work_block(
-                "Operational Rule Declared",
-                &p(
-                    "As noted by the inspector/supervisor, if the angle of choke falls \
-                     below 90 degrees, the sling wraps the load tightly under tension. \
-                     The choke point is forced flush against the cylinder surface, \
-                     meaning there is zero floating gap or air space above the cargo.",
-                    "",
-                ),
+            out.push(subheading("Operational Rule Declared:"));
+            out.push(p(
+                "As noted by the inspector/supervisor, if the angle of choke falls \
+                 below 90 degrees, the sling wraps the load tightly under tension. \
+                 The choke point is forced flush against the cylinder surface, \
+                 meaning there is zero floating gap or air space above the cargo.",
+                "",
             ));
-            blocks.push(work_block(
-                "Vertical Height (Choke to Top of Load)",
-                &equation("\\text{Height}_{Choke-Load} = 0.000\\ \\text{m}"),
-            ));
+            out.push(subheading("Vertical Height (Choke to Top of Load):"));
+            out.push(equation("\\text{Height}_{Choke-Load} = 0.000\\ \\text{m}"));
         } else {
             let y_value = if internal != 0.0 {
                 radius / internal.to_radians().sin()
             } else {
                 radius
             };
-            blocks.push(work_block(
-                "Vertical Height (Choke to Top of Load)",
-                &format!(
-                    "{}{}",
-                    equation(&format!(
-                        "Y = \\frac{{\\text{{Radius}}}}{{\\sin(\\text{{Choke Internal Angle}})}} = \
-                         \\frac{{{}}}{{\\sin({}^\\circ)}} = {}\\ \\text{{m}}",
-                        tex_num(Some(radius), 3),
-                        tex_num(Some(internal), 0),
-                        tex_num(Some(y_value), 3)
-                    )),
-                    equation(&format!(
-                        "\\text{{Height}}_{{Choke-Load}} = Y - \\text{{Radius}} = \
-                         {} - {} = {}\\ \\text{{m}}",
-                        tex_num(Some(y_value), 3),
-                        tex_num(Some(radius), 3),
-                        tex_num(gap, 3)
-                    ))
-                ),
-            ));
-        }
-        blocks.push(work_block(
-            "Vertical Height (Hook to Choke)",
-            &equation(&format!(
-                "\\text{{Height}}_{{Hook-Choke}} = \\text{{Total Length}} - \\text{{Perimeter}} = \
+            out.push(subheading("Vertical Height (Choke to Top of Load):"));
+            out.push(equation(&format!(
+                "Y = \\frac{{\\text{{Radius}}}}{{\\sin(\\text{{Choke Internal Angle}})}} = \
+                 \\frac{{{}}}{{\\sin({}^\\circ)}} = {}\\ \\text{{m}}",
+                tex_num(Some(radius), 3),
+                tex_num(Some(internal), 0),
+                tex_num(Some(y_value), 3)
+            )));
+            out.push(equation(&format!(
+                "\\text{{Height}}_{{Choke-Load}} = Y - \\text{{Radius}} = \
                  {} - {} = {}\\ \\text{{m}}",
-                tex_num(Some(length), 1),
-                tex_num(Some(wrap), 3),
-                tex_num(Some(lead), 3)
-            )),
-        ));
-        out.push(working_grid(&blocks));
-        return out.join("");
+                tex_num(Some(y_value), 3),
+                tex_num(Some(radius), 3),
+                tex_num(gap, 3)
+            )));
+        }
+        out.push(subheading("Vertical Height (Hook to Choke):"));
+        out.push(equation(&format!(
+            "\\text{{Height}}_{{Hook-Choke}} = \\text{{Total Length}} - \\text{{Perimeter}} = \
+             {} - {} = {}\\ \\text{{m}}",
+            tex_num(Some(length), 1),
+            tex_num(Some(wrap), 3),
+            tex_num(Some(lead), 3)
+        )));
+        return geometry_grid(out);
     }
 
     // --- The rectangular choke (the remaining arrangement) ------------------
@@ -1021,7 +1051,7 @@ pub fn geometry_section(result: &SlingResult, spec: &HitchSpec) -> String {
         tex_num(Some(wrap), 3),
         tex_num(Some(lead), 3)
     )));
-    out.join("")
+    geometry_grid(out)
 }
 
 #[cfg(test)]

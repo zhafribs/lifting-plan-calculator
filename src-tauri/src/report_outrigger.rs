@@ -48,11 +48,10 @@ pub fn outrigger_section(result: &OutriggerResult) -> String {
             "",
         ));
     } else {
-        // The subheading and the working share a line: the square's side is
-        // one short result, and A4 has better uses for the vertical room.
+        // One centred rule between two hairlines: the label and the working
+        // read as a single result, and A4 keeps the vertical room.
         out.push(format!(
-            "<div class=\"pad-square-line\">\
-             <span class=\"pad-square-k\">Minimum square pad</span>\
+            "<div class=\"pad-square-line\"><b>Minimum square pad</b> \u{2192} \
              <span class=\"pad-square-eq\">\\(\\text{{Side}} = \\sqrt{{A}} = {}\\ \\text{{m}} \\approx {}\\ \\text{{m}}\\)</span>\
              </div>",
             tex_num(Some(result.recommended_square_m), 3),

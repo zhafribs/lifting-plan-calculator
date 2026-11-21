@@ -12,17 +12,19 @@ Maintainer). Bar 8/10 per seat. The implementer did not score.
 ## Proposal
 
 Section 4 printed one label and one display equation per line, using the full
-page width for formulas that are mostly short. Lay the round-choke workings out
-two per row, in the same grid the rest of the report already uses.
+page width for formulas that are mostly short. Lay every sling arrangement's
+workings out two per row, in the same grid the rest of the report already uses.
 
 ## What changed
 
-- The round-choke geometry builds label/formula blocks and prints them with
-  `working_grid`: two per row.
-- The choke-to-load height keeps its `Y` and `Height = Y − Radius` equations in
-  one block, so the derivation is not separated across columns.
-- The prose "Operational Rule Declared" is a block of its own rather than a
-  full-width paragraph between formulas.
+- `geometry_grid` groups the section's built strings into label/formula blocks
+  and prints them with `working_grid`: two per row. A following equation stays
+  with its label's block; prose becomes a block of its own; a lone last block
+  spans the row.
+- This applies to every branch — direct, nested, round choke and rectangular
+  choke — because it post-processes the finished parts rather than one branch.
+- The first attempt used CSS columns; the printed PDF ignored them, so the
+  table-based grid replaced it.
 
 ## Evidence
 
@@ -30,7 +32,8 @@ two per row, in the same grid the rest of the report already uses.
   `the_round_choke_height_states_its_derivation`, which asserts the three
   equations unchanged.
 - `cargo clippy --all-targets -- -D warnings` clean.
-- The formulas are unchanged; only their arrangement moved.
+- The formulas are unchanged; only their arrangement moved. The fixture report
+  dropped from seven pages to five.
 
 ## Scores
 
@@ -44,6 +47,6 @@ two per row, in the same grid the rest of the report already uses.
 
 ## Known limits
 
-- Only the round-choke branch is compacted. The rectangular choke and the
-  direct/nested branches keep their one-column flow; they have their own long
-  formulas and should be converted with the same care when needed.
+- A very long formula can still be wider than its half-column; none of the
+  current ones overflow in the fixture render, but a new one would need
+  splitting inside its `aligned` environment.

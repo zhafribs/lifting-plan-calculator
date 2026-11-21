@@ -150,9 +150,9 @@
     "semantic_hash": "39fd8bdd7b986a2529af5a708f565abd"
   },
   "src-tauri/src/report.rs": {
-    "mtime": 1795284735.7142994,
-    "seen": 1795285059.163315,
-    "ast_hash": "dc343c76a9efe3bfaacc98254f97ba91",
+    "mtime": 1795285822.2928605,
+    "seen": 1795286285.9023607,
+    "ast_hash": "9279aea12c17164640c0127ab90967aa",
     "semantic_hash": ""
   },
   "src-tauri/src/report_capacity.rs": {
@@ -300,9 +300,9 @@
     "semantic_hash": "3a57d99448f802024d640c81af3341a8"
   },
   "CHANGELOG.md": {
-    "mtime": 1795285011.7174056,
-    "seen": 1795285059.1634142,
-    "ast_hash": "58f04de6d8862c190f0bd3b7db2e4dfa",
+    "mtime": 1795286247.128693,
+    "seen": 1795286285.9024484,
+    "ast_hash": "f40b873c7af62c4386da5b9c8c4f1902",
     "semantic_hash": ""
   },
   "CODE_OF_CONDUCT.md": {
@@ -1206,9 +1206,9 @@
     "semantic_hash": ""
   },
   "src-tauri/src/report_style.rs": {
-    "mtime": 1795261751.080177,
-    "seen": 1795267319.6684783,
-    "ast_hash": "a12460c4314f0bf876003e66293efdf8",
+    "mtime": 1795285758.0952919,
+    "seen": 1795286285.9023688,
+    "ast_hash": "a1b8fa22a178d26f872dd6202684eace",
     "semantic_hash": ""
   },
   "src-tauri/src/theme_windows.rs": {

@@ -4,7 +4,7 @@ Welcome to the Lifting Plan Calculator. This guide walks through every tab in th
 
 Think of it as the walkthrough I would give you at a demo table: no jargon, just the fields to fill and the checks that matter. You can read it from start to finish, or jump to the tab you need.
 
-**Prefer to watch?** The [52-second walkthrough](video/tutorial.mp4) follows a 4,000 kg round load on a 2-Leg Round Choke from Overall Weight through to a saved PDF. It predates the Outrigger Pad Size tab, which is covered in section 3 below. The screenshots use the larger 20,350 kg example so the 75% warning is visible. Both are from the 2.12.x/2.13.x line.
+**Prefer to watch?** The [52-second walkthrough](video/tutorial.mp4) follows a 4,000 kg round load on a 2-Leg Round Choke from Overall Weight through to a saved PDF. It predates the Outrigger Pad Size tab, which is covered in section 3 below. The screenshots use the larger 20,350 kg example so the 75% warning is visible. They are from the 2.17.x line.
 
 ## Contents
 

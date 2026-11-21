@@ -714,6 +714,10 @@ select option { background: var(--surface-2); }
   text-align: right;
 }
 
+/* The measured value sits on the same line as the quantity, so it carries the
+   same height rather than the taller full-field padding. */
+.row-card .row-measure input { padding-top: 4px; padding-bottom: 4px; }
+
 /* One or two value boxes. The pair is a single unit: it keeps its boxes side
    by side and, when the working line is too narrow, the pair moves to its own
    line rather than stacking the two boxes. */

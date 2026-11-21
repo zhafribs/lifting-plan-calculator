@@ -49,6 +49,7 @@
 - **The description and measured-by controls are boxed.** In both the load and
   tackle cards the description field and the measured-by picker now carry the
   same border as the Lift field, so every control on a line reads as editable.
+  The measured value's box is the same height as the quantity box beside it.
 - **The diagram scale is typed, not picked.** The Report sections card takes a
   number between 25 and 100, normalised when focus leaves. Only the width is
   set; the height follows, so the diagram keeps its own ratio.

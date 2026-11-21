@@ -2,7 +2,7 @@
 
 import { el, svgIcon, debounce, escapeHtml } from "../dom.js";
 import { api, errorText } from "../api.js";
-import { card, field, selectInput, textInput } from "../components.js";
+import { card, field, numberInput, textInput, withUnit } from "../components.js";
 import { captureWorkingDiagram } from "../graph/snapshot.js";
 import { createPdfViewer } from "../pdf-viewer.js";
 
@@ -84,19 +84,28 @@ export function createReportScreen(ctx) {
 
   const diagramInput = el("input", { type: "checkbox" });
   let diagramScale = 100;
-  const diagramScaleInput = selectInput({
-    options: [
-      { key: "50", label: "50%" },
-      { key: "75", label: "75%" },
-      { key: "100", label: "100%" },
-    ],
-    value: "100",
-    disabled: true,
-    onChange: (value) => {
-      diagramScale = Number(value);
-      schedulePreview(0);
-      schedulePdf(0);
+  const diagramScaleInput = numberInput({
+    value: 100,
+    onInput: (value) => {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed) && parsed > 0) {
+        diagramScale = Math.min(100, Math.max(25, parsed));
+        schedulePreview(0);
+        schedulePdf(0);
+      }
     },
+  });
+  diagramScaleInput.classList.add("diagram-scale-input");
+  diagramScaleInput.disabled = true;
+  // A typed figure is normalised once focus leaves, so the field shows the
+  // value the report actually used.
+  diagramScaleInput.addEventListener("blur", () => {
+    const parsed = Number(diagramScaleInput.value);
+    const next = Number.isFinite(parsed) ? Math.min(100, Math.max(25, parsed)) : 100;
+    diagramScaleInput.value = String(next);
+    diagramScale = next;
+    schedulePreview(0);
+    schedulePdf(0);
   });
   diagramInput.addEventListener("change", () => {
     diagramScaleInput.disabled = !diagramInput.checked;
@@ -132,7 +141,7 @@ export function createReportScreen(ctx) {
       "span",
       { class: "diagram-scale" },
       el("span", { class: "d", text: "Scale" }),
-      diagramScaleInput,
+      withUnit(diagramScaleInput, "%"),
     ),
   );
 

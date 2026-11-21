@@ -1,3 +1,11 @@
+## [Unreleased]
+
+### Changed
+
+- **The diagram scale is typed, not picked.** The Report sections card takes a
+  number between 25 and 100, normalised when focus leaves. Only the width is
+  set; the height follows, so the diagram keeps its own ratio.
+
 ## [2.17.8] - 2026-11-21
 
 ### Added

@@ -1016,11 +1016,15 @@ table.grid td.num { text-align: right; }
   gap: 6px;
   cursor: default;
 }
-.check .diagram-scale select {
-  width: auto;
-  min-width: 60px;
-  padding: 4px 22px 4px 8px;
+.check .diagram-scale .input-wrap {
+  width: 62px;
+  flex: 0 0 auto;
+}
+.check .diagram-scale input {
+  width: 62px;
+  padding: 4px 20px 4px 8px;
   font-size: 12px;
+  text-align: right;
 }
 
 /* toasts */

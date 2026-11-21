@@ -41,6 +41,12 @@ keep the diagram's ratio.
 
 **Mean 8.0/10** — at the bar.
 
+## Also in this change
+
+- The Print button reset the live frame's preview zoom to 100% for the job, so a
+  printed plan and a saved PDF now carry the same font sizes. The frame is
+  re-fitted after printing.
+
 ## Known limits
 
 - The field accepts only 25–100; larger would exceed the printed column.

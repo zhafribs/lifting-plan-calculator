@@ -405,7 +405,19 @@ export function createReportScreen(ctx) {
     doc.body.style.zoom = String(scale);
   }
 
-  frame.addEventListener("load", fitLive);
+  frame.addEventListener("load", () => {
+    fitLive();
+    // The live frame is zoomed to fill the pane. Printing it while zoomed
+    // scaled the whole plan (a 118% font, not the 100% Save as PDF writes).
+    // Reset the zoom for the print job, then re-fit the preview afterwards.
+    const doc = frame.contentDocument;
+    const view = frame.contentWindow;
+    if (!doc || !view) return;
+    view.addEventListener("beforeprint", () => {
+      doc.body.style.zoom = "1";
+    });
+    view.addEventListener("afterprint", fitLive);
+  });
   new ResizeObserver(fitLive).observe(frameWrap);
 
   const previewPane = el("div", { class: "preview-pane" }, previewBar, frameWrap, pdfWrap);

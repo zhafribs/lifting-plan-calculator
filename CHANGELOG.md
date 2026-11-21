@@ -2,6 +2,10 @@
 
 ### Fixed
 
+- **Printing the live preview no longer scales the plan.** The preview is zoomed
+  to fit its pane; the Print button used to print that zoom, so a printed plan
+  could carry a 118% font while Save as PDF carried 100%. The frame is reset to
+  100% for the print job and re-fitted after it.
 - **The working range diagram scales both ways.** The image carried a
   `max-height` that pinned its height, so a scale changed only the width; the
   height now follows the width and the capture keeps its own ratio.

@@ -65,6 +65,8 @@ pub const REPORT_CSS: &str = r#"
 .report .plan-crane { font-size: 10pt; font-weight: bold; color: #1b2733; }
 .report .plan-details { margin-top: 4pt; }
 .report .plan-head h2 { margin: 3pt 0 2pt; }
+.report .plan-lines { margin-top: 6pt; border-top: 0.5pt solid #e4eaf1;
+    padding-top: 4pt; }
 .report table.plan-meta { width: 100%; border-collapse: collapse;
     table-layout: fixed; margin: 0; }
 .report table.plan-meta col.ref { width: 30%; }

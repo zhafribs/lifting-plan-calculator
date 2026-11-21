@@ -575,6 +575,7 @@ fn plan_head(
     gross: f64,
     crane: Option<&CraneResult>,
     diagram: Option<(&str, f64)>,
+    lines: Option<String>,
 ) -> String {
     let entry = |value: &str| {
         if value.trim().is_empty() {
@@ -622,6 +623,11 @@ fn plan_head(
     }
     if let Some((source, scale)) = diagram {
         out.push_str(&working_diagram_html(source, scale));
+    }
+    if let Some(lines) = lines {
+        out.push_str("<div class=\"plan-lines\"><h2>LOAD ITEMS AND LIFTING TACKLE</h2>");
+        out.push_str(&lines);
+        out.push_str("</div>");
     }
 
     out.push_str("</section>");
@@ -800,6 +806,16 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
         let scale = inputs.diagram_scale.unwrap_or(100.0).clamp(25.0, 100.0);
         (source, scale)
     });
+    // The line lists belong under the plan details too. A requested page break
+    // still wins: the lists then print as their own card, where the break can
+    // take effect.
+    let lines = if lines_on {
+        let html = plan_lines(&inputs.load_items, &inputs.tackle_items);
+        (!html.is_empty()).then_some(html)
+    } else {
+        None
+    };
+    let lines_in_head = !breaks("lines");
     if plan_on {
         parts.push(plan_head(
             &inputs.signoff,
@@ -807,13 +823,15 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
             gross,
             crane_for_head,
             diagram,
+            lines.as_ref().filter(|_| lines_in_head).cloned(),
         ));
     } else if let Some((source, scale)) = diagram {
         parts.push(working_diagram_html(source, scale));
     }
-    if lines_on {
-        let lines = plan_lines(&inputs.load_items, &inputs.tackle_items);
-        if !lines.is_empty() {
+    if let Some(lines) = &lines {
+        // Inside the plan box unless there is no plan box, or a page break
+        // needs the lists to start their own section.
+        if !plan_on || !lines_in_head {
             parts.push(section_card(
                 &format!("<h2>LOAD ITEMS AND LIFTING TACKLE</h2>{lines}"),
                 breaks("lines"),
@@ -1585,6 +1603,28 @@ mod tests {
         };
         let html = build_report_html(&inputs, &[]);
         assert!(html.find("Working range diagram") < html.find("Load items"));
+        // The lists sit inside the plan details box as well.
+        let head = html.find("<section class=\"plan-head\">").unwrap();
+        let end = head + html[head..].find("</section>").unwrap();
+        assert!(html[..end].contains("Load items"));
+    }
+
+    #[test]
+    fn a_page_break_for_the_lines_keeps_them_in_their_own_section() {
+        let inputs = ReportInputs {
+            load_items: vec![LoadItem {
+                name: "Steel plate".to_string(),
+                weight_kg: 500.0,
+                ..LoadItem::default()
+            }],
+            page_breaks: vec!["lines".to_string()],
+            ..ReportInputs::default()
+        };
+        let html = build_report_html(&inputs, &[]);
+        let head = html.find("<section class=\"plan-head\">").unwrap();
+        let end = head + html[head..].find("</section>").unwrap();
+        assert!(!html[..end].contains("Load items"));
+        assert!(html.contains("section-card new-page"));
     }
 
     #[test]

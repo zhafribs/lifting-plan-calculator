@@ -65,8 +65,14 @@ pub const REPORT_CSS: &str = r#"
 .report .plan-crane { font-size: 10pt; font-weight: bold; color: #1b2733; }
 .report .plan-details { margin-top: 4pt; }
 .report .plan-head h2 { margin: 3pt 0 2pt; }
-.report .plan-lines { margin-top: 6pt; border-top: 0.5pt solid #e4eaf1;
-    padding-top: 4pt; }
+/* The diagram and the line lists share a row while they fit; the lists wrap
+   under the diagram when the page or the chosen scale leaves no room. */
+.report .plan-figure { display: flex; flex-wrap: wrap; align-items: flex-start;
+    gap: 8pt; margin-top: 6pt; }
+.report .plan-figure .working-diagram { flex: 0 0 auto; margin: 0; }
+.report .plan-figure .plan-lines { flex: 1 1 150pt; min-width: 140pt;
+    margin: 0; }
+.report .plan-lines .metric-k { margin-bottom: 2pt; }
 .report table.plan-meta { width: 100%; border-collapse: collapse;
     table-layout: fixed; margin: 0; }
 .report table.plan-meta col.ref { width: 30%; }

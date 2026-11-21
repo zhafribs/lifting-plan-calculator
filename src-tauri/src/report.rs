@@ -621,13 +621,19 @@ fn plan_head(
         out.push_str(&metrics_table(result, gross));
         out.push_str(&crane_section(result, gross));
     }
-    if let Some((source, scale)) = diagram {
-        out.push_str(&working_diagram_html(source, scale));
-    }
-    if let Some(lines) = lines {
-        out.push_str("<div class=\"plan-lines\"><h2>LOAD ITEMS AND LIFTING TACKLE</h2>");
-        out.push_str(&lines);
-        out.push_str("</div>");
+    // The diagram takes the left of the row and the line lists the right.
+    // When the pair cannot fit (a wide diagram or a narrow page) the lists
+    // wrap under the diagram.
+    match (diagram, lines) {
+        (Some((source, scale)), Some(lines)) => {
+            out.push_str("<div class=\"plan-figure\">");
+            out.push_str(&working_diagram_html(source, scale));
+            out.push_str(&plan_lines_block(&lines));
+            out.push_str("</div>");
+        }
+        (Some((source, scale)), None) => out.push_str(&working_diagram_html(source, scale)),
+        (None, Some(lines)) => out.push_str(&plan_lines_block(&lines)),
+        (None, None) => {}
     }
 
     out.push_str("</section>");
@@ -636,9 +642,19 @@ fn plan_head(
 
 fn working_diagram_html(source: &str, scale: f64) -> String {
     format!(
-        "<div class=\"working-diagram\"><div class=\"diagram-title\">Working range diagram</div>\
-         <img src=\"{}\" alt=\"Working range diagram\" style=\"width: {scale:.0}%;\"></div>",
+        "<div class=\"working-diagram\" style=\"width: {scale:.0}%;\">\
+         <div class=\"diagram-title\">Working range diagram</div>\
+         <img src=\"{}\" alt=\"Working range diagram\" style=\"width: 100%;\"></div>",
         escape(source)
+    )
+}
+
+/// The line lists as a compact block: a small label like the plan's figures,
+/// then the two lists. It sits beside the diagram when there is room.
+fn plan_lines_block(lines: &str) -> String {
+    format!(
+        "<div class=\"plan-lines\"><div class=\"metric-k\">\
+         Load items and lifting tackle</div>{lines}</div>"
     )
 }
 
@@ -1607,6 +1623,27 @@ mod tests {
         let head = html.find("<section class=\"plan-head\">").unwrap();
         let end = head + html[head..].find("</section>").unwrap();
         assert!(html[..end].contains("Load items"));
+    }
+
+    #[test]
+    fn the_diagram_and_lines_share_a_row_while_they_fit() {
+        let inputs = ReportInputs {
+            load_items: vec![LoadItem {
+                name: "Steel plate".to_string(),
+                weight_kg: 500.0,
+                ..LoadItem::default()
+            }],
+            working_diagram: Some("data:image/png;base64,AAAA".to_string()),
+            diagram_scale: Some(50.0),
+            ..ReportInputs::default()
+        };
+        let html = build_report_html(&inputs, &[]);
+        let figure = html.find("class=\"plan-figure\"").unwrap();
+        let diagram = html.find("class=\"working-diagram\"").unwrap();
+        let lines = html.find("class=\"plan-lines\"").unwrap();
+        let end = figure + html[figure..].find("</section>").unwrap();
+        assert!(diagram > figure && diagram < lines, "diagram on the left");
+        assert!(lines < end, "the lists stay in the plan box");
     }
 
     #[test]

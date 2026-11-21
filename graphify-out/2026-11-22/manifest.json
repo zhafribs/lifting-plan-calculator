@@ -150,9 +150,9 @@
     "semantic_hash": "39fd8bdd7b986a2529af5a708f565abd"
   },
   "src-tauri/src/report.rs": {
-    "mtime": 1795265337.5922852,
-    "seen": 1795267319.668472,
-    "ast_hash": "be25b393587301c56af18c3623999d41",
+    "mtime": 1795284735.7142994,
+    "seen": 1795285059.163315,
+    "ast_hash": "dc343c76a9efe3bfaacc98254f97ba91",
     "semantic_hash": ""
   },
   "src-tauri/src/report_capacity.rs": {
@@ -300,9 +300,9 @@
     "semantic_hash": "3a57d99448f802024d640c81af3341a8"
   },
   "CHANGELOG.md": {
-    "mtime": 1795269228.5428832,
-    "seen": 1795273998.9364712,
-    "ast_hash": "644cb0a6d0467cb9f0f8889d7686b561",
+    "mtime": 1795285011.7174056,
+    "seen": 1795285059.1634142,
+    "ast_hash": "58f04de6d8862c190f0bd3b7db2e4dfa",
     "semantic_hash": ""
   },
   "CODE_OF_CONDUCT.md": {

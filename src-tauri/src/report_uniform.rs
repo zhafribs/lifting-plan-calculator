@@ -264,6 +264,46 @@ fn choke_height_equation(
 
 /// Section 2: the wrap, the free leg, the sling angle and the headroom.
 #[allow(clippy::too_many_lines)]
+/// Break a long display equation at its top-level equals signs. The piece is
+/// the same math on more lines; a formula wider than its column would make the
+/// whole printed page shrink.
+fn split_long_equation(part: &str) -> String {
+    if part.len() < 120 || part.contains("\\begin{aligned}") {
+        return part.to_string();
+    }
+    let (Some(start), Some(end)) = (part.find("\\["), part.rfind("\\]")) else {
+        return part.to_string();
+    };
+    let latex = &part[start + 2..end];
+    let mut pieces: Vec<String> = Vec::new();
+    let mut depth = 0i32;
+    let mut from = 0usize;
+    for (index, ch) in latex.char_indices() {
+        match ch {
+            '{' => depth += 1,
+            '}' => depth -= 1,
+            '=' if depth == 0 => {
+                pieces.push(latex[from..index].trim().to_string());
+                from = index + 1;
+            }
+            _ => {}
+        }
+    }
+    pieces.push(latex[from..].trim().to_string());
+    if pieces.len() < 2 {
+        return part.to_string();
+    }
+    let mut lines = vec![format!("{} &= {}", pieces[0], pieces[1])];
+    for piece in &pieces[2..] {
+        lines.push(format!("&= {piece}"));
+    }
+    let aligned = format!(
+        "\\begin{{aligned}}{}\\end{{aligned}}",
+        lines.join(" \\\\ ")
+    );
+    format!("<div class=\"equation\">\\[{aligned}\\]</div>")
+}
+
 /// Lay the section's label/formula pairs out two to a row. A following
 /// equation (such as the second height) stays with its label's block; prose
 /// becomes a block of its own. The report's working grid is a table, so this
@@ -286,9 +326,13 @@ fn geometry_grid(mut parts: Vec<String>) -> String {
                     .to_string(),
             );
         } else if part.starts_with("<div class=\"equation\">") {
+            let part = split_long_equation(&part);
+            // A formula too wide for half a page takes the whole row.
+            let wide = part.len() > 240;
             match label.take() {
                 Some(open) => blocks.push(format!(
-                    "<div class=\"work-label\">{open}</div>{part}"
+                    "<div class=\"work-label\"{}>{open}</div>{part}",
+                    if wide { " data-wide=\"1\"" } else { "" }
                 )),
                 None => {
                     if let Some(last) = blocks.last_mut() {
@@ -1060,9 +1104,23 @@ mod tests {
     use crate::report::next_section_number;
     use crate::sling::{hitch_spec, solve_defaults};
 
+    /// The alignment markup removed, so a formula split over lines still
+    /// compares with the reference's one-line string.
+    fn unaligned(html: &str) -> String {
+        let mut out = html
+            .replace("\\begin{aligned}", "")
+            .replace("\\end{aligned}", "")
+            .replace("\\\\", " ")
+            .replace("&=", "=");
+        while out.contains("  ") {
+            out = out.replace("  ", " ");
+        }
+        out
+    }
+
     fn geometry(hitch: &str) -> String {
         let result = solve_defaults(hitch, 2000.0).unwrap();
-        geometry_section(&result, hitch_spec(&result.hitch).unwrap())
+        unaligned(&geometry_section(&result, hitch_spec(&result.hitch).unwrap()))
     }
 
     fn inputs(hitch: &str) -> String {

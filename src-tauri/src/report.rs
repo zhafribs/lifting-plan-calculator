@@ -441,22 +441,32 @@ pub fn notes_pair(left: &str, right: &str) -> String {
     )
 }
 
-/// The workings laid out two to a row; a lone last one spans the row.
+/// The workings laid out two to a row. A block marked `data-wide` — one whose
+/// label or formula is too long for half a page — takes the whole row instead:
+/// a wider cell is print-safe, while an over-wide page shrinks as a whole.
 pub fn working_grid(blocks: &[String]) -> String {
     let mut out = String::from("<div class=\"working-wrap\"><table class=\"working\"><tbody>");
-    for chunk in blocks.chunks(2) {
-        out.push_str("<tr>");
-        match chunk {
-            [one, two] => {
-                out.push_str(&format!("<td>{one}</td><td>{two}</td>"));
-            }
-            [one] => {
-                out.push_str(&format!("<td colspan=\"2\">{one}</td>"));
-            }
+    let mut row: Vec<&String> = Vec::new();
+    let flush = |row: &mut Vec<&String>, out: &mut String| {
+        match row.as_slice() {
+            [one, two] => out.push_str(&format!("<tr><td>{one}</td><td>{two}</td></tr>")),
+            [one] => out.push_str(&format!("<tr><td colspan=\"2\">{one}</td></tr>")),
             _ => {}
         }
-        out.push_str("</tr>");
+        row.clear();
+    };
+    for block in blocks {
+        if block.contains("data-wide=\"1\"") {
+            flush(&mut row, &mut out);
+            out.push_str(&format!("<tr><td colspan=\"2\">{block}</td></tr>"));
+        } else {
+            row.push(block);
+            if row.len() == 2 {
+                flush(&mut row, &mut out);
+            }
+        }
     }
+    flush(&mut row, &mut out);
     out.push_str("</tbody></table></div>");
     out
 }

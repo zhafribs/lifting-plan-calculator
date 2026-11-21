@@ -8,6 +8,13 @@
 
 ### Fixed
 
+- **Every uniform arrangement prints at 100%.** A formula wider than its
+  half-column made WebKit shrink the whole printed page: the 2-leg round choke
+  printed at about 86% and the nested arrangement at about 64%, while direct
+  hook printed at 100%. Long formulas now break at their equals signs and a
+  block still too wide takes the full row. Measured on the rendered PDFs:
+  direct hook, 2-leg round choke, nested, four-leg direct and round choke all
+  carry the plan-details title at the same size.
 - **Printing the live preview no longer scales the plan.** The preview is zoomed
   to fit its pane; the Print button used to print that zoom, so a printed plan
   could carry a 118% font while Save as PDF carried 100%. The frame is reset to

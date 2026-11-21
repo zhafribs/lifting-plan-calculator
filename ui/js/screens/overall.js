@@ -54,7 +54,10 @@ export function createOverallScreen(ctx) {
       class: "btn add wide",
       onClick: () =>
         store.update((state) => {
-          state.tackle_items.push(blankTackleItem());
+          state.tackle_items.push({
+            ...blankTackleItem(),
+            lift: state.tackle_items.at(-1)?.lift?.trim() || "Lift 1",
+          });
         }),
     },
     svgIcon("plus", 15),
@@ -298,6 +301,16 @@ export function createOverallScreen(ctx) {
       });
       descInput.className = "row-name";
       descInput.setAttribute("aria-label", "Description");
+      const liftInput = textInput({
+        value: item.lift ?? "Lift 1",
+        placeholder: "Lift 1",
+        onInput: (value) =>
+          store.update((s) => {
+            s.tackle_items[index].lift = value;
+          }),
+      });
+      liftInput.className = "row-lift";
+      liftInput.setAttribute("aria-label", "Lift group");
       const qtyInput = numberInput({
         value: item.qty,
         placeholder: "qty",
@@ -322,7 +335,7 @@ export function createOverallScreen(ctx) {
         el(
           "div",
           { class: "row-card tackle-row" },
-          el("div", { class: "row-identity" }, descInput, total),
+          el("div", { class: "row-identity" }, liftInput, descInput, total),
           el(
             "div",
             { class: "row-working" },
@@ -376,8 +389,9 @@ export function createOverallScreen(ctx) {
 
     const totals = solved.totals;
     const lifts = totals.lifts || [];
+    const liftTotal = (lift) => lift.weight + (lift.tackle || 0);
     const governing = lifts.reduce(
-      (best, lift) => (best === null || lift.weight > best.weight ? lift : best),
+      (best, lift) => (best === null || liftTotal(lift) > liftTotal(best) ? lift : best),
       null,
     );
     summaryBox.replaceChildren(
@@ -407,7 +421,7 @@ export function createOverallScreen(ctx) {
           ? el("p", {
               class: "faint small",
               style: { margin: "8px 2px 0" },
-              text: `Heaviest lift: ${governing.name} — ${fmt(governing.weight, 2, "kg")}`,
+              text: `Heaviest lift: ${governing.name} — ${fmt(liftTotal(governing), 2, "kg")}`,
             })
           : null,
         el("p", {

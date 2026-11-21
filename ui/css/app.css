@@ -667,7 +667,6 @@ select option { background: var(--surface-2); }
   flex: 1 1 auto;
   min-width: 0;
   padding: 4px 8px;
-  border-color: var(--border-soft);
   background: var(--surface-2);
   font-weight: 500;
 }
@@ -691,8 +690,7 @@ select option { background: var(--surface-2); }
   width: auto;
   max-width: none;
   padding: 4px 22px 4px 6px;
-  border-color: transparent;
-  background-color: transparent;
+  background-color: var(--surface-2);
   font-size: 12px;
   font-weight: 500;
   color: var(--muted);

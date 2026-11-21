@@ -640,15 +640,8 @@ fn plan_lines(load_items: &[LoadItem], tackle_items: &[TackleItem]) -> String {
         return String::new();
     }
 
-    let multiple_lifts = {
-        let mut names: Vec<&str> = loads
-            .iter()
-            .map(|item| item.lift.trim())
-            .collect();
-        names.sort_unstable();
-        names.dedup();
-        names.len() > 1
-    };
+    let totals = LiftTotals::of(load_items, tackle_items);
+    let multiple_lifts = totals.lifts.len() > 1;
 
     let column = |title: &str, rows: &[String]| -> String {
         if rows.is_empty() {
@@ -661,19 +654,6 @@ fn plan_lines(load_items: &[LoadItem], tackle_items: &[TackleItem]) -> String {
             rows.concat()
         )
     };
-
-    let mut lifts: Vec<(String, f64)> = Vec::new();
-    for item in &loads {
-        let lift = if item.lift.trim().is_empty() {
-            "Lift 1"
-        } else {
-            item.lift.trim()
-        };
-        match lifts.iter_mut().find(|(name, _)| name == lift) {
-            Some((_, weight)) => *weight += item.weight(),
-            None => lifts.push((lift.to_string(), item.weight())),
-        }
-    }
 
     let load_rows: Vec<String> = loads
         .iter()
@@ -711,12 +691,16 @@ fn plan_lines(load_items: &[LoadItem], tackle_items: &[TackleItem]) -> String {
         column("Load items", &load_rows),
         column("Lifting tackle", &tackle_rows)
     );
-    if lifts.len() > 1 {
-        if let Some((name, weight)) = lifts.iter().max_by(|a, b| a.1.total_cmp(&b.1)) {
+    if totals.lifts.len() > 1 {
+        if let Some(lift) = totals
+            .lifts
+            .iter()
+            .max_by(|a, b| a.total().total_cmp(&b.total()))
+        {
             out.push_str(&format!(
                 "<div class=\"line-note\">Overall weight uses {} ({}).</div>",
-                escape(name),
-                fmt(Some(*weight), 2, "kg")
+                escape(&lift.name),
+                fmt(Some(lift.total()), 2, "kg")
             ));
         }
     }

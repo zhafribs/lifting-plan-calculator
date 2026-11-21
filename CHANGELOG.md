@@ -14,6 +14,11 @@
   scaffold and the rest stay separate. The summary names the heaviest lift, and
   the printed list prefixes each item with its lift and says which one sets the
   overall weight.
+- **Tackle lines carry a lift too.** Each lifting-tackle line has the same
+  "Lift" field as a load line, so rigging is counted with the lift it rides
+  with: the overall weight is the heaviest lift's load **plus that lift's
+  tackle**. Tackle left on a lift that is not in the plan is treated as shared
+  and counted on every lift rather than dropped.
 - **The Overall Weight tab has an Actions card.** Load example fills a 1,500 kg
   steel plate and an 80 kg 2-leg chain sling; Show report opens the plan with
   the crane section; Clear returns both lists to one blank line.
@@ -37,6 +42,13 @@
 
 ### Changed
 
+- **A new plan opens with five sections ticked.** Plan details, Crane, Working
+  Range Diagram, Load Items and Lifting Tackle, and Outrigger Pad Size start on;
+  the three sling sections stay off. The outrigger prints its "choose a ground
+  category" note until that tab is filled in.
+- **The description and measured-by controls are boxed.** In both the load and
+  tackle cards the description field and the measured-by picker now carry the
+  same border as the Lift field, so every control on a line reads as editable.
 - **The diagram scale is typed, not picked.** The Report sections card takes a
   number between 25 and 100, normalised when focus leaves. Only the width is
   set; the height follows, so the diagram keeps its own ratio.

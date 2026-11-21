@@ -15,7 +15,7 @@ export function createReportScreen(ctx) {
     plan: true,
     crane: true,
     lines: true,
-    outrigger: false,
+    outrigger: true,
     uniform: false,
     nonuniform: false,
     tandem: false,
@@ -53,7 +53,7 @@ export function createReportScreen(ctx) {
   const checkNodes = {
     plan: ["Plan details", "The reference, sign-off and figures"],
     crane: ["Crane", "Capacity check against the load chart"],
-    lines: ["Load items and lifting tackle", "The lines that make up the lift"],
+    lines: ["Load Items and Lifting Tackle", "The lines that make up the lift"],
     outrigger: ["Outrigger Pad Size", "Bearing area from the BS 8004 ground table"],
     uniform: ["Uniform Load", "The selected sling arrangement"],
     nonuniform: ["Nonuniform Load", "The asymmetric bridle"],
@@ -93,6 +93,7 @@ export function createReportScreen(ctx) {
   }
 
   const diagramInput = el("input", { type: "checkbox" });
+  diagramInput.checked = true;
   let diagramScale = 100;
   const diagramScaleInput = numberInput({
     value: 100,
@@ -106,7 +107,7 @@ export function createReportScreen(ctx) {
     },
   });
   diagramScaleInput.classList.add("diagram-scale-input");
-  diagramScaleInput.disabled = true;
+  diagramScaleInput.disabled = false;
   // A typed figure is normalised once focus leaves, so the field shows the
   // value the report actually used.
   diagramScaleInput.addEventListener("blur", () => {
@@ -144,7 +145,7 @@ export function createReportScreen(ctx) {
     el(
       "span",
       {},
-      el("div", { class: "t", text: "Working range diagram" }),
+      el("div", { class: "t", text: "Working Range Diagram" }),
       el("div", { class: "d", text: "The current crane and jib configuration" }),
     ),
     el(

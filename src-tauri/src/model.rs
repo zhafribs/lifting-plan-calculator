@@ -107,6 +107,9 @@ impl LoadItem {
 pub struct TackleItem {
     pub id: u64,
     pub description: String,
+    /// The lift this rigging rides with. Blank is shared: it counts on every
+    /// lift, so a line entered before the lifts were named is never dropped.
+    pub lift: String,
     pub qty: i64,
     pub weight_kg: f64,
 }
@@ -116,6 +119,7 @@ impl Default for TackleItem {
         Self {
             id: next_line_id(),
             description: String::new(),
+            lift: "Lift 1".to_string(),
             qty: 1,
             weight_kg: 0.0,
         }
@@ -133,6 +137,16 @@ impl TackleItem {
 pub struct LiftGroup {
     pub name: String,
     pub weight: f64,
+    /// The rigging assigned to this lift.
+    #[serde(default)]
+    pub tackle: f64,
+}
+
+impl LiftGroup {
+    /// What this lift puts on the hook.
+    pub fn total(&self) -> f64 {
+        self.weight + self.tackle
+    }
 }
 
 /// The Overall Weight figures, in the order the result card renders them.
@@ -156,6 +170,16 @@ pub struct LiftTotals {
     pub lifts: Vec<LiftGroup>,
 }
 
+/// A line's lift name, with the blank name read as the first lift.
+fn lift_name(raw: &str) -> &str {
+    let name = raw.trim();
+    if name.is_empty() {
+        "Lift 1"
+    } else {
+        name
+    }
+}
+
 impl LiftTotals {
     /// Sum a lift's lines.
     ///
@@ -167,21 +191,40 @@ impl LiftTotals {
         // than by everything on the sheet.
         let mut lifts: Vec<LiftGroup> = Vec::new();
         for item in load_items {
-            let raw = item.lift.trim();
-            let name = if raw.is_empty() { "Lift 1" } else { raw };
+            let name = lift_name(&item.lift);
             match lifts.iter_mut().find(|group| group.name == name) {
                 Some(group) => group.weight += item.weight(),
                 None => lifts.push(LiftGroup {
                     name: name.to_string(),
                     weight: item.weight(),
+                    tackle: 0.0,
                 }),
             }
         }
-        let load = lifts
+
+        // Named tackle rides with its own lift. Unnamed tackle, or tackle that
+        // names no lift in this plan, is shared: it is counted on every lift,
+        // so a typo adds weight rather than quietly leaving it out.
+        let mut shared = 0.0;
+        for item in tackle_items {
+            let named = !item.lift.trim().is_empty();
+            let name = lift_name(&item.lift);
+            match lifts.iter_mut().find(|group| group.name == name) {
+                Some(group) if named => group.tackle += item.subtotal(),
+                _ => shared += item.subtotal(),
+            }
+        }
+        for lift in &mut lifts {
+            lift.tackle += shared;
+        }
+
+        let governing = lifts
             .iter()
-            .map(|group| group.weight)
-            .fold(0.0, f64::max);
-        let tackle: f64 = tackle_items.iter().map(TackleItem::subtotal).sum();
+            .max_by(|a, b| a.total().total_cmp(&b.total()));
+        let (load, tackle) = match governing {
+            Some(lift) => (lift.weight, lift.tackle),
+            None => (0.0, shared),
+        };
         let gross = calc::gross_lift_weight(load, tackle).unwrap_or(0.0);
         let required = calc::required_chart_capacity(gross, calc::CRANE_USAGE_RATIO).unwrap_or(0.0);
         LiftTotals {
@@ -259,6 +302,53 @@ mod tests {
         assert_eq!(totals.lifts.len(), 2);
         assert_eq!(totals.lifts[0].name, "Steel");
         assert!((totals.lifts[1].weight - 1580.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn tackle_rides_with_its_own_lift() {
+        let steel = LoadItem {
+            lift: "Steel".to_string(),
+            weight_kg: 1000.0,
+            ..LoadItem::default()
+        };
+        let concrete = LoadItem {
+            lift: "Concrete".to_string(),
+            weight_kg: 950.0,
+            ..LoadItem::default()
+        };
+        let rig = TackleItem {
+            lift: "Concrete".to_string(),
+            weight_kg: 50.0,
+            qty: 2,
+            ..TackleItem::default()
+        };
+        let totals = LiftTotals::of(&[steel, concrete], &[rig]);
+        assert!((totals.load - 950.0).abs() < 1e-9);
+        assert!((totals.tackle - 100.0).abs() < 1e-9);
+        assert!((totals.gross - 1050.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn shared_tackle_counts_on_the_lift_it_rides_with() {
+        let steel = LoadItem {
+            lift: "Steel".to_string(),
+            weight_kg: 1000.0,
+            ..LoadItem::default()
+        };
+        let concrete = LoadItem {
+            lift: "Concrete".to_string(),
+            weight_kg: 500.0,
+            ..LoadItem::default()
+        };
+        let rig = TackleItem {
+            lift: String::new(),
+            weight_kg: 100.0,
+            ..TackleItem::default()
+        };
+        let totals = LiftTotals::of(&[steel, concrete], &[rig]);
+        assert!((totals.load - 1000.0).abs() < 1e-9);
+        assert!((totals.tackle - 100.0).abs() < 1e-9);
+        assert!((totals.gross - 1100.0).abs() < 1e-9);
     }
 
     #[test]

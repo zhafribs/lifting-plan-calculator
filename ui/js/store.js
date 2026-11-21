@@ -37,7 +37,7 @@ export function blankLoadItem() {
 }
 
 export function blankTackleItem() {
-  return { id: newId(), description: "", qty: 1, weight_kg: 0 };
+  return { id: newId(), description: "", lift: "Lift 1", qty: 1, weight_kg: 0 };
 }
 
 export function blankChartRow() {

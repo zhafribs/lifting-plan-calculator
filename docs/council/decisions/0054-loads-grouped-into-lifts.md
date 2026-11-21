@@ -55,7 +55,7 @@ plan is sized by the heaviest lift.
 
 ## Known limits
 
-- The tackle list is shared: its total is added to the heaviest lift. Tackle
-  that belongs to one lift only is not modelled yet.
+- ~~The tackle list is shared: its total is added to the heaviest lift.~~
+  Superseded by 0056: tackle lines now carry their own lift.
 - Lines in the same lift are grouped by exact name (case-sensitive).
 - The non-uniform and tandem tabs still use their own single gross.

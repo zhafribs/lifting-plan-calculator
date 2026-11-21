@@ -8,7 +8,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::calc::{crane_usage_band, LoadType, UsageState};
+use crate::calc::{crane_usage_band, UsageState};
 use crate::crane::{CraneResult, DESIGN_LOAD_RATIO};
 use crate::dto::PlanSignoff;
 use crate::model::{LiftTotals, LoadItem, TackleItem};
@@ -629,9 +629,9 @@ fn plan_head(
     out
 }
 
-/// The load and tackle lines, as one compact table with a group row for each.
-/// A line with no name is a blank row the operator has not used yet, so it is
-/// left out of the plan.
+/// The load and tackle lines as two side-by-side lists: the description and
+/// its subtotal, loads on the left and tackle on the right. A line with no name
+/// is a blank row the operator has not used yet, so it is left out.
 fn plan_lines(load_items: &[LoadItem], tackle_items: &[TackleItem]) -> String {
     let loads: Vec<&LoadItem> = load_items
         .iter()
@@ -645,57 +645,44 @@ fn plan_lines(load_items: &[LoadItem], tackle_items: &[TackleItem]) -> String {
         return String::new();
     }
 
-    let mut out = String::new();
-    out.push_str(
-        "<table class=\"line-list\"><thead><tr>\
-         <th>Description</th><th>Measured by</th><th class=\"n\">Qty</th>\
-         <th>Measurement</th><th class=\"n\">Weight</th></tr></thead><tbody>",
-    );
+    let column = |title: &str, rows: &[String]| -> String {
+        if rows.is_empty() {
+            return String::new();
+        }
+        format!(
+            "<div class=\"line-pair-title\">{}</div>\
+             <table class=\"line-pair-list\"><tbody>{}</tbody></table>",
+            escape(title),
+            rows.concat()
+        )
+    };
 
-    if !loads.is_empty() {
-        out.push_str("<tr class=\"group\"><td colspan=\"5\">Load items</td></tr>");
-        for item in loads {
-            let measurement = match item.load_type {
-                LoadType::PerMetre => format!(
-                    "{} × {}",
-                    fmt(Some(item.kg_per_metre), 2, "kg/m"),
-                    fmt(Some(item.length_m), 2, "m")
-                ),
-                LoadType::PerVolume => format!(
-                    "{} × {}",
-                    fmt(Some(item.volume_m3), 2, "m3"),
-                    fmt(Some(item.density_kg_m3), 2, "kg/m3")
-                ),
-                LoadType::Fixed => fmt(Some(item.weight_kg), 2, "kg"),
-            };
-            out.push_str(&format!(
-                "<tr><td>{}</td><td>{}</td><td class=\"n\">{}</td><td>{}</td>\
-                 <td class=\"n\">{}</td></tr>",
+    let load_rows: Vec<String> = loads
+        .iter()
+        .map(|item| {
+            format!(
+                "<tr><td>{}</td><td class=\"n\">{}</td></tr>",
                 escape(item.name.trim()),
-                escape(item.load_type.label()),
-                item.qty,
-                escape(&measurement),
                 fmt(Some(item.weight()), 2, "kg")
-            ));
-        }
-    }
-
-    if !tackle.is_empty() {
-        out.push_str("<tr class=\"group\"><td colspan=\"5\">Lifting tackle</td></tr>");
-        for item in tackle {
-            out.push_str(&format!(
-                "<tr><td>{}</td><td>\u{2014}</td><td class=\"n\">{}</td>\
-                 <td>{}</td><td class=\"n\">{}</td></tr>",
+            )
+        })
+        .collect();
+    let tackle_rows: Vec<String> = tackle
+        .iter()
+        .map(|item| {
+            format!(
+                "<tr><td>{}</td><td class=\"n\">{}</td></tr>",
                 escape(item.description.trim()),
-                item.qty,
-                fmt(Some(item.weight_kg), 2, "kg"),
                 fmt(Some(item.subtotal()), 2, "kg")
-            ));
-        }
-    }
+            )
+        })
+        .collect();
 
-    out.push_str("</tbody></table>");
-    out
+    format!(
+        "<table class=\"line-pairs\"><tbody><tr><td>{}</td><td>{}</td></tr></tbody></table>",
+        column("Load items", &load_rows),
+        column("Lifting tackle", &tackle_rows)
+    )
 }
 
 /// The reference and credit line every printed page carries, with the defaults

@@ -22,11 +22,10 @@ from under the figure to the label line, where it fits at the printed size.
 
 - `ReportInputs` carries the load and tackle lines from the Overall Weight
   state (`build_report` clones them from `AppState`).
-- `plan_head` prints one compact table after the diagram (or after the crane
-  working when there is no diagram), with a group row for each list:
-  - **Load items:** description, measured by, quantity, measurement (the
-    per-metre/per-volume pair as `value × value`), weight.
-  - **Lifting tackle:** description, quantity, weight each, subtotal.
+- `plan_head` prints two small lists side by side after the diagram (or after
+  the crane working when there is no diagram): the load items on the left and
+  the lifting tackle on the right, each a description and its subtotal. The
+  second header and the measurement columns went with the change.
 - A line with no name is an unused blank row and is left out. If both lists are
   empty, nothing is printed.
 - `Chart capacity` uses a new `metric_cell_aside`: the note sits on the label

@@ -92,28 +92,20 @@ pub const REPORT_CSS: &str = r#"
 .report table.input-grid td { border: 0; padding: 3.5pt 5pt; background: #f2f6fa;
     border-radius: 3pt; vertical-align: top; }
 .report table.input-grid .input-v { font-size: 8pt; }
-.report .line-list-title { font-size: 6pt; font-weight: bold;
+.report table.line-pairs { width: 100%; border-collapse: collapse;
+    table-layout: fixed; margin: 4pt 0 2pt; }
+.report table.line-pairs > tbody > tr > td { width: 50%; vertical-align: top;
+    border: 0; padding: 0 7pt 0 0; }
+.report table.line-pairs > tbody > tr > td + td { padding: 0 0 0 7pt; }
+.report .line-pair-title { font-size: 5.5pt; font-weight: bold;
     letter-spacing: 0.3pt; text-transform: uppercase; color: #6d7a88;
-    margin: 6pt 0 1.5pt; }
-.report table.line-list { width: 100%; border-collapse: collapse;
-    table-layout: auto; margin: 0 0 3pt; font-size: 7pt; }
-.report table.line-list th { border: 0; border-bottom: 0.5pt solid #ccd6e0;
-    padding: 1.5pt 3pt; text-align: left; font-size: 5.5pt;
-    letter-spacing: 0.2pt; text-transform: uppercase; color: #6d7a88;
-    font-weight: normal; }
-.report table.line-list td { border: 0; border-bottom: 0.5pt solid #e4eaf1;
-    padding: 2pt 3pt; color: #1b2733; vertical-align: top; }
-.report table.line-list .n { text-align: right; white-space: nowrap; }
-.report table.line-list tr:last-child td { border-bottom: 0; }
-.report table.line-list tr.group td { border-bottom: 0; padding: 3pt 3pt 1pt;
-    font-size: 5.5pt; font-weight: bold; letter-spacing: 0.3pt;
-    text-transform: uppercase; color: #6d7a88; }
-.report .pad-square-line { display: flex; align-items: baseline; gap: 5pt;
-    margin: 3pt 0 2pt; }
-.report .pad-square-k { font-size: 6.5pt; font-weight: bold;
-    letter-spacing: 0.3pt; text-transform: uppercase; color: #6d7a88;
-    white-space: nowrap; }
-.report .pad-square-eq .katex { font-size: 1em; }
+    margin: 0 0 1pt; }
+.report table.line-pair-list { width: 100%; border-collapse: collapse;
+    table-layout: auto; margin: 0; font-size: 7pt; }
+.report table.line-pair-list td { border: 0; border-bottom: 0.5pt solid #e4eaf1;
+    padding: 1.5pt 2pt; color: #1b2733; vertical-align: top; }
+.report table.line-pair-list .n { text-align: right; white-space: nowrap; }
+.report table.line-pair-list tr:last-child td { border-bottom: 0; }
 .report .working-wrap { padding: 0; margin-top: 6pt; }
 .report table.working { width: 100%; border-collapse: collapse; margin: 4pt 0 4pt;
     /* Auto, not fixed: the divider sits at the true centre when both sides fit,

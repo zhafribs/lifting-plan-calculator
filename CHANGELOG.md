@@ -2,10 +2,10 @@
 
 ### Added
 
-- **The plan lists the load and tackle lines in one table.** Section 1 prints a
-  "Load items" group and a "Lifting tackle" group — description, measured by,
-  quantity, measurement and weight — after the required-capacity/usage working,
-  or below the working range diagram when that is printed.
+- **The plan lists the load and tackle lines side by side.** Section 1 prints
+  two small lists — description and subtotal only — with the load items on the
+  left and the lifting tackle on the right, after the required-capacity/usage
+  working or below the working range diagram when that is printed.
 
 ### Changed
 
@@ -18,6 +18,9 @@
 - **The plan-details usage cell no longer repeats "of chart capacity".** The
   figure and the band already say it; the caution case keeps "past the 75%
   target".
+- **The choke geometry reads two blocks per row.** Its label/formula pairs sit
+  in the same two-column working grid as the rest of the report, with the two
+  height workings kept together in one block.
 
 ### Fixed
 

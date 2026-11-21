@@ -1,6 +1,9 @@
 //! The uniform-lift report sections, ported from `ReportUniform.kt`.
 
-use crate::report::{card_grid, equation, fmt, heading, p, plain, subheading, tex_deg, tex_num};
+use crate::report::{
+    card_grid, equation, fmt, heading, p, plain, subheading, tex_deg, tex_num, work_block,
+    working_grid,
+};
 use crate::sling::{
     HitchSpec, SecondaryGroup, SlingResult, ANGLE_BASIS_EXTERNAL,
 };
@@ -894,61 +897,79 @@ pub fn geometry_section(result: &SlingResult, spec: &HitchSpec) -> String {
         let external = result.external_angle.unwrap_or(0.0);
         let lead = result.lead.unwrap_or(0.0);
         let gap = result.choke_to_load;
-        out.push(subheading("Vertical Angle Outside Choke:"));
-        out.push(equation(&format!(
-            "\\text{{Choke External Angle}} = 180^\\circ - \\text{{Choke Internal Angle}} = \
-             180^\\circ - {}^\\circ = {}^\\circ",
-            tex_num(Some(internal), 0),
-            tex_num(Some(external), 0)
-        )));
-        out.push(subheading("Total Sling Perimeter Wrap:"));
-        out.push(equation(&format!(
-            "\\text{{Perimeter}} = \\pi \\times \\text{{Diameter}} = \\pi \\times \
-             {} = {}\\ \\text{{m}}",
-            tex_num(Some(result.diameter), 3),
-            tex_num(Some(wrap), 3)
-        )));
+        let mut blocks = vec![
+            work_block(
+                "Vertical Angle Outside Choke",
+                &equation(&format!(
+                    "\\text{{Choke External Angle}} = 180^\\circ - \\text{{Choke Internal Angle}} = \
+                     180^\\circ - {}^\\circ = {}^\\circ",
+                    tex_num(Some(internal), 0),
+                    tex_num(Some(external), 0)
+                )),
+            ),
+            work_block(
+                "Total Sling Perimeter Wrap",
+                &equation(&format!(
+                    "\\text{{Perimeter}} = \\pi \\times \\text{{Diameter}} = \\pi \\times \
+                     {} = {}\\ \\text{{m}}",
+                    tex_num(Some(result.diameter), 3),
+                    tex_num(Some(wrap), 3)
+                )),
+            ),
+        ];
         if external < 90.0 {
-            out.push(subheading("Operational Rule Declared:"));
-            out.push(p(
-                "As noted by the inspector/supervisor, if the angle of choke falls \
-                 below 90 degrees, the sling wraps the load tightly under tension. \
-                 The choke point is forced flush against the cylinder surface, \
-                 meaning there is zero floating gap or air space above the cargo.",
-                "",
+            blocks.push(work_block(
+                "Operational Rule Declared",
+                &p(
+                    "As noted by the inspector/supervisor, if the angle of choke falls \
+                     below 90 degrees, the sling wraps the load tightly under tension. \
+                     The choke point is forced flush against the cylinder surface, \
+                     meaning there is zero floating gap or air space above the cargo.",
+                    "",
+                ),
             ));
-            out.push(subheading("Vertical Height (Choke to Top of Load):"));
-            out.push(equation("\\text{Height}_{Choke-Load} = 0.000\\ \\text{m}"));
+            blocks.push(work_block(
+                "Vertical Height (Choke to Top of Load)",
+                &equation("\\text{Height}_{Choke-Load} = 0.000\\ \\text{m}"),
+            ));
         } else {
             let y_value = if internal != 0.0 {
                 radius / internal.to_radians().sin()
             } else {
                 radius
             };
-            out.push(subheading("Vertical Height (Choke to Top of Load):"));
-            out.push(equation(&format!(
-                "Y = \\frac{{\\text{{Radius}}}}{{\\sin(\\text{{Choke Internal Angle}})}} = \
-                 \\frac{{{}}}{{\\sin({}^\\circ)}} = {}\\ \\text{{m}}",
-                tex_num(Some(radius), 3),
-                tex_num(Some(internal), 0),
-                tex_num(Some(y_value), 3)
-            )));
-            out.push(equation(&format!(
-                "\\text{{Height}}_{{Choke-Load}} = Y - \\text{{Radius}} = \
-                 {} - {} = {}\\ \\text{{m}}",
-                tex_num(Some(y_value), 3),
-                tex_num(Some(radius), 3),
-                tex_num(gap, 3)
-            )));
+            blocks.push(work_block(
+                "Vertical Height (Choke to Top of Load)",
+                &format!(
+                    "{}{}",
+                    equation(&format!(
+                        "Y = \\frac{{\\text{{Radius}}}}{{\\sin(\\text{{Choke Internal Angle}})}} = \
+                         \\frac{{{}}}{{\\sin({}^\\circ)}} = {}\\ \\text{{m}}",
+                        tex_num(Some(radius), 3),
+                        tex_num(Some(internal), 0),
+                        tex_num(Some(y_value), 3)
+                    )),
+                    equation(&format!(
+                        "\\text{{Height}}_{{Choke-Load}} = Y - \\text{{Radius}} = \
+                         {} - {} = {}\\ \\text{{m}}",
+                        tex_num(Some(y_value), 3),
+                        tex_num(Some(radius), 3),
+                        tex_num(gap, 3)
+                    ))
+                ),
+            ));
         }
-        out.push(subheading("Vertical Height (Hook to Choke):"));
-        out.push(equation(&format!(
-            "\\text{{Height}}_{{Hook-Choke}} = \\text{{Total Length}} - \\text{{Perimeter}} = \
-             {} - {} = {}\\ \\text{{m}}",
-            tex_num(Some(length), 1),
-            tex_num(Some(wrap), 3),
-            tex_num(Some(lead), 3)
-        )));
+        blocks.push(work_block(
+            "Vertical Height (Hook to Choke)",
+            &equation(&format!(
+                "\\text{{Height}}_{{Hook-Choke}} = \\text{{Total Length}} - \\text{{Perimeter}} = \
+                 {} - {} = {}\\ \\text{{m}}",
+                tex_num(Some(length), 1),
+                tex_num(Some(wrap), 3),
+                tex_num(Some(lead), 3)
+            )),
+        ));
+        out.push(working_grid(&blocks));
         return out.join("");
     }
 

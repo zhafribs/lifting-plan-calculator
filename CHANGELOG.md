@@ -1,3 +1,12 @@
+## [Unreleased]
+
+### Changed
+
+- **The working range diagram sits inside the Plan details box.** It used to
+  print beside the details card, so the page showed two boxes where the plan is
+  one. The diagram now sits under the plan figures, inside the same border. If
+  Plan details is unticked the diagram still prints on its own.
+
 ## [2.17.11] - 2026-11-21
 
 ### Fixed

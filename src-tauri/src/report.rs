@@ -574,6 +574,7 @@ fn plan_head(
     issued_at: Option<&str>,
     gross: f64,
     crane: Option<&CraneResult>,
+    diagram: Option<(&str, f64)>,
 ) -> String {
     let entry = |value: &str| {
         if value.trim().is_empty() {
@@ -619,9 +620,20 @@ fn plan_head(
         out.push_str(&metrics_table(result, gross));
         out.push_str(&crane_section(result, gross));
     }
+    if let Some((source, scale)) = diagram {
+        out.push_str(&working_diagram_html(source, scale));
+    }
 
     out.push_str("</section>");
     out
+}
+
+fn working_diagram_html(source: &str, scale: f64) -> String {
+    format!(
+        "<div class=\"working-diagram\"><div class=\"diagram-title\">Working range diagram</div>\
+         <img src=\"{}\" alt=\"Working range diagram\" style=\"width: {scale:.0}%;\"></div>",
+        escape(source)
+    )
 }
 
 /// The load and tackle lines as two side-by-side lists: the description and
@@ -782,21 +794,22 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
         ),
         "<div class=\"report\">".to_string(),
     ];
+    // The diagram belongs to the plan details box. When the plan header is
+    // hidden it still prints on its own, because its tick is independent.
+    let diagram = working_diagram.map(|source| {
+        let scale = inputs.diagram_scale.unwrap_or(100.0).clamp(25.0, 100.0);
+        (source, scale)
+    });
     if plan_on {
         parts.push(plan_head(
             &inputs.signoff,
             inputs.issued_at.as_deref(),
             gross,
             crane_for_head,
+            diagram,
         ));
-    }
-    if let Some(source) = working_diagram {
-        let scale = inputs.diagram_scale.unwrap_or(100.0).clamp(25.0, 100.0);
-        parts.push(format!(
-            "<div class=\"working-diagram\"><div class=\"diagram-title\">Working range diagram</div>\
-             <img src=\"{}\" alt=\"Working range diagram\" style=\"width: {scale:.0}%;\"></div>",
-            escape(source)
-        ));
+    } else if let Some((source, scale)) = diagram {
+        parts.push(working_diagram_html(source, scale));
     }
     if lines_on {
         let lines = plan_lines(&inputs.load_items, &inputs.tackle_items);
@@ -1583,6 +1596,11 @@ mod tests {
         };
         let html = build_report_html(&inputs, &[]);
         assert!(html.contains("style=\"width: 50%;\""));
+        // The diagram sits inside the plan details box, not beside it.
+        let head = html.find("<section class=\"plan-head\">").unwrap();
+        let end = head + html[head..].find("</section>").unwrap();
+        let diagram = html.find("class=\"working-diagram\"").unwrap();
+        assert!(diagram > head && diagram < end);
     }
 
     #[test]

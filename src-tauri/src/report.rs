@@ -569,16 +569,11 @@ fn metrics_table(crane: &CraneResult, gross: f64) -> String {
 /// The plan's head: title and model, the plan's own lines, then the figures
 /// and the verdict. Printed even when no crane section is selected — a plan is
 /// signed on paper, and a blank line is what gets a name written on it.
-#[allow(clippy::too_many_arguments)]
 fn plan_head(
     signoff: &PlanSignoff,
     issued_at: Option<&str>,
     gross: f64,
     crane: Option<&CraneResult>,
-    working_diagram: Option<&str>,
-    diagram_scale: Option<f64>,
-    load_items: &[LoadItem],
-    tackle_items: &[TackleItem],
 ) -> String {
     let entry = |value: &str| {
         if value.trim().is_empty() {
@@ -624,21 +619,6 @@ fn plan_head(
         out.push_str(&metrics_table(result, gross));
         out.push_str(&crane_section(result, gross));
     }
-
-    if let Some(source) = working_diagram {
-        out.push_str("<div class=\"working-diagram\">");
-        out.push_str("<div class=\"diagram-title\">Working range diagram</div>");
-        let scale = diagram_scale.unwrap_or(100.0).clamp(25.0, 100.0);
-        out.push_str(&format!(
-            "<img src=\"{}\" alt=\"Working range diagram\" style=\"width: {scale:.0}%;\">",
-            escape(source)
-        ));
-        out.push_str("</div>");
-    }
-
-    // The lines follow the working, or the diagram when it is printed: the
-    // figures are read first, then the things that produced them.
-    out.push_str(&plan_lines(load_items, tackle_items));
 
     out.push_str("</section>");
     out
@@ -805,6 +785,10 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
         .filter(|source| source.starts_with("data:image/png;base64,"));
     let (reference, footer_center) =
         footer_texts(&reference, inputs.footer_center.as_deref());
+    // The report screen can hide the plan header and the line lists; every
+    // other caller keeps them, so their absence needs an explicit marker.
+    let plan_on = !include.iter().any(|section| section == "no-plan");
+    let lines_on = !include.iter().any(|section| section == "no-lines");
     let mut parts: Vec<String> = vec![
         REPORT_CSS.to_string(),
         format!(
@@ -813,17 +797,32 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
             css_string(&footer_center)
         ),
         "<div class=\"report\">".to_string(),
-        plan_head(
+    ];
+    if plan_on {
+        parts.push(plan_head(
             &inputs.signoff,
             inputs.issued_at.as_deref(),
             gross,
             crane_for_head,
-            working_diagram,
-            inputs.diagram_scale,
-            &inputs.load_items,
-            &inputs.tackle_items,
-        ),
-    ];
+        ));
+    }
+    if let Some(source) = working_diagram {
+        let scale = inputs.diagram_scale.unwrap_or(100.0).clamp(25.0, 100.0);
+        parts.push(format!(
+            "<div class=\"working-diagram\"><div class=\"diagram-title\">Working range diagram</div>\
+             <img src=\"{}\" alt=\"Working range diagram\" style=\"width: {scale:.0}%;\"></div>",
+            escape(source)
+        ));
+    }
+    if lines_on {
+        let lines = plan_lines(&inputs.load_items, &inputs.tackle_items);
+        if !lines.is_empty() {
+            parts.push(section_card(
+                &format!("<h2>LOAD ITEMS AND LIFTING TACKLE</h2>{lines}"),
+                breaks("lines"),
+            ));
+        }
+    }
 
     if selected("crane") && inputs.crane.is_none() {
         if let Some(error) = &inputs.crane_error {
@@ -890,12 +889,19 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
         parts.push(with_break(section_card(&section, false), breaks("tandem")));
     }
 
-    if gross <= 0.0 {
+    if plan_on && gross <= 0.0 {
         parts.push(p(
             "<b>Setup note:</b> Add the load and complete the Overall Weight \
              tab before issuing this plan.",
             "border:2px solid #a33; padding:5pt 7pt; margin:5pt 0;",
         ));
+    }
+
+    if parts.len() == 3 {
+        // Every section is unticked: an empty body prints no pages at all, and
+        // the print backend then fails with "Invalid page range". One blank
+        // line keeps the single, empty page.
+        parts.push("&nbsp;".to_string());
     }
 
     parts.push("</div>".to_string());
@@ -1273,6 +1279,13 @@ mod tests {
         assert!(!nothing.contains("Crane rating"));
         assert!(!nothing.contains("Kobelco CKE90G-2"));
         assert!(report(example_crane(), &["crane"]).contains("Kobelco CKE90G-2"));
+    }
+
+    #[test]
+    fn an_empty_plan_still_prints_one_blank_page() {
+        let html = report(example_crane(), &["no-plan", "no-lines"]);
+        assert!(!html.contains("<h1>Lifting Plan"));
+        assert!(html.contains("&nbsp;"));
     }
 
     #[test]

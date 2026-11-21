@@ -11,7 +11,15 @@ export function createReportScreen(ctx) {
 
   // A new plan starts with the crane check alone: that is the section every plan
   // needs. The rest are opt-in, so nothing unticked can look like an omission.
-  const sections = { crane: true, outrigger: false, uniform: false, nonuniform: false, tandem: false };
+  const sections = {
+    plan: true,
+    crane: true,
+    lines: true,
+    outrigger: false,
+    uniform: false,
+    nonuniform: false,
+    tandem: false,
+  };
   let lastHtml = "";
   let lastSavedPath = null;
   const DEFAULT_FOOTER =
@@ -43,7 +51,9 @@ export function createReportScreen(ctx) {
   const pageBreaks = new Set();
   const breakBoxes = {};
   const checkNodes = {
+    plan: ["Plan details", "The reference, sign-off and figures"],
     crane: ["Crane", "Capacity check against the load chart"],
+    lines: ["Load items and lifting tackle", "The lines that make up the lift"],
     outrigger: ["Outrigger Pad Size", "Bearing area from the BS 8004 ground table"],
     uniform: ["Uniform Load", "The selected sling arrangement"],
     nonuniform: ["Nonuniform Load", "The asymmetric bridle"],
@@ -634,8 +644,12 @@ export function createReportScreen(ctx) {
 
   async function buildNow() {
     const include = Object.entries(sections)
-      .filter(([, on]) => on)
+      .filter(([key, on]) => on && key !== "plan" && key !== "lines")
       .map(([key]) => key);
+    // The plan header and the line lists print unless the report screen
+    // explicitly hides them; the other tabs' Show report keeps them.
+    if (!sections.plan) include.push("no-plan");
+    if (!sections.lines) include.push("no-lines");
     try {
       const diagram = diagramInput.checked ? captureWorkingDiagram() : null;
       if (diagramInput.checked && !diagram) diagramInput.checked = false;
@@ -751,6 +765,10 @@ export function createReportScreen(ctx) {
 
   function setSections(list) {
     for (const key of Object.keys(sections)) sections[key] = list.includes(key);
+    // A report opened from another tab always carries the plan header and the
+    // line lists; only this screen's own checkboxes can hide them.
+    sections.plan = true;
+    sections.lines = true;
     for (const [key, input] of Object.entries(checkBoxes)) input.checked = sections[key];
     schedulePreview(0);
   }

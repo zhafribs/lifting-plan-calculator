@@ -2,6 +2,11 @@
 
 ### Added
 
+- **The plan header and the line lists are sections.** "Plan details" now sits
+  above Crane in the Report sections card, and "Load items and lifting tackle"
+  sits between the working range diagram and the outrigger. Unticking them
+  along with the other sections leaves an empty plan, which still previews and
+  saves as one blank page; the setup note follows the plan header.
 - **Load lines are grouped by lift.** Every load line carries a "Lift" field.
   Lines with the same lift are lifted together and add up; different lifts are
   alternatives, and the plan uses the **heaviest lift** instead of summing the

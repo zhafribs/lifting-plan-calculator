@@ -619,21 +619,34 @@ fn plan_head(
 
     if let Some(result) = crane {
         out.push_str(&metrics_table(result, gross));
-        out.push_str(&crane_section(result, gross));
     }
-    // The diagram takes the left of the row and the line lists the right.
-    // When the pair cannot fit (a wide diagram or a narrow page) the lists
-    // wrap under the diagram.
-    match (diagram, lines) {
-        (Some((source, scale)), Some(lines)) => {
+    // The diagram takes the left of the row. Its right side carries the two
+    // workings first, then the line lists, top to bottom. When the column
+    // cannot fit beside the diagram it wraps underneath as one block.
+    let workings = crane
+        .map(|result| crane_workings(result, gross))
+        .unwrap_or_default();
+    let aside = format!(
+        "{workings}{}",
+        lines.as_deref().map(plan_lines_block).unwrap_or_default()
+    );
+    match diagram {
+        Some((source, scale)) => {
             out.push_str("<div class=\"plan-figure\">");
             out.push_str(&working_diagram_html(source, scale));
-            out.push_str(&plan_lines_block(&lines));
+            if !aside.is_empty() {
+                out.push_str(&format!("<div class=\"plan-aside\">{aside}</div>"));
+            }
             out.push_str("</div>");
         }
-        (Some((source, scale)), None) => out.push_str(&working_diagram_html(source, scale)),
-        (None, Some(lines)) => out.push_str(&plan_lines_block(&lines)),
-        (None, None) => {}
+        None => {
+            if !workings.is_empty() {
+                out.push_str(&format!("<div class=\"plan-aside\">{workings}</div>"));
+            }
+            if let Some(lines) = lines {
+                out.push_str(&plan_lines_block(&lines));
+            }
+        }
     }
 
     out.push_str("</section>");
@@ -964,36 +977,21 @@ fn renumber_sections(html: &str) -> String {
 }
 
 /// The crane, its boom and the capacity check against the load chart.
-fn crane_section(crane: &CraneResult, gross: f64) -> String {
+fn crane_workings(crane: &CraneResult, gross: f64) -> String {
     let chart_capacity = crane.chart_capacity_kg;
 
     // The figures are printed in the plan head; what remains here is the working
-    // that produced them. The two formulas sit side by side — the required
-    // capacity on the left, the usage on the right — so one row carries both.
+    // that produced them. Required capacity comes first, then usage - the order
+    // the right column reads.
     // W is a crane load-chart sizing load. It belongs to the crane check only
     // and is deliberately not used by the sling sections.
     let applied_load = design_load_from_gross(gross);
     let ratio = tex_num(Some(DESIGN_LOAD_RATIO), 2);
     let usage = crane.capacity_usage_percent;
 
-    let left = match (chart_capacity, usage) {
-        (Some(capacity), Some(usage)) if capacity != 0.0 => format!(
-            "<div class=\"work-label\">Usage, % of chart capacity</div>{}",
-            equation(&format!(
-                "\\text{{Usage}} = \\frac{{\\text{{Gross load at hook}}}}\
-                 {{\\text{{Chart capacity at radius}}}} \\times 100\\% = \
-                 \\frac{{{}}}{{{}}} \\times 100\\% = {:.2}\\%",
-                tex_num(Some(gross), 2),
-                tex_num(Some(capacity), 2),
-                usage
-            ))
-        ),
-        _ => "<div class=\"work-label\">Usage, % of chart capacity</div>\
-              <div class=\"work-empty\">Not evaluated</div>"
-            .to_string(),
-    };
-    let right = format!(
-        "<div class=\"work-label\">Required capacity at 75%, W</div>{}",
+    let required = format!(
+        "<div class=\"plan-work\"><div class=\"work-label\">\
+         Required capacity at 75%, W</div>{}</div>",
         equation(&format!(
             "\\text{{W}} = \\frac{{\\text{{Gross load at hook}}}}{{{ratio}}} = \
              \\frac{{{}}}{{{ratio}}} = {}\\ \\text{{kg}}",
@@ -1001,8 +999,36 @@ fn crane_section(crane: &CraneResult, gross: f64) -> String {
             tex_num(Some(applied_load), 2)
         ))
     );
-
-    working_pair(&right, &left)
+    let used = match (chart_capacity, usage) {
+        (Some(capacity), Some(usage)) if capacity != 0.0 => {
+            // The usage working is longer than the column beside the diagram,
+            // so it breaks at its equals signs into an aligned block.
+            let lines = [
+                "\\text{Usage} &= \\frac{\\text{Gross load at hook}}\
+                 {\\text{Chart capacity at radius}} \\times 100\\%"
+                    .to_string(),
+                format!(
+                    "&= \\frac{{{}}}{{{}}} \\times 100\\%",
+                    tex_num(Some(gross), 2),
+                    tex_num(Some(capacity), 2)
+                ),
+                format!("&= {usage:.2}\\%"),
+            ];
+            format!(
+                "<div class=\"plan-work\"><div class=\"work-label\">\
+                 Usage, % of chart capacity</div>{}</div>",
+                equation(&format!(
+                    "\\begin{{aligned}}{}\\end{{aligned}}",
+                    lines.join(" \\\\ ")
+                ))
+            )
+        }
+        _ => "<div class=\"plan-work\"><div class=\"work-label\">\
+              Usage, % of chart capacity</div>\
+              <div class=\"work-empty\">Not evaluated</div></div>"
+            .to_string(),
+    };
+    format!("{required}{used}")
 }
 
 #[cfg(test)]
@@ -1013,6 +1039,20 @@ mod tests {
 
     fn example_crane() -> CraneResult {
         solve_crane(&example_crane_inputs(), 2000.0).unwrap()
+    }
+
+    /// The alignment markup removed, so a formula split over lines still
+    /// compares with the reference's one-line string.
+    fn unaligned(html: &str) -> String {
+        let mut out = html
+            .replace("\\begin{aligned}", "")
+            .replace("\\end{aligned}", "")
+            .replace("\\\\", " ")
+            .replace("&=", "=");
+        while out.contains("  ") {
+            out = out.replace("  ", " ");
+        }
+        out
     }
 
     fn report(crane: CraneResult, include: &[&str]) -> String {
@@ -1226,7 +1266,7 @@ mod tests {
 
     #[test]
     fn the_usage_equation_is_the_references_own_string() {
-        let html = report(example_crane(), &["crane"]);
+        let html = unaligned(&report(example_crane(), &["crane"]));
         assert!(html.contains("<div class=\"work-label\">Usage, % of chart capacity</div>"));
         assert!(html.contains(
             "\\[\\text{Usage} = \\frac{\\text{Gross load at hook}}\
@@ -1256,7 +1296,7 @@ mod tests {
 
     #[test]
     fn each_working_label_precedes_its_formula() {
-        let html = report(example_crane(), &["crane"]);
+        let html = unaligned(&report(example_crane(), &["crane"]));
         let usage_label = html.find("Usage, % of chart capacity").unwrap();
         let usage_formula = html.find("\\text{Usage} =").unwrap();
         assert!(usage_label < usage_formula);
@@ -1635,14 +1675,18 @@ mod tests {
             }],
             working_diagram: Some("data:image/png;base64,AAAA".to_string()),
             diagram_scale: Some(50.0),
+            crane: Some(example_crane()),
             ..ReportInputs::default()
         };
-        let html = build_report_html(&inputs, &[]);
+        let html = build_report_html(&inputs, &["crane".to_string()]);
         let figure = html.find("class=\"plan-figure\"").unwrap();
         let diagram = html.find("class=\"working-diagram\"").unwrap();
+        let required = html.find("Required capacity at 75%, W").unwrap();
+        let usage = html.find("Usage, % of chart capacity").unwrap();
         let lines = html.find("class=\"plan-lines\"").unwrap();
         let end = figure + html[figure..].find("</section>").unwrap();
-        assert!(diagram > figure && diagram < lines, "diagram on the left");
+        assert!(diagram > figure && diagram < required, "diagram on the left");
+        assert!(required < usage && usage < lines, "required, then usage, then the lists");
         assert!(lines < end, "the lists stay in the plan box");
     }
 

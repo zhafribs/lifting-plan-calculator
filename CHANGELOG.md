@@ -4,9 +4,9 @@
 
 - **The plan's opening block is one box.** The working range diagram and the
   Load Items and Lifting Tackle lists now sit under the plan figures, inside
-  the Plan details border. The diagram takes the left of the row and the lists
-  the right; when the chosen scale leaves no room, the lists wrap under the
-  diagram. A page break ticked for the line lists still puts them on their own
+  the Plan details border. The diagram takes the left of the row; the right
+  side reads Required capacity, then Usage, then the line lists. When the
+  chosen scale leaves no room, that whole column wraps under the diagram. A page break ticked for the line lists still puts them on their own
   page, and unticking Plan details still prints each part on its own.
 
 ## [2.17.11] - 2026-11-21

@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+### Added
+
+- **The Overall Weight tab has an Actions card.** Load example fills a 1,500 kg
+  steel plate and an 80 kg 2-leg chain sling; Show report opens the plan with
+  the crane section; Clear returns both lists to one blank line.
+
 ### Fixed
 
 - **Printing the live preview no longer scales the plan.** The preview is zoomed

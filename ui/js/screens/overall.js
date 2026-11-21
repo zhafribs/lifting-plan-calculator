@@ -4,9 +4,12 @@
 import { el, svgIcon } from "../dom.js";
 import {
   card,
+  clearButton,
   emptyState,
+  exampleButton,
   kvRows,
   numberInput,
+  reportButton,
   selectInput,
   textInput,
   withUnit,
@@ -114,6 +117,45 @@ export function createOverallScreen(ctx) {
               "Check the crane",
             ),
           ),
+        }),
+        card({
+          title: "Actions",
+          body: el(
+            "div",
+            { class: "row wrap" },
+            exampleButton(() =>
+              store.update((s) => {
+                s.load_items = [
+                  {
+                    ...blankLoadItem(),
+                    name: "Steel Plate",
+                    load_type: "fixed",
+                    qty: 1,
+                    weight_kg: 1500,
+                  },
+                ];
+                s.tackle_items = [
+                  {
+                    ...blankTackleItem(),
+                    description: "2-Leg Chain Sling",
+                    qty: 1,
+                    weight_kg: 80,
+                  },
+                ];
+              }),
+            ),
+            reportButton("Show report", () => ctx.showReport(["crane"])),
+            clearButton(() =>
+              store.update((s) => {
+                s.load_items = [blankLoadItem()];
+                s.tackle_items = [blankTackleItem()];
+              }),
+            ),
+          ),
+          foot: el("span", {
+            class: "faint",
+            text: "Clear removes every load and tackle line.",
+          }),
         }),
       ),
     ),

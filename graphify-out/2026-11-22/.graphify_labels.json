@@ -10,9 +10,7 @@
   "10": "Formatting & Update Check",
   "12": "Excel Load Chart Parsing",
   "16": "CI Workflow",
-  "17": "Excel Column Chart Import",
   "19": "Nonuniform Sling Calculation",
-  "20": "Workbook Fixtures & Jib Tests",
   "21": "Load Chart Data Model",
   "22": "Tauri Configuration",
   "23": "KaTeX DOM Building",
@@ -36,6 +34,5 @@
   "48": "KaTeX Node Markup C",
   "49": "KaTeX Node Markup D",
   "50": "Build Script Entry",
-  "51": "App Entry Point",
-  "52": "KaTeX Auto-Render"
+  "51": "App Entry Point"
 }

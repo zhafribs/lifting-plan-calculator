@@ -66,9 +66,9 @@
     "semantic_hash": "b20dea1f31d5244bada45a9490f1f4ab"
   },
   "src-tauri/Cargo.toml": {
-    "mtime": 1795337348.1562386,
-    "seen": 1795338414.1695645,
-    "ast_hash": "c95084e6c611951fcfa72867fbcafcb1",
+    "mtime": 1795345687.2730803,
+    "seen": 1795345836.3332434,
+    "ast_hash": "b65189cc8370cb736d1afaa9410c2335",
     "semantic_hash": ""
   },
   "src-tauri/build.rs": {
@@ -186,9 +186,9 @@
     "semantic_hash": ""
   },
   "src-tauri/tauri.conf.json": {
-    "mtime": 1795337348.198805,
-    "seen": 1795338414.169621,
-    "ast_hash": "8d6bbdb678390faa8aa6ad65f8eb7166",
+    "mtime": 1795345687.2731826,
+    "seen": 1795345836.333298,
+    "ast_hash": "8cc87d74f3971828b872d4363ef87a14",
     "semantic_hash": ""
   },
   "ui/js/api.js": {
@@ -300,9 +300,9 @@
     "semantic_hash": "3a57d99448f802024d640c81af3341a8"
   },
   "CHANGELOG.md": {
-    "mtime": 1795345389.5478249,
-    "seen": 1795345399.3454702,
-    "ast_hash": "f939dfb863ad798202d8a9ef8173c9d7",
+    "mtime": 1795345687.2745624,
+    "seen": 1795345836.3333702,
+    "ast_hash": "6d5942b2b8f42f4fcc124f5a18bc887d",
     "semantic_hash": ""
   },
   "CODE_OF_CONDUCT.md": {
@@ -1905,6 +1905,18 @@
     "mtime": 1795337348.2055886,
     "seen": 1795338414.1699173,
     "ast_hash": "13d5b5b16539f97503c48ec17febdad1",
+    "semantic_hash": ""
+  },
+  "docs/council/decisions/0060-two-line-workings-everywhere.md": {
+    "mtime": 1795345687.278808,
+    "seen": 1795345836.3335173,
+    "ast_hash": "c8de7e7c6736031673bbd1f7dc52d4b8",
+    "semantic_hash": ""
+  },
+  "docs/releases/v2.17.13.md": {
+    "mtime": 1795345687.279877,
+    "seen": 1795345836.3335872,
+    "ast_hash": "b061aeadb23e3446e05382e58f331aaf",
     "semantic_hash": ""
   }
 }

@@ -70,12 +70,16 @@ pub const REPORT_CSS: &str = r#"
 .report .plan-figure { display: flex; flex-wrap: wrap; align-items: flex-start;
     gap: 8pt; margin-top: 6pt; }
 .report .plan-figure .working-diagram { flex: 0 0 auto; margin: 0; }
+/* On the right the column is narrow, so the workings stack and the lists
+   follow. Wrapped under the diagram it is full width: the two workings then
+   sit side by side, with the lists below them. */
 .report .plan-aside { flex: 1 1 150pt; min-width: 140pt;
-    display: flex; flex-direction: column; gap: 3pt; }
-.report .plan-aside .plan-work + .plan-work { margin-top: 1pt; }
+    display: flex; flex-wrap: wrap; align-content: flex-start;
+    gap: 3pt 8pt; }
+.report .plan-aside .plan-work { flex: 1 1 140pt; min-width: 0; }
 .report .plan-aside .equation { margin-left: 0; margin-right: 0; }
 .report .plan-figure .plan-lines { margin: 0; }
-.report .plan-aside .plan-lines { margin-top: 2pt;
+.report .plan-aside .plan-lines { flex: 1 1 100%; margin-top: 2pt;
     border-top: 0.5pt solid #e4eaf1; padding-top: 3pt; }
 .report .plan-lines .metric-k { margin-bottom: 2pt; }
 .report table.plan-meta { width: 100%; border-collapse: collapse;

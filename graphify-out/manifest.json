@@ -66,9 +66,9 @@
     "semantic_hash": "b20dea1f31d5244bada45a9490f1f4ab"
   },
   "src-tauri/Cargo.toml": {
-    "mtime": 1795269228.5434566,
-    "seen": 1795273998.9363472,
-    "ast_hash": "04eb60a9acf633686adcf42f52d848f0",
+    "mtime": 1795337348.1562386,
+    "seen": 1795338414.1695645,
+    "ast_hash": "c95084e6c611951fcfa72867fbcafcb1",
     "semantic_hash": ""
   },
   "src-tauri/build.rs": {
@@ -186,9 +186,9 @@
     "semantic_hash": ""
   },
   "src-tauri/tauri.conf.json": {
-    "mtime": 1795269228.5435424,
-    "seen": 1795273998.9364002,
-    "ast_hash": "b3234d17997365941bda296a6c08ed69",
+    "mtime": 1795337348.198805,
+    "seen": 1795338414.169621,
+    "ast_hash": "8d6bbdb678390faa8aa6ad65f8eb7166",
     "semantic_hash": ""
   },
   "ui/js/api.js": {
@@ -300,9 +300,9 @@
     "semantic_hash": "3a57d99448f802024d640c81af3341a8"
   },
   "CHANGELOG.md": {
-    "mtime": 1795336274.9926546,
-    "seen": 1795336347.665511,
-    "ast_hash": "fd5b1f56cd291992bc579348eaf229b9",
+    "mtime": 1795337348.2002053,
+    "seen": 1795338414.169695,
+    "ast_hash": "6ceb9328fcc81ef3d4538a45982a67d7",
     "semantic_hash": ""
   },
   "CODE_OF_CONDUCT.md": {
@@ -522,9 +522,9 @@
     "semantic_hash": ""
   },
   "docs/screenshots/07-summary.png": {
-    "mtime": 1795272469.7875555,
-    "seen": 1795273998.9367666,
-    "ast_hash": "7abf163ce3c66be21ef4a9cb51f07275",
+    "mtime": 1795338235.7846522,
+    "seen": 1795338414.1700747,
+    "ast_hash": "6ec00e931ce1a90e065fa20f30c236de",
     "semantic_hash": ""
   },
   "src-tauri/icons/128x128.png": {
@@ -1893,6 +1893,18 @@
     "mtime": 1795269228.5488832,
     "seen": 1795273998.9366825,
     "ast_hash": "54f04aed51db8a57dd5fef40dec6ca95",
+    "semantic_hash": ""
+  },
+  "docs/council/decisions/0059-plan-block-layout.md": {
+    "mtime": 1795337348.2037737,
+    "seen": 1795338414.1698465,
+    "ast_hash": "462468106d8f808badd319fed8affe96",
+    "semantic_hash": ""
+  },
+  "docs/releases/v2.17.12.md": {
+    "mtime": 1795337348.2055886,
+    "seen": 1795338414.1699173,
+    "ast_hash": "13d5b5b16539f97503c48ec17febdad1",
     "semantic_hash": ""
   }
 }

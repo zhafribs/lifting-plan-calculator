@@ -66,9 +66,9 @@
     "semantic_hash": "b20dea1f31d5244bada45a9490f1f4ab"
   },
   "src-tauri/Cargo.toml": {
-    "mtime": 1795345687.2730803,
-    "seen": 1795345836.3332434,
-    "ast_hash": "b65189cc8370cb736d1afaa9410c2335",
+    "mtime": 1795362199.986049,
+    "seen": 1795362327.3072689,
+    "ast_hash": "15ddb0fba60718357161853e7ffc8a5f",
     "semantic_hash": ""
   },
   "src-tauri/build.rs": {
@@ -186,9 +186,9 @@
     "semantic_hash": ""
   },
   "src-tauri/tauri.conf.json": {
-    "mtime": 1795345687.2731826,
-    "seen": 1795345836.333298,
-    "ast_hash": "8cc87d74f3971828b872d4363ef87a14",
+    "mtime": 1795362199.9861727,
+    "seen": 1795362327.307323,
+    "ast_hash": "1e5579372a34dece81bbc171f9b77116",
     "semantic_hash": ""
   },
   "ui/js/api.js": {
@@ -300,9 +300,9 @@
     "semantic_hash": "3a57d99448f802024d640c81af3341a8"
   },
   "CHANGELOG.md": {
-    "mtime": 1795348387.964469,
-    "seen": 1795348398.1930845,
-    "ast_hash": "eda4afb29221c01e9146db513348e031",
+    "mtime": 1795362199.9873922,
+    "seen": 1795362327.3073962,
+    "ast_hash": "45c8f029a4b0f8005ba37d67004afcea",
     "semantic_hash": ""
   },
   "CODE_OF_CONDUCT.md": {
@@ -1917,6 +1917,18 @@
     "mtime": 1795345687.279877,
     "seen": 1795345836.3335872,
     "ast_hash": "b061aeadb23e3446e05382e58f331aaf",
+    "semantic_hash": ""
+  },
+  "docs/council/decisions/0061-capacity-pair-and-lone-tension.md": {
+    "mtime": 1795362199.9918177,
+    "seen": 1795362327.3075497,
+    "ast_hash": "570943b1a25d188c882a010ee69b352a",
+    "semantic_hash": ""
+  },
+  "docs/releases/v2.17.14.md": {
+    "mtime": 1795362199.9928021,
+    "seen": 1795362327.3076239,
+    "ast_hash": "1f84047e7fe6d42c49c99d0541da5999",
     "semantic_hash": ""
   }
 }

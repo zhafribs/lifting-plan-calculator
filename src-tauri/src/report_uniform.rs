@@ -304,9 +304,9 @@ fn split_long_equation(part: &str) -> String {
     // Split into two lines at the point that keeps the wider line shortest.
     // A twenty-odd character line fits the half-column; a longer one takes
     // the full row, so the page never has to shrink to make it fit.
-    let mut at_best = 1;
+    let mut at_best = 2;
     let mut widest = usize::MAX;
-    for at in 1..pieces.len() {
+    for at in 2..pieces.len() {
         let left = pieces[..at].join(" = ");
         let right = pieces[at..].join(" = ");
         let width = left.len().max(right.len());
@@ -327,11 +327,14 @@ fn split_long_equation(part: &str) -> String {
         );
         return format!("<div class=\"equation\">\\[{aligned}\\]</div>");
     }
-    let left = pieces[..at_best].join(" = ");
-    let right = pieces[at_best..].join(" = ");
+    // The alignment point is the first equals, so the second line continues
+    // under it. Putting it at the end would push the tail off the column.
+    let first = &pieces[0];
+    let head = pieces[1..at_best].join(" = ");
+    let tail = pieces[at_best..].join(" = ");
     let wide = if widest > 85 { " data-wide=\"1\"" } else { "" };
     format!(
-        "<div class=\"equation\"{wide}>\\[\\begin{{aligned}}{left} \\\\ &= {right}\\end{{aligned}}\\]</div>"
+        "<div class=\"equation\"{wide}>\\[\\begin{{aligned}}{first} &= {head} \\\\ &= {tail}\\end{{aligned}}\\]</div>"
     )
 }
 
@@ -1158,6 +1161,10 @@ mod tests {
             split.matches(" \\\\ ").count(),
             1,
             "two lines, so one row break"
+        );
+        assert!(
+            split.contains(" \\\\ &= "),
+            "the tail starts at the first equals, not after a long line"
         );
         assert!(!split.contains("data-wide"), "the pair still fits half a row");
     }

@@ -150,15 +150,15 @@
     "semantic_hash": "39fd8bdd7b986a2529af5a708f565abd"
   },
   "src-tauri/src/report.rs": {
-    "mtime": 1795344801.0687206,
-    "seen": 1795345399.3453856,
-    "ast_hash": "d34fdfe18d2e4be365634c9a6c48bc80",
+    "mtime": 1795347339.8507087,
+    "seen": 1795348398.1929567,
+    "ast_hash": "4432ccf6ae8e64df1de4bfb3e765e681",
     "semantic_hash": ""
   },
   "src-tauri/src/report_capacity.rs": {
-    "mtime": 1794814339.4334013,
-    "seen": 1795267319.6684735,
-    "ast_hash": "24d13490c3af2c79b11db02dd19ae330",
+    "mtime": 1795347634.4258509,
+    "seen": 1795348398.1929812,
+    "ast_hash": "c733530b42f1892102a097fa35bb1ef8",
     "semantic_hash": ""
   },
   "src-tauri/src/report_nonuniform.rs": {
@@ -300,9 +300,9 @@
     "semantic_hash": "3a57d99448f802024d640c81af3341a8"
   },
   "CHANGELOG.md": {
-    "mtime": 1795345687.2745624,
-    "seen": 1795345836.3333702,
-    "ast_hash": "6d5942b2b8f42f4fcc124f5a18bc887d",
+    "mtime": 1795348387.964469,
+    "seen": 1795348398.1930845,
+    "ast_hash": "eda4afb29221c01e9146db513348e031",
     "semantic_hash": ""
   },
   "CODE_OF_CONDUCT.md": {

@@ -300,9 +300,9 @@
     "semantic_hash": "3a57d99448f802024d640c81af3341a8"
   },
   "CHANGELOG.md": {
-    "mtime": 1795288531.985819,
-    "seen": 1795289945.654164,
-    "ast_hash": "43d1055e1d69c93710f7aa916fdd5280",
+    "mtime": 1795314579.807245,
+    "seen": 1795314624.6117647,
+    "ast_hash": "f014ef34ccf89a073c43784c5643fa39",
     "semantic_hash": ""
   },
   "CODE_OF_CONDUCT.md": {
@@ -1206,9 +1206,9 @@
     "semantic_hash": ""
   },
   "src-tauri/src/report_style.rs": {
-    "mtime": 1795289078.5414786,
-    "seen": 1795289945.6540852,
-    "ast_hash": "6edde75797e80c5a001009bda55131ff",
+    "mtime": 1795314486.890493,
+    "seen": 1795314624.6116757,
+    "ast_hash": "740321345b44e475217d8513cfcde6d4",
     "semantic_hash": ""
   },
   "src-tauri/src/theme_windows.rs": {

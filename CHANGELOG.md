@@ -1,3 +1,13 @@
+## [Unreleased]
+
+### Changed
+
+- **The lone tension working prints on one line.** In Rigging Factors & Tension,
+  the tension formula has the whole row, so it no longer splits into two.
+- **The capacity workings pair up.** In Final Capacity, Minimum Required Sling
+  WLL and WLL Utilisation now sit side by side, two lines each, for every
+  arrangement. Nested lifts pair each sling the same way.
+
 ## [2.17.13] - 2026-11-22
 
 ### Fixed

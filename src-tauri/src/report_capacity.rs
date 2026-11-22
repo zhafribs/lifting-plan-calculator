@@ -2,7 +2,10 @@
 //! capacity and equipment selection, and the notes. Ported from
 //! `ReportCapacity.kt`.
 
-use crate::report::{equation, fmt, heading, notes_pair, p, subheading, tex_deg, tex_num, work_block, working_grid};
+use crate::report::{
+    equation, fmt, heading, notes_pair, p, split_long_equations, subheading, tex_deg, tex_num,
+    work_block, working_grid,
+};
 use crate::sling::{HitchSpec, SlingResult, SINGLE_LEG};
 
 /// The four arrangements a choke reduction applies to.
@@ -192,6 +195,12 @@ pub fn factors_section(result: &SlingResult, spec: &HitchSpec) -> String {
         ));
     }
 
+    // Split the paired factors for their half-column; the lone tension
+    // workings below keep one line because they have the full row.
+    let factors: Vec<String> = factors
+        .iter()
+        .map(|block| split_long_equations(block))
+        .collect();
     out.push(working_grid(&factors));
     if result.nested != 0 {
         let secondary_tension = result.secondary_tension.unwrap_or(0.0);
@@ -337,39 +346,39 @@ fn utilisation_block(
     } else {
         String::new()
     };
-    let mut out = vec![subheading(&format!(
-        "WLL Utilisation{prefix} (Tag Rating):"
-    ))];
+    let label = format!("WLL Utilisation{prefix} (Tag Rating):");
     let (Some(capacity), Some(utilisation)) = (capacity, utilisation) else {
-        out.push(p(
-            &format!(
-                "Not calculated \u{2014} enter the sling tag rating{} \
-                 to complete the equipment check.",
-                if needs_angle { " and its rated angle" } else { "" }
+        return work_block(
+            &label,
+            &p(
+                &format!(
+                    "Not calculated \u{2014} enter the sling tag rating{} \
+                     to complete the equipment check.",
+                    if needs_angle { " and its rated angle" } else { "" }
+                ),
+                "",
             ),
-            "",
-        ));
-        return out.join("");
+        );
     };
-    out.push(equation(&format!(
+    let formula = equation(&format!(
         "\\text{{WLL Utilisation}}{index} = \
          \\frac{{\\text{{Minimum WLL}}{index}}}{{{capacity_label}}} \\times 100\\% = \
          \\frac{{{}}}{{{}}} \\times 100\\% = {:.2}\\%",
         tex_num(Some(required), 1),
         tex_num(Some(capacity), 1),
         utilisation
-    )));
+    ));
     let pass = utilisation <= 100.0;
     let class = if pass { "pass" } else { "fail" };
     let word = if pass { "PASS" } else { "FAIL" };
-    out.push(p(
+    let note = p(
         &format!(
             "<b>Tag rating check{check}:</b> <span class='{class}'>{word}</span> \u{2014} the \
              sling leg is {utilisation:.2}% utilised."
         ),
         "",
-    ));
-    out.join("")
+    );
+    work_block(&label, &format!("{formula}{note}"))
 }
 
 /// Section 4: what the sling has to be rated at, and whether the tag meets it.
@@ -415,22 +424,25 @@ pub fn capacity_section(result: &SlingResult, spec: &HitchSpec) -> String {
         }
     }
 
+    let mut blocks: Vec<String> = Vec::new();
     if nested {
         let secondary_required = result.secondary_required_wll.unwrap_or(0.0);
         let secondary_combined = result.secondary_combined_af.unwrap_or(1.0);
         let secondary_capacity = result.secondary_leg_capacity;
         let secondary_legs = result.secondary_legs.unwrap_or(1);
-        out.push(subheading("Minimum Required Sling WLL for First Sling (Tag Rating):"));
-        out.push(equation(&format!(
-            "\\text{{Minimum WLL}}_1 = \\frac{{\\text{{Load Weight}}}}\
-             {{\\text{{Sling Legs}}_1 \\times \\text{{RF}} \\times \\text{{AF}}_{{Long}}}} = \
-             \\frac{{{}}}{{{rating_legs} \\times {} \\times {}}} = {}\\ \\text{{kg}}",
-            tex_num(Some(weight), 0),
-            tex_num(Some(rf), 2),
-            tex_num(Some(af), 3),
-            tex_num(Some(required), 1)
-        )));
-        out.push(utilisation_block(
+        blocks.push(work_block(
+            "Minimum Required Sling WLL for First Sling (Tag Rating):",
+            &equation(&format!(
+                "\\text{{Minimum WLL}}_1 = \\frac{{\\text{{Load Weight}}}}\
+                 {{\\text{{Sling Legs}}_1 \\times \\text{{RF}} \\times \\text{{AF}}_{{Long}}}} = \
+                 \\frac{{{}}}{{{rating_legs} \\times {} \\times {}}} = {}\\ \\text{{kg}}",
+                tex_num(Some(weight), 0),
+                tex_num(Some(rf), 2),
+                tex_num(Some(af), 3),
+                tex_num(Some(required), 1)
+            )),
+        ));
+        blocks.push(utilisation_block(
             required,
             "\\text{First Sling Leg Capacity Per}",
             capacity,
@@ -440,19 +452,21 @@ pub fn capacity_section(result: &SlingResult, spec: &HitchSpec) -> String {
             "First",
             true,
         ));
-        out.push(subheading("Minimum Required Sling WLL for Second Sling (Tag Rating):"));
-        out.push(equation(&format!(
-            "\\text{{Minimum WLL}}_2 = \\frac{{\\text{{Load Weight}}}}\
-             {{\\text{{Sling Legs}}_1 \\times \\text{{Sling Legs}}_2 \\times \
-             \\text{{RF}} \\times \\text{{AF}}_{{Combined}}}} = \
-             \\frac{{{}}}{{{rating_legs} \\times {secondary_legs} \\times {} \\times {}}} = \
-             {}\\ \\text{{kg}}",
-            tex_num(Some(weight), 0),
-            tex_num(Some(rf), 2),
-            tex_num(Some(secondary_combined), 3),
-            tex_num(Some(secondary_required), 1)
-        )));
-        out.push(utilisation_block(
+        blocks.push(work_block(
+            "Minimum Required Sling WLL for Second Sling (Tag Rating):",
+            &equation(&format!(
+                "\\text{{Minimum WLL}}_2 = \\frac{{\\text{{Load Weight}}}}\
+                 {{\\text{{Sling Legs}}_1 \\times \\text{{Sling Legs}}_2 \\times \
+                 \\text{{RF}} \\times \\text{{AF}}_{{Combined}}}} = \
+                 \\frac{{{}}}{{{rating_legs} \\times {secondary_legs} \\times {} \\times {}}} = \
+                 {}\\ \\text{{kg}}",
+                tex_num(Some(weight), 0),
+                tex_num(Some(rf), 2),
+                tex_num(Some(secondary_combined), 3),
+                tex_num(Some(secondary_required), 1)
+            )),
+        ));
+        blocks.push(utilisation_block(
             secondary_required,
             "\\text{Second Sling Leg Capacity Per}",
             secondary_capacity,
@@ -469,9 +483,8 @@ pub fn capacity_section(result: &SlingResult, spec: &HitchSpec) -> String {
         } else {
             "Minimum Required Sling WLL (Tag Rating):".to_string()
         };
-        out.push(subheading(&required_heading));
-        if CHOKE_KEYS.contains(&key) {
-            out.push(equation(&format!(
+        let formula = if CHOKE_KEYS.contains(&key) {
+            equation(&format!(
                 "\\text{{Minimum WLL}} = \\frac{{\\text{{Load Weight}}}}\
                  {{\\text{{Sling Legs}} \\times \\text{{Combined RF}} \\times \\text{{AF}}}} = \
                  \\frac{{{}}}{{{rating_legs} \\times {} \\times {}}} = {}\\ \\text{{kg}}",
@@ -479,9 +492,9 @@ pub fn capacity_section(result: &SlingResult, spec: &HitchSpec) -> String {
                 tex_num(Some(combined), 4),
                 tex_num(Some(af), 3),
                 tex_num(Some(required), 1)
-            )));
+            ))
         } else {
-            out.push(equation(&format!(
+            equation(&format!(
                 "\\text{{Minimum WLL}} = \\frac{{\\text{{Load Weight}}}}\
                  {{\\text{{Sling Legs}} \\times \\text{{RF}} \\times \\text{{AF}}}} = \
                  \\frac{{{}}}{{{rating_legs} \\times {} \\times {}}} = {}\\ \\text{{kg}}",
@@ -489,10 +502,11 @@ pub fn capacity_section(result: &SlingResult, spec: &HitchSpec) -> String {
                 tex_num(Some(rf), 2),
                 tex_num(Some(af), 3),
                 tex_num(Some(required), 1)
-            )));
-        }
+            ))
+        };
+        blocks.push(work_block(&required_heading, &formula));
         if spec.leg_count > 1 {
-            out.push(utilisation_block(
+            blocks.push(utilisation_block(
                 required,
                 "\\text{Sling Leg Capacity Per}",
                 capacity,
@@ -504,7 +518,7 @@ pub fn capacity_section(result: &SlingResult, spec: &HitchSpec) -> String {
             ));
         } else {
             // A single leg hangs vertical, so there is no derate to show.
-            out.push(utilisation_block(
+            blocks.push(utilisation_block(
                 required,
                 "\\text{Installed tag WLL}",
                 capacity,
@@ -516,6 +530,14 @@ pub fn capacity_section(result: &SlingResult, spec: &HitchSpec) -> String {
             ));
         }
     }
+    // The pair sits side by side, so each working takes two lines. The
+    // full-row marker is dropped: a pair that spanned the row would defeat
+    // the layout the reference documents use.
+    let blocks: Vec<String> = blocks
+        .into_iter()
+        .map(|block| split_long_equations(&block).replace(" data-wide=\"1\"", ""))
+        .collect();
+    out.push(working_grid(&blocks));
 
     out.push(subheading("Configured Setup SWL:"));
     out.push(equation(&format!(
@@ -729,12 +751,26 @@ mod tests {
         solve_one_leg(inputs, 2000.0).unwrap()
     }
 
+    /// The alignment markup removed, so a two-line working still compares
+    /// with the reference's one-line string.
+    fn unaligned(html: &str) -> String {
+        let mut out = html
+            .replace("\\begin{aligned}", "")
+            .replace("\\end{aligned}", "")
+            .replace("\\\\", " ")
+            .replace("&=", "=");
+        while out.contains("  ") {
+            out = out.replace("  ", " ");
+        }
+        out
+    }
+
     fn sections(inputs: &OneLegInputs) -> (String, String, String) {
         let result = solve(inputs);
         let spec = hitch_spec(&result.hitch).unwrap();
         (
-            factors_section(&result, spec),
-            capacity_section(&result, spec),
+            unaligned(&factors_section(&result, spec)),
+            unaligned(&capacity_section(&result, spec)),
             notes_section(&result, spec),
         )
     }

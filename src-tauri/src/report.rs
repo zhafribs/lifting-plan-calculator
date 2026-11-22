@@ -990,8 +990,8 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
             if let Ok(spec) = hitch_spec(&sling.hitch) {
                 parts.push(with_break(section_inputs(sling, spec), breaks("uniform")));
                 parts.push(section_card(&geometry_section(sling, spec), false));
-                parts.push(section_card(&split_long_equations(&factors_section(sling, spec)), false));
-                parts.push(section_card(&split_long_equations(&capacity_section(sling, spec)), false));
+                parts.push(section_card(&factors_section(sling, spec), false));
+                parts.push(section_card(&capacity_section(sling, spec), false));
                 if shows_notes(spec) {
                     parts.push(section_card(&notes_section(sling, spec), false));
                 }

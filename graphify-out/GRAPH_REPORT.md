@@ -1,7 +1,7 @@
 # Graph Report - lifting-plan-calculator  (2026-11-22)
 
 ## Corpus Check
-- 240 files · ~239,400 words
+- 240 files · ~239,460 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 43 file(s) not represented in the graph (top: .woff2 22, (none) 8, .xml 3)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `95ccfb91`
+- Built from commit: `63c2358b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -1633,7 +1633,7 @@ Cohesion: 0.70
 Nodes (5): writeArray(), writeDict(), writeObject(), writeStream(), writeValue()
 
 ## Knowledge Gaps
-- **38 isolated node(s):** `sign-manifest`, `Number`, `Empty`, `Negative`, `NonPositiveCapacity` (+33 more)
+- **38 isolated node(s):** `sign-manifest`, `Number`, `Caution`, `Over`, `Within` (+33 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 2664 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **315 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -1641,15 +1641,15 @@ Nodes (5): writeArray(), writeDict(), writeObject(), writeStream(), writeValue()
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `c()` connect `c` to `Cache`, `Debug`, `Embed`, `Enforce`, `Jog`, `MsgId`, `RunScripts`, `Formatting & Update Check`, `Staple`, `Threshold`, `Type`, `Load Chart Data Model`, `Bug Report Issue Form`, `m`, `constructor`, `XhtmlObject`, `CompressObjectStream`, `OperatorList`, `ConfigNamespace`, `.i`, `JpxError`, `Subform`, `getToken`, `FontInfo`, `Transform`, `Xdp`, `addNode`, `LocaleSetNamespace`, `BehaviorOverride`, `Encrypt`, `EquateRange`, `Exclude`, `Message`, `Packets`, `PageRange`, `Record`, `Relevant`, `Rename`, `Script`, `DocumentAssembly`, `Range`, `IfEmpty`, `ValidateApprovalSignatures`, `Window`, `LabelPrinter`, `OpenAction`, `Picture`, `Overprint`, `Encryption`, `Acrobat`, `Pagination`, `AddSilentPrint`, `Pdfa`, `AddViewerPreferences`, `AdobeExtensionLevel`, `Agent`, `Amd`, `AutoSave`, `Base`, `CompressLogicalStructure`, `BatchOutput`, `Conformance`, `Common`, `Compress`, `Compression`, `Config`, `ContentCopy`, `Copies`, `Driver`, `Ps`, `SuppressBanner`, `Creator`, `DefaultTypeface`, `Layout`, `Destination`, `Log`, `Equate`, `Validate`, `FlipLabel`, `NeverEmbed`, `FormFieldFilling`, `IncludeXDPContent`, `IncrementalLoad`, `IncrementalMerge`, `Interactive`, `Level`, `Linearized`, `MapElement`, `Messaging`, `Mode`, `Present`, `ModifyAnnots`, `PrinterName`, `PrintScaling`, `NameAttr`, `NumberOfCopies`, `RenderPolicy`, `Output`, `OutputBin`, `SilentPrint`, `PageOffset`, `StartNode`, `PaginationOverride`, `Pcl`, `SubsetBelow`, `Pdf`, `Permissions`, `TemplateCache`, `PickTrayByPDFSize`, `PlaintextMetadata`, `Trace`, `Presence`, `Print`, `PrintHighQuality`, `Producer`, `ScriptModel`, `Severity`, `StartPage`, `SubmitFormat`, `SubmitUrl`, `Tagged`, `To`, `ValidationMessaging`, `Version`, `VersionControl`, `WebClient`, `Xdc`, `Xsl`, `Zpl`?**
-  _High betweenness centrality (0.197) - this node is a cross-community bridge._
+  _High betweenness centrality (0.175) - this node is a cross-community bridge._
 - **Are the 147 inferred relationships involving `c()` (e.g. with `pdf.min.js` and `pdf.worker.min.js`) actually correct?**
   _`c()` has 147 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `sign-manifest`, `Number`, `Empty` to the rest of the system?**
+- **What connects `sign-manifest`, `Number`, `Caution` to the rest of the system?**
   _38 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `KaTeX Parser Internals` be split into smaller, more focused modules?**
   _Cohesion score 0.07539682539682539 - nodes in this community are weakly interconnected._
 - **Why does `m` connect `m` to `Formatting & Update Check`?**
-  _High betweenness centrality (0.098) - this node is a cross-community bridge._
+  _High betweenness centrality (0.081) - this node is a cross-community bridge._
 - **Should `Crane Chart Domain Model` be split into smaller, more focused modules?**
   _Cohesion score 0.06386066763425254 - nodes in this community are weakly interconnected._
 - **Should `el` be split into smaller, more focused modules?**

@@ -1,3 +1,14 @@
+## [Unreleased]
+
+### Changed
+
+- **Geometry blocks pair by what actually fits.** The width check counts the
+  glyphs a formula prints, not its LaTeX markup, so a two-line working that
+  fits a half-column now shares a row instead of taking the whole width. In the
+  bridle geometry the centroid radius stays alone as the first step, and the
+  sling angle and vertical height now sit side by side. The fixture report
+  drops from nine pages to eight.
+
 ## [2.17.14] - 2026-11-22
 
 ### Changed

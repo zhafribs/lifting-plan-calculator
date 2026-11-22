@@ -444,6 +444,27 @@ pub fn notes_pair(left: &str, right: &str) -> String {
 /// The workings laid out two to a row. A block marked `data-wide` — one whose
 /// label or formula is too long for half a page — takes the whole row instead:
 /// a wider cell is print-safe, while an over-wide page shrinks as a whole.
+/// Roughly how wide a LaTeX piece prints: command names and braces are not
+/// glyphs, so the raw source length overstates a `\text` or `\frac`.
+fn visible_width(latex: &str) -> usize {
+    let mut width = 0;
+    let mut command = false;
+    for ch in latex.chars() {
+        if command {
+            if ch.is_ascii_alphabetic() {
+                continue;
+            }
+            command = false;
+        }
+        match ch {
+            '\\' => command = true,
+            '{' | '}' | '^' | '_' | ' ' => {}
+            _ => width += 1,
+        }
+    }
+    width
+}
+
 pub fn split_long_equation(part: &str) -> String {
     if part.len() < 120 || part.contains("\\begin{aligned}") {
         return part.to_string();
@@ -486,7 +507,7 @@ pub fn split_long_equation(part: &str) -> String {
     for at in 2..pieces.len() {
         let left = pieces[..at].join(" = ");
         let right = pieces[at..].join(" = ");
-        let width = left.len().max(right.len());
+        let width = visible_width(&left).max(visible_width(&right));
         if width < widest {
             widest = width;
             at_best = at;
@@ -509,7 +530,8 @@ pub fn split_long_equation(part: &str) -> String {
     let first = &pieces[0];
     let head = pieces[1..at_best].join(" = ");
     let tail = pieces[at_best..].join(" = ");
-    let wide = if widest > 85 { " data-wide=\"1\"" } else { "" };
+    // About sixty visible characters fit a half-column at this size.
+    let wide = if widest > 60 { " data-wide=\"1\"" } else { "" };
     format!(
         "<div class=\"equation\"{wide}>\\[\\begin{{aligned}}{first} &= {head} \\\\ &= {tail}\\end{{aligned}}\\]</div>"
     )

@@ -276,7 +276,12 @@ fn geometry_grid(mut parts: Vec<String>) -> String {
     let heading = parts.remove(0);
     let mut blocks: Vec<String> = Vec::new();
     let mut label: Option<String> = None;
+    let mut force_wide = false;
     for part in parts {
+        if part == "<!--wide-->" {
+            force_wide = true;
+            continue;
+        }
         if part.starts_with("<h3>") {
             if let Some(open) = label.take() {
                 blocks.push(format!("<div class=\"work-label\">{open}</div>"));
@@ -289,7 +294,8 @@ fn geometry_grid(mut parts: Vec<String>) -> String {
         } else if part.starts_with("<div class=\"equation\">") {
             let part = split_long_equation(&part);
             // A formula too wide for half a page takes the whole row.
-            let wide = part.len() > 240 || part.contains("data-wide");
+            let wide = force_wide || part.len() > 240 || part.contains("data-wide");
+            force_wide = false;
             match label.take() {
                 Some(open) => blocks.push(format!(
                     "<div class=\"work-label\"{}>{open}</div>{part}",
@@ -363,6 +369,8 @@ pub fn geometry_section(result: &SlingResult, spec: &HitchSpec) -> String {
         out.push(subheading(
             "Centroid Radius (Horizontal Distance from Center to Any Pick Point):",
         ));
+        // The first step; it has nothing to pair with before the wrap is known.
+        out.push("<!--wide-->".to_string());
         out.push(equation(&radius_latex));
         out.push(subheading("Sling Contact Perimeter Wrap:"));
         out.push(equation("\\text{Wrap Length} = 0.000\\ \\text{m}"));
@@ -1111,6 +1119,27 @@ mod tests {
     fn geometry(hitch: &str) -> String {
         let result = solve_defaults(hitch, 2000.0).unwrap();
         unaligned(&geometry_section(&result, hitch_spec(&result.hitch).unwrap()))
+    }
+
+    #[test]
+    fn the_bridle_centroid_stands_alone_and_angle_pairs_with_height() {
+        let result = solve_defaults("four_leg_direct", 2000.0).unwrap();
+        let html = geometry_section(&result, hitch_spec(&result.hitch).unwrap());
+
+        let centroid = html.find("Centroid Radius").unwrap();
+        let row = html[..centroid].rfind("<tr>").unwrap();
+        let end = row + html[row..].find("</tr>").unwrap();
+        assert!(
+            html[row..end].contains("data-wide"),
+            "the first step takes the full row"
+        );
+
+        let angle = html.find("Sling Leg Angle from Vertical").unwrap();
+        let row = html[..angle].rfind("<tr>").unwrap();
+        let end = row + html[row..].find("</tr>").unwrap();
+        let pair = &html[row..end];
+        assert!(pair.contains("Vertical Height"), "angle and height share a row");
+        assert!(!pair.contains("data-wide"), "and that row is a half-and-half pair");
     }
 
     fn inputs(hitch: &str) -> String {

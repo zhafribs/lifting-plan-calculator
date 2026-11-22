@@ -66,9 +66,9 @@
     "semantic_hash": "b20dea1f31d5244bada45a9490f1f4ab"
   },
   "src-tauri/Cargo.toml": {
-    "mtime": 1795362199.986049,
-    "seen": 1795362327.3072689,
-    "ast_hash": "15ddb0fba60718357161853e7ffc8a5f",
+    "mtime": 1795364602.9454756,
+    "seen": 1795364768.829245,
+    "ast_hash": "a3ca3ae954f4d243a3ddb8ce1f0bf584",
     "semantic_hash": ""
   },
   "src-tauri/build.rs": {
@@ -186,9 +186,9 @@
     "semantic_hash": ""
   },
   "src-tauri/tauri.conf.json": {
-    "mtime": 1795362199.9861727,
-    "seen": 1795362327.307323,
-    "ast_hash": "1e5579372a34dece81bbc171f9b77116",
+    "mtime": 1795364602.9456017,
+    "seen": 1795364768.8292992,
+    "ast_hash": "6b602585f9023fe79b1ca19b36cc9601",
     "semantic_hash": ""
   },
   "ui/js/api.js": {
@@ -300,9 +300,9 @@
     "semantic_hash": "3a57d99448f802024d640c81af3341a8"
   },
   "CHANGELOG.md": {
-    "mtime": 1795364462.803656,
-    "seen": 1795364474.4326727,
-    "ast_hash": "f723ff49a7d2d2aa58491fd521187be0",
+    "mtime": 1795364602.9468946,
+    "seen": 1795364768.8293722,
+    "ast_hash": "e4dfbd8a87c5d4b5549f557647f8dfef",
     "semantic_hash": ""
   },
   "CODE_OF_CONDUCT.md": {
@@ -1929,6 +1929,18 @@
     "mtime": 1795362199.9928021,
     "seen": 1795362327.3076239,
     "ast_hash": "1f84047e7fe6d42c49c99d0541da5999",
+    "semantic_hash": ""
+  },
+  "docs/council/decisions/0062-geometry-blocks-pair-by-printed-width.md": {
+    "mtime": 1795364602.9504712,
+    "seen": 1795364768.8295283,
+    "ast_hash": "0f37634871fefbac9b415e09a949b776",
+    "semantic_hash": ""
+  },
+  "docs/releases/v2.17.15.md": {
+    "mtime": 1795364602.951471,
+    "seen": 1795364768.8296049,
+    "ast_hash": "a7de5afcee78e88aa210176eeba1aa85",
     "semantic_hash": ""
   }
 }

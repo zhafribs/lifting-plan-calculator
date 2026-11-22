@@ -293,15 +293,46 @@ fn split_long_equation(part: &str) -> String {
     if pieces.len() < 2 {
         return part.to_string();
     }
-    let mut lines = vec![format!("{} &= {}", pieces[0], pieces[1])];
-    for piece in &pieces[2..] {
-        lines.push(format!("&= {piece}"));
+    if pieces.len() == 2 {
+        let aligned = format!(
+            "\\begin{{aligned}}{} &= {}\\end{{aligned}}",
+            pieces[0], pieces[1]
+        );
+        return format!("<div class=\"equation\">\\[{aligned}\\]</div>");
     }
-    let aligned = format!(
-        "\\begin{{aligned}}{}\\end{{aligned}}",
-        lines.join(" \\\\ ")
-    );
-    format!("<div class=\"equation\">\\[{aligned}\\]</div>")
+
+    // Split into two lines at the point that keeps the wider line shortest.
+    // A twenty-odd character line fits the half-column; a longer one takes
+    // the full row, so the page never has to shrink to make it fit.
+    let mut at_best = 1;
+    let mut widest = usize::MAX;
+    for at in 1..pieces.len() {
+        let left = pieces[..at].join(" = ");
+        let right = pieces[at..].join(" = ");
+        let width = left.len().max(right.len());
+        if width < widest {
+            widest = width;
+            at_best = at;
+        }
+    }
+    if widest > 150 {
+        // Still too wide in two lines: fall back to one piece per line.
+        let mut lines = vec![format!("{} &= {}", pieces[0], pieces[1])];
+        for piece in &pieces[2..] {
+            lines.push(format!("&= {piece}"));
+        }
+        let aligned = format!(
+            "\\begin{{aligned}}{}\\end{{aligned}}",
+            lines.join(" \\\\ ")
+        );
+        return format!("<div class=\"equation\">\\[{aligned}\\]</div>");
+    }
+    let left = pieces[..at_best].join(" = ");
+    let right = pieces[at_best..].join(" = ");
+    let wide = if widest > 85 { " data-wide=\"1\"" } else { "" };
+    format!(
+        "<div class=\"equation\"{wide}>\\[\\begin{{aligned}}{left} \\\\ &= {right}\\end{{aligned}}\\]</div>"
+    )
 }
 
 /// Lay the section's label/formula pairs out two to a row. A following
@@ -328,7 +359,7 @@ fn geometry_grid(mut parts: Vec<String>) -> String {
         } else if part.starts_with("<div class=\"equation\">") {
             let part = split_long_equation(&part);
             // A formula too wide for half a page takes the whole row.
-            let wide = part.len() > 240;
+            let wide = part.len() > 240 || part.contains("data-wide");
             match label.take() {
                 Some(open) => blocks.push(format!(
                     "<div class=\"work-label\"{}>{open}</div>{part}",
@@ -1116,6 +1147,31 @@ mod tests {
             out = out.replace("  ", " ");
         }
         out
+    }
+
+    #[test]
+    fn a_long_formula_breaks_into_two_lines_when_it_fits() {
+        let part = "<div class=\"equation\">\\[\\text{Free Leg Length} = \\text{Total Length} - \\text{Perimeter} = 7.000 - 3.142 = 3.858\\ \\text{m}\\]</div>";
+        let split = split_long_equation(part);
+        assert!(split.contains("\\begin{aligned}"), "split into an aligned block");
+        assert_eq!(
+            split.matches(" \\\\ ").count(),
+            1,
+            "two lines, so one row break"
+        );
+        assert!(!split.contains("data-wide"), "the pair still fits half a row");
+    }
+
+    #[test]
+    fn a_long_formula_takes_the_full_row_when_its_lines_are_wide() {
+        let piece = "\\text{a long measurement name with enough words}";
+        let part = format!(
+            "<div class=\"equation\">\\[{piece} = {piece} = {piece} = {piece}\\]</div>"
+        );
+        let split = split_long_equation(&part);
+        assert!(split.contains("\\begin{aligned}"));
+        assert!(split.contains("data-wide"));
+        assert_eq!(split.matches(" \\\\ ").count(), 1, "two lines");
     }
 
     fn geometry(hitch: &str) -> String {

@@ -1,3 +1,11 @@
+## [Unreleased]
+
+### Fixed
+
+- **Long geometry formulas break into two lines, not three.** A working that
+  fits on two lines is now grouped that way, with the result on the second
+  line. Only a formula too wide for the row keeps one step per line.
+
 ## [2.17.12] - 2026-11-22
 
 ### Changed

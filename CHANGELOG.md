@@ -2,10 +2,12 @@
 
 ### Fixed
 
-- **Long geometry formulas break into two lines, not three.** A working that
-  fits on two lines is now grouped that way, with the continuation starting
-  under the first equals, so it cannot spill past the column. Only a formula
-  too wide for the row keeps one step per line.
+- **Long workings break into two lines, not three, in every arrangement.**
+  Uniform, nested, bridle, nonuniform and tandem workings, plus the rigging
+  factors and the capacity section, now group a formula into two lines with the
+  continuation under the first equals. Only a formula too wide for the row
+  keeps one step per line, and a two-line block stays in its half-column unless
+  its lines are wide, so the page does not gain blank space.
 
 ## [2.17.12] - 2026-11-22
 

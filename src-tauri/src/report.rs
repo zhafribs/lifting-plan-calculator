@@ -444,6 +444,97 @@ pub fn notes_pair(left: &str, right: &str) -> String {
 /// The workings laid out two to a row. A block marked `data-wide` — one whose
 /// label or formula is too long for half a page — takes the whole row instead:
 /// a wider cell is print-safe, while an over-wide page shrinks as a whole.
+pub fn split_long_equation(part: &str) -> String {
+    if part.len() < 120 || part.contains("\\begin{aligned}") {
+        return part.to_string();
+    }
+    let (Some(start), Some(end)) = (part.find("\\["), part.rfind("\\]")) else {
+        return part.to_string();
+    };
+    let latex = &part[start + 2..end];
+    let mut pieces: Vec<String> = Vec::new();
+    let mut depth = 0i32;
+    let mut from = 0usize;
+    for (index, ch) in latex.char_indices() {
+        match ch {
+            '{' => depth += 1,
+            '}' => depth -= 1,
+            '=' if depth == 0 => {
+                pieces.push(latex[from..index].trim().to_string());
+                from = index + 1;
+            }
+            _ => {}
+        }
+    }
+    pieces.push(latex[from..].trim().to_string());
+    if pieces.len() < 2 {
+        return part.to_string();
+    }
+    if pieces.len() == 2 {
+        let aligned = format!(
+            "\\begin{{aligned}}{} &= {}\\end{{aligned}}",
+            pieces[0], pieces[1]
+        );
+        return format!("<div class=\"equation\">\\[{aligned}\\]</div>");
+    }
+
+    // Split into two lines at the point that keeps the wider line shortest.
+    // A twenty-odd character line fits the half-column; a longer one takes
+    // the full row, so the page never has to shrink to make it fit.
+    let mut at_best = 2;
+    let mut widest = usize::MAX;
+    for at in 2..pieces.len() {
+        let left = pieces[..at].join(" = ");
+        let right = pieces[at..].join(" = ");
+        let width = left.len().max(right.len());
+        if width < widest {
+            widest = width;
+            at_best = at;
+        }
+    }
+    if widest > 150 {
+        // Still too wide in two lines: fall back to one piece per line.
+        let mut lines = vec![format!("{} &= {}", pieces[0], pieces[1])];
+        for piece in &pieces[2..] {
+            lines.push(format!("&= {piece}"));
+        }
+        let aligned = format!(
+            "\\begin{{aligned}}{}\\end{{aligned}}",
+            lines.join(" \\\\ ")
+        );
+        return format!("<div class=\"equation\">\\[{aligned}\\]</div>");
+    }
+    // The alignment point is the first equals, so the second line continues
+    // under it. Putting it at the end would push the tail off the column.
+    let first = &pieces[0];
+    let head = pieces[1..at_best].join(" = ");
+    let tail = pieces[at_best..].join(" = ");
+    let wide = if widest > 85 { " data-wide=\"1\"" } else { "" };
+    format!(
+        "<div class=\"equation\"{wide}>\\[\\begin{{aligned}}{first} &= {head} \\\\ &= {tail}\\end{{aligned}}\\]</div>"
+    )
+}
+
+/// Apply the splitter to every display equation in a fragment, so whole
+/// sections (nonuniform, tandem, factors, capacity) get the same two-line
+/// treatment as the geometry grid.
+pub fn split_long_equations(html: &str) -> String {
+    let tag = "<div class=\"equation\">";
+    let mut out = String::with_capacity(html.len());
+    let mut rest = html;
+    while let Some(start) = rest.find(tag) {
+        let Some(end) = rest[start..].find("</div>") else {
+            break;
+        };
+        let end = start + end + "</div>".len();
+        out.push_str(&rest[..start]);
+        out.push_str(&split_long_equation(&rest[start..end]));
+        rest = &rest[end..];
+    }
+    out.push_str(rest);
+    out
+}
+
 pub fn working_grid(blocks: &[String]) -> String {
     let mut out = String::from("<div class=\"working-wrap\"><table class=\"working\"><tbody>");
     let mut row: Vec<&String> = Vec::new();
@@ -899,8 +990,8 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
             if let Ok(spec) = hitch_spec(&sling.hitch) {
                 parts.push(with_break(section_inputs(sling, spec), breaks("uniform")));
                 parts.push(section_card(&geometry_section(sling, spec), false));
-                parts.push(section_card(&factors_section(sling, spec), false));
-                parts.push(section_card(&capacity_section(sling, spec), false));
+                parts.push(section_card(&split_long_equations(&factors_section(sling, spec)), false));
+                parts.push(section_card(&split_long_equations(&capacity_section(sling, spec)), false));
                 if shows_notes(spec) {
                     parts.push(section_card(&notes_section(sling, spec), false));
                 }
@@ -917,6 +1008,7 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
             inputs.nonuniform_error.as_deref(),
         )
         .join("");
+        let section = split_long_equations(&section);
         parts.push(with_break(section_card(&section, false), breaks("nonuniform")));
     }
     if selected("tandem") {
@@ -930,6 +1022,7 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
             inputs.tandem_error.as_deref(),
         )
         .join("");
+        let section = split_long_equations(&section);
         parts.push(with_break(section_card(&section, false), breaks("tandem")));
     }
 

@@ -1,7 +1,8 @@
 //! The uniform-lift report sections, ported from `ReportUniform.kt`.
 
 use crate::report::{
-    card_grid, equation, fmt, heading, p, plain, subheading, tex_deg, tex_num, working_grid,
+    card_grid, equation, fmt, heading, p, plain, split_long_equation, subheading, tex_deg,
+    tex_num, working_grid,
 };
 use crate::sling::{
     HitchSpec, SecondaryGroup, SlingResult, ANGLE_BASIS_EXTERNAL,
@@ -264,80 +265,6 @@ fn choke_height_equation(
 
 /// Section 2: the wrap, the free leg, the sling angle and the headroom.
 #[allow(clippy::too_many_lines)]
-/// Break a long display equation at its top-level equals signs. The piece is
-/// the same math on more lines; a formula wider than its column would make the
-/// whole printed page shrink.
-fn split_long_equation(part: &str) -> String {
-    if part.len() < 120 || part.contains("\\begin{aligned}") {
-        return part.to_string();
-    }
-    let (Some(start), Some(end)) = (part.find("\\["), part.rfind("\\]")) else {
-        return part.to_string();
-    };
-    let latex = &part[start + 2..end];
-    let mut pieces: Vec<String> = Vec::new();
-    let mut depth = 0i32;
-    let mut from = 0usize;
-    for (index, ch) in latex.char_indices() {
-        match ch {
-            '{' => depth += 1,
-            '}' => depth -= 1,
-            '=' if depth == 0 => {
-                pieces.push(latex[from..index].trim().to_string());
-                from = index + 1;
-            }
-            _ => {}
-        }
-    }
-    pieces.push(latex[from..].trim().to_string());
-    if pieces.len() < 2 {
-        return part.to_string();
-    }
-    if pieces.len() == 2 {
-        let aligned = format!(
-            "\\begin{{aligned}}{} &= {}\\end{{aligned}}",
-            pieces[0], pieces[1]
-        );
-        return format!("<div class=\"equation\">\\[{aligned}\\]</div>");
-    }
-
-    // Split into two lines at the point that keeps the wider line shortest.
-    // A twenty-odd character line fits the half-column; a longer one takes
-    // the full row, so the page never has to shrink to make it fit.
-    let mut at_best = 2;
-    let mut widest = usize::MAX;
-    for at in 2..pieces.len() {
-        let left = pieces[..at].join(" = ");
-        let right = pieces[at..].join(" = ");
-        let width = left.len().max(right.len());
-        if width < widest {
-            widest = width;
-            at_best = at;
-        }
-    }
-    if widest > 150 {
-        // Still too wide in two lines: fall back to one piece per line.
-        let mut lines = vec![format!("{} &= {}", pieces[0], pieces[1])];
-        for piece in &pieces[2..] {
-            lines.push(format!("&= {piece}"));
-        }
-        let aligned = format!(
-            "\\begin{{aligned}}{}\\end{{aligned}}",
-            lines.join(" \\\\ ")
-        );
-        return format!("<div class=\"equation\">\\[{aligned}\\]</div>");
-    }
-    // The alignment point is the first equals, so the second line continues
-    // under it. Putting it at the end would push the tail off the column.
-    let first = &pieces[0];
-    let head = pieces[1..at_best].join(" = ");
-    let tail = pieces[at_best..].join(" = ");
-    let wide = if widest > 85 { " data-wide=\"1\"" } else { "" };
-    format!(
-        "<div class=\"equation\"{wide}>\\[\\begin{{aligned}}{first} &= {head} \\\\ &= {tail}\\end{{aligned}}\\]</div>"
-    )
-}
-
 /// Lay the section's label/formula pairs out two to a row. A following
 /// equation (such as the second height) stays with its label's block; prose
 /// becomes a block of its own. The report's working grid is a table, so this

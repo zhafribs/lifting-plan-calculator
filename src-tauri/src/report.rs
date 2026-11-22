@@ -666,7 +666,7 @@ fn working_diagram_html(source: &str, scale: f64) -> String {
 /// then the two lists. It sits beside the diagram when there is room.
 fn plan_lines_block(lines: &str) -> String {
     format!(
-        "<div class=\"plan-lines\"><div class=\"metric-k\">\
+        "<div class=\"plan-lines\"><div class=\"work-label\">\
          Load items and lifting tackle</div>{lines}</div>"
     )
 }
@@ -1000,18 +1000,29 @@ fn crane_workings(crane: &CraneResult, gross: f64) -> String {
         ))
     );
     let used = match (chart_capacity, usage) {
-        (Some(capacity), Some(usage)) if capacity != 0.0 => format!(
-            "<div class=\"plan-work\"><div class=\"work-label\">\
-             Usage, % of chart capacity</div>{}</div>",
-            equation(&format!(
-                "\\text{{Usage}} = \\frac{{\\text{{Gross load at hook}}}}\
-                 {{\\text{{Chart capacity at radius}}}} \\times 100\\% = \
-                 \\frac{{{}}}{{{}}} \\times 100\\% = {:.2}\\%",
-                tex_num(Some(gross), 2),
-                tex_num(Some(capacity), 2),
-                usage
-            ))
-        ),
+        (Some(capacity), Some(usage)) if capacity != 0.0 => {
+            // Two lines at most: the side column is narrower than the full
+            // working. The arithmetic is unchanged.
+            let lines = [
+                "\\text{Usage} &= \\frac{\\text{Gross load at hook}}\
+                 {\\text{Chart capacity at radius}} \\times 100\\%"
+                    .to_string(),
+                format!(
+                    "&= \\frac{{{}}}{{{}}} \\times 100\\% = {:.2}\\%",
+                    tex_num(Some(gross), 2),
+                    tex_num(Some(capacity), 2),
+                    usage
+                ),
+            ];
+            format!(
+                "<div class=\"plan-work\"><div class=\"work-label\">\
+                 Usage, % of chart capacity</div>{}</div>",
+                equation(&format!(
+                    "\\begin{{aligned}}{}\\end{{aligned}}",
+                    lines.join(" \\\\ ")
+                ))
+            )
+        }
         _ => "<div class=\"plan-work\"><div class=\"work-label\">\
               Usage, % of chart capacity</div>\
               <div class=\"work-empty\">Not evaluated</div></div>"

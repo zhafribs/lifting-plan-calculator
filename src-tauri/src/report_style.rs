@@ -76,15 +76,14 @@ pub const REPORT_CSS: &str = r#"
 /* The workings keep the report's own equation size. At that size the Usage
    line needs the full page, so the column drops under the diagram and each
    working takes a row. */
-.report .plan-aside { flex: 1 1 300pt; min-width: 300pt;
+.report .plan-aside { flex: 1 1 140pt; min-width: 140pt;
     display: flex; flex-wrap: wrap; align-content: flex-start;
     gap: 3pt 8pt; }
-.report .plan-aside .plan-work { flex: 1 1 100%; min-width: 0; }
+.report .plan-aside .plan-work { flex: 1 1 140pt; min-width: 0; }
 .report .plan-aside .equation { margin-left: 0; margin-right: 0; }
 .report .plan-figure .plan-lines { margin: 0; }
 .report .plan-aside .plan-lines { flex: 1 1 100%; margin-top: 2pt;
     border-top: 0.5pt solid #e4eaf1; padding-top: 3pt; }
-.report .plan-lines .metric-k { margin-bottom: 2pt; }
 .report table.plan-meta { width: 100%; border-collapse: collapse;
     table-layout: fixed; margin: 0; }
 .report table.plan-meta col.ref { width: 30%; }

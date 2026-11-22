@@ -3,13 +3,14 @@
 ### Changed
 
 - **The plan's opening block is one box.** The working range diagram and the
-  Load Items and Lifting Tackle lists sit under the plan figures, inside the
-  Plan details border. The diagram takes the left of the row. Required capacity
-  and Usage use the report's own equation size, so they stay on one line each;
-  at that size the Usage line needs the page width, so the two workings take a
-  row each under the diagram, with the line lists below. A page break ticked
-  for the line lists still puts them on their own page, and unticking Plan
-  details still prints each part on its own.
+  Load Items and Lifting Tackle lists sit inside the Plan details border. When
+  the diagram leaves room on its right — as it does at the default 50% — the
+  workings and the lists stack there. Each working takes at most two lines.
+  When the scale leaves no room (100% or a narrow page), they drop under the
+  diagram: Required capacity and Usage side by side, two lines each, with the
+  lists below them. The list heading uses the same bold label as the workings.
+  A page break ticked for the line lists still puts them on their own page, and
+  unticking Plan details still prints each part on its own.
 
 ## [2.17.11] - 2026-11-21
 

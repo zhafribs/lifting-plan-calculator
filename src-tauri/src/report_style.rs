@@ -77,7 +77,10 @@ pub const REPORT_CSS: &str = r#"
     display: flex; flex-wrap: wrap; align-content: flex-start;
     gap: 3pt 8pt; }
 .report .plan-aside .plan-work { flex: 1 1 140pt; min-width: 0; }
-.report .plan-aside .equation { margin-left: 0; margin-right: 0; }
+.report .plan-aside .equation { margin-left: 0; margin-right: 0;
+    font-size: 6pt; }
+/* KaTeX lifts its own size by 1.21em; the side column cannot spare it. */
+.report .plan-aside .equation .katex { font-size: 1em; }
 .report .plan-figure .plan-lines { margin: 0; }
 .report .plan-aside .plan-lines { flex: 1 1 100%; margin-top: 2pt;
     border-top: 0.5pt solid #e4eaf1; padding-top: 3pt; }

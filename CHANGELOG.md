@@ -1,3 +1,10 @@
+## [Unreleased]
+
+### Security
+
+- **`url` 2.5.9 closes a stack overflow.** The lockfile moves from 2.5.8 to
+  pick up the fix for RUSTSEC-2026-0592. No code changed.
+
 ## [2.17.15] - 2026-11-23
 
 ### Changed

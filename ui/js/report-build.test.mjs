@@ -58,6 +58,18 @@ test("a rejected run clears the queue", async () => {
   assert.equal(await task("b"), "ok");
 });
 
+test("a matching quality still runs the keyed build, so changed inputs are not skipped", async () => {
+  let state = { html: "old", quality: "export" };
+  let writes = 0;
+  const rebuild = async (quality) => {
+    writes += 1;
+    state = { html: "new", quality };
+  };
+  const html = await ensureQuality("export", () => state, rebuild);
+  assert.equal(html, "new");
+  assert.equal(writes, 1);
+});
+
 test("an export request re-asserts after a preview overwrites it", async () => {
   let state = { html: "", quality: "" };
   let writes = 0;
@@ -73,23 +85,11 @@ test("an export request re-asserts after a preview overwrites it", async () => {
   assert.equal(writes, 2);
 });
 
-test("a matching quality is returned without another build", async () => {
-  let writes = 0;
-  const state = { html: "preview", quality: "preview" };
-  const html = await ensureQuality("preview", () => state, async () => {
-    writes += 1;
-  });
-  assert.equal(html, "preview");
-  assert.equal(writes, 0);
-});
-
 test("a quality that never sticks throws instead of returning the wrong build", async () => {
   let writes = 0;
   const state = { html: "preview", quality: "preview" };
   const rebuild = async () => {
     writes += 1;
-    state.html = "preview";
-    state.quality = "preview";
   };
   await assert.rejects(
     ensureQuality("export", () => ({ ...state }), rebuild),

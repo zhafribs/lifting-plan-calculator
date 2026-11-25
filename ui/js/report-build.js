@@ -54,19 +54,17 @@ export function createSingleFlight(task) {
 }
 
 /**
- * Read the report at the requested quality, rebuilding until it is the thing
- * that was asked for. A preview request can replace a pending export in the
- * queue, so Save/Print re-assert after the run instead of trusting the last
- * writer. Three attempts is enough for a click that races typing; after that a
- * retry is safer than printing the wrong diagram.
+ * Read the report at the requested quality. The keyed build inside `rebuild`
+ * decides whether the inputs changed, so this always asks for a run: a matching
+ * quality alone is not proof the page is current. If a preview replaces a
+ * pending export, the loop re-asserts the quality; after three lost races it
+ * throws rather than print the wrong diagram.
  */
 export async function ensureQuality(quality, read, rebuild) {
   for (let attempt = 0; attempt < 3; attempt += 1) {
+    await rebuild(quality);
     const current = read();
     if (current.quality === quality) return current.html;
-    await rebuild(quality);
-    const after = read();
-    if (after.quality === quality) return after.html;
   }
   throw new Error("The report was still rebuilding. Try again.");
 }

@@ -82,3 +82,18 @@ test("a matching quality is returned without another build", async () => {
   assert.equal(html, "preview");
   assert.equal(writes, 0);
 });
+
+test("a quality that never sticks throws instead of returning the wrong build", async () => {
+  let writes = 0;
+  const state = { html: "preview", quality: "preview" };
+  const rebuild = async () => {
+    writes += 1;
+    state.html = "preview";
+    state.quality = "preview";
+  };
+  await assert.rejects(
+    ensureQuality("export", () => ({ ...state }), rebuild),
+    /still rebuilding/,
+  );
+  assert.equal(writes, 3);
+});

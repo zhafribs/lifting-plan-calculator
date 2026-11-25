@@ -482,7 +482,7 @@ export function createReportScreen(ctx) {
           frame.contentWindow.focus();
           frame.contentWindow.print();
         } catch (error) {
-          toast("Printing is not available here — save the file and print it from a browser instead.", "error");
+          toast(errorText(error), "error");
         }
       },
     },

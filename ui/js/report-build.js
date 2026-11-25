@@ -1,5 +1,6 @@
-// The Summary screen's build inputs and its one-at-a-time queue. Keeping both
-// pure makes the stale-report and rapid-typing rules testable without a webview.
+// The Summary screen's build inputs, its one-at-a-time queue, and the quality
+// guarantee that keeps a 2x preview out of a printed PDF. Keeping them pure
+// makes the stale-report and rapid-typing rules testable without a webview.
 
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);

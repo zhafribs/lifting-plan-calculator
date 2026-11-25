@@ -398,7 +398,7 @@ smaller, never larger.
 Record the before/after capture, build and preview times in the PR/commit
 message. Do not claim a speed-up without a log line.
 
-- [ ] **Step 6: Three-seat review**
+- [x] **Step 6: Three-seat review**
 
 Run the repository's review gate from `AGENTS.md`:
 
@@ -411,6 +411,10 @@ Run the repository's review gate from `AGENTS.md`:
 
 Each seat scores out of 10 with a cited file, line or command; every seat must
 reach 8.0 before the branch lands.
+
+**Result (2026-11-26):** Safety & QA **8.5**, Security & Build **9.0**,
+Design & Steward **8.5**. The export-quality race and the stale Pages view were
+both found by the seats and fixed before landing.
 
 ---
 

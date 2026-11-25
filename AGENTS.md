@@ -77,7 +77,8 @@ Frontend modules that work without a webview:
 ```bash
 node --test ui/js/pdf-math.test.mjs ui/js/jib.test.mjs \
   ui/js/graph/print-palette.test.mjs ui/js/theme.test.mjs \
-  ui/js/windows-theme.test.mjs
+  ui/js/windows-theme.test.mjs ui/js/graph/capture-cache.test.mjs \
+  ui/js/graph/snapshot.test.mjs ui/js/report-build.test.mjs
 # CI syntax-checks every module as an ES module (so the copy is renamed .mjs)
 mkdir -p /tmp/jschk && printf '{"type":"module"}\n' > /tmp/jschk/package.json
 while IFS= read -r -d '' f; do

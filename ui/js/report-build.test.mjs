@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildReportKey, createSingleFlight } from "./report-build.js";
+import { buildReportKey, createSingleFlight, ensureQuality } from "./report-build.js";
 
 test("the build key ignores object key order but not value changes", () => {
   const a = {
@@ -56,4 +56,29 @@ test("a rejected run clears the queue", async () => {
   });
   await assert.rejects(task("a"), /boom/);
   assert.equal(await task("b"), "ok");
+});
+
+test("an export request re-asserts after a preview overwrites it", async () => {
+  let state = { html: "", quality: "" };
+  let writes = 0;
+  const rebuild = async (quality) => {
+    writes += 1;
+    // The first run is replaced by a preview, as the queue can do.
+    state = writes === 1
+      ? { html: "preview", quality: "preview" }
+      : { html: quality, quality };
+  };
+  const html = await ensureQuality("export", () => state, rebuild);
+  assert.equal(html, "export");
+  assert.equal(writes, 2);
+});
+
+test("a matching quality is returned without another build", async () => {
+  let writes = 0;
+  const state = { html: "preview", quality: "preview" };
+  const html = await ensureQuality("preview", () => state, async () => {
+    writes += 1;
+  });
+  assert.equal(html, "preview");
+  assert.equal(writes, 0);
 });

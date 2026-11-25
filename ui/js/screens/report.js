@@ -5,7 +5,7 @@ import { api, errorText } from "../api.js";
 import { card, field, numberInput, textInput, withUnit } from "../components.js";
 import { captureWorkingDiagram } from "../graph/snapshot.js";
 import { createPdfViewer } from "../pdf-viewer.js";
-import { buildReportKey, createSingleFlight } from "../report-build.js";
+import { buildReportKey, createSingleFlight, ensureQuality } from "../report-build.js";
 
 export function createReportScreen(ctx) {
   const { store, catalog, toast } = ctx;
@@ -128,7 +128,7 @@ export function createReportScreen(ctx) {
       schedulePdf(0);
       return;
     }
-    const url = captureWorkingDiagram();
+    const url = captureWorkingDiagram({ scale: previewMode === "pages" ? 3 : 2 });
     if (!url) {
       diagramInput.checked = false;
       diagramScaleInput.disabled = true;
@@ -378,7 +378,12 @@ export function createReportScreen(ctx) {
     closeMargins();
     // The page view carries the margin in its cache key; a forced refresh makes
     // the change visible without waiting for the next keystroke.
-    await rebuild("export");
+    try {
+      await rebuild("export");
+    } catch (error) {
+      toast(errorText(error), "error");
+      return;
+    }
     if (previewMode === "pages") refreshPdf({ force: true });
   }
 
@@ -725,8 +730,11 @@ export function createReportScreen(ctx) {
   }
 
   async function ensureHtml(quality = "preview") {
-    if (!lastHtml || lastQuality !== quality) await rebuild(quality);
-    return lastHtml;
+    return ensureQuality(
+      quality,
+      () => ({ html: lastHtml, quality: lastQuality }),
+      rebuild,
+    );
   }
 
   function timed(label, started, detail = "") {
@@ -773,6 +781,7 @@ export function createReportScreen(ctx) {
     try {
       const html = await ensureHtml("export");
       if (!force && html === lastPdfHtml) return;
+      const previewStarted = performance.now();
       const bytes = await api.previewPdf(html, footerParams(), margins);
       // Tauri returns the raw response as an ArrayBuffer; accept a typed array
       // as well so the viewer does not depend on that detail.
@@ -786,6 +795,7 @@ export function createReportScreen(ctx) {
         viewer.setZoom(zoomBefore);
       }
       if (scrollBefore > 0) viewer.element.scrollTop = scrollBefore;
+      timed("preview", previewStarted, "export");
     } catch (error) {
       const message = errorText(error);
       // A page view needs the print path. When it is unavailable, say why and

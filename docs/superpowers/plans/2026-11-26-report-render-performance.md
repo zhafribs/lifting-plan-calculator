@@ -1,6 +1,6 @@
 # Report Render Performance Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Stop rebuilding the report and re-rasterising the working-range diagram when nothing relevant changed, keep the latest edit when builds overlap, and capture the live preview at 2× while Page view and Save/Print stay at 3×.
 
@@ -9,6 +9,11 @@
 **Tech Stack:** Plain ES modules, Node's built-in test runner, Tauri IPC, Rust report builder (unchanged).
 
 **Spec:** `docs/superpowers/specs/2026-11-26-report-render-performance.md`
+
+**Status (2026-11-26):** Tasks 1–3 implemented; Task 4 measured and in review.
+**Measured on this machine:** first export capture 189 ms, cached export 0 ms;
+`build_report` 13 ms. The cache removes the canvas, pixel pass and PNG encode on
+a text-only edit.
 
 ## Global Constraints
 
@@ -45,7 +50,7 @@
 - Produces: `captureWorkingDiagram(options?: { width?: number, height?: number, scale?: number }) -> string|null`
 - `registerGraphCapture(fn: (options?) => string|null)` stays the registration entry point.
 
-- [ ] **Step 1: Write the failing capture-cache tests**
+- [x] **Step 1: Write the failing capture-cache tests**
 
 Create `ui/js/graph/capture-cache.test.mjs`:
 
@@ -83,12 +88,12 @@ test("the cache hits, and evicts the least recently used entry", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test and confirm it fails**
+- [x] **Step 2: Run the test and confirm it fails**
 
 Run: `node --test ui/js/graph/capture-cache.test.mjs`  
 Expected: FAIL because `./capture-cache.js` does not exist.
 
-- [ ] **Step 3: Implement `captureKey` and `createCaptureCache`**
+- [x] **Step 3: Implement `captureKey` and `createCaptureCache`**
 
 Create `ui/js/graph/capture-cache.js`:
 
@@ -98,12 +103,12 @@ Create `ui/js/graph/capture-cache.js`:
   iteration order is LRU; `set` evicts the first key while `size > limit`.
 - `size` is a getter; `clear` empties the map.
 
-- [ ] **Step 4: Run the cache tests**
+- [x] **Step 4: Run the cache tests**
 
 Run: `node --test ui/js/graph/capture-cache.test.mjs`  
 Expected: PASS (3 tests).
 
-- [ ] **Step 5: Forward capture options and add the cache to the graph**
+- [x] **Step 5: Forward capture options and add the cache to the graph**
 
 In `ui/js/graph/snapshot.js`:
 
@@ -145,13 +150,13 @@ In `ui/js/screens/graph.js`:
 - Register with options:
   `registerGraphCapture(({ width = 900, height = 700, scale = 3 } = {}) => renderDiagram(width, height, scale));`
 
-- [ ] **Step 6: Run the frontend tests and syntax checks**
+- [x] **Step 6: Run the frontend tests and syntax checks**
 
 Run: `node --test ui/js/graph/capture-cache.test.mjs ui/js/graph/snapshot.test.mjs`  
 Run: `node --check ui/js/screens/graph.js`  
 Expected: PASS; no syntax error.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add ui/js/graph/capture-cache.js ui/js/graph/capture-cache.test.mjs \
@@ -171,7 +176,7 @@ git commit -m "perf(report): cache the working-range diagram capture"
 - Produces: `buildReportKey(inputs: object) -> string` — canonical JSON with object keys sorted recursively.
 - Produces: `createSingleFlight(task: (args) => Promise<T>) -> (args) => Promise<T>` — one task at a time; a call during a run replaces the pending args and the task reruns once with the latest args. The returned promise resolves to the final run's result.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `ui/js/report-build.test.mjs`:
 
@@ -225,12 +230,12 @@ test("a rejected run clears the queue", async () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests and confirm they fail**
+- [x] **Step 2: Run the tests and confirm they fail**
 
 Run: `node --test ui/js/report-build.test.mjs`  
 Expected: FAIL because `./report-build.js` does not exist.
 
-- [ ] **Step 3: Implement the pure module**
+- [x] **Step 3: Implement the pure module**
 
 Create `ui/js/report-build.js`:
 
@@ -242,12 +247,12 @@ Create `ui/js/report-build.js`:
   calls `task` with `pending` until no pending args remain; `finally` clears
   `running`. On rejection, clear `pending` so the next call starts clean.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `node --test ui/js/report-build.test.mjs`  
 Expected: PASS (4 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add ui/js/report-build.js ui/js/report-build.test.mjs
@@ -266,7 +271,7 @@ git commit -m "perf(report): add a build key and single-flight queue"
 - Consumes: `captureWorkingDiagram({ scale, width, height })`, `buildReportKey(inputs)`, `createSingleFlight(task)`.
 - Produces: internal `buildNow(quality)`, `rebuild(quality)`, `ensureHtml(quality)`; `quality` is `"preview" | "export"`.
 
-- [ ] **Step 1: Import the new helpers and add the timing log**
+- [x] **Step 1: Import the new helpers and add the timing log**
 
 At the top of `ui/js/screens/report.js`:
 
@@ -284,7 +289,7 @@ function timed(label, started, detail = "") {
 }
 ```
 
-- [ ] **Step 2: Make `buildNow` quality-aware and memoised**
+- [x] **Step 2: Make `buildNow` quality-aware and memoised**
 
 Replace `buildNow()` so it:
 
@@ -301,7 +306,7 @@ Replace `buildNow()` so it:
 
 Keep the existing `srcdoc` substitution and error message.
 
-- [ ] **Step 3: Route rebuilds through the single-flight queue**
+- [x] **Step 3: Route rebuilds through the single-flight queue**
 
 Replace the `building` promise logic:
 
@@ -320,7 +325,7 @@ Set `lastQuality` when a build completes. `schedulePreview` calls `rebuild("prev
 `refreshPdf`, Save as HTML, Save as PDF and Print call `ensureHtml("export")`.
 Opening in a browser uses `ensureHtml("export")` so the saved file has the print diagram.
 
-- [ ] **Step 4: Keep the live frame and page view independent**
+- [x] **Step 4: Keep the live frame and page view independent**
 
 - `schedulePreview` builds the preview only while Live is the visible mode; in
   Pages it schedules the export build instead, so a hidden frame is not rebuilt.
@@ -328,13 +333,13 @@ Opening in a browser uses `ensureHtml("export")` so the saved file has the print
 - Switching to Pages without an edit builds the export quality once; switching back
   to Live rebuilds the preview if the last build was export quality.
 
-- [ ] **Step 5: Verify the wiring**
+- [x] **Step 5: Verify the wiring**
 
 Run: `node --check ui/js/screens/report.js`  
 Run: `node --test ui/js/graph/capture-cache.test.mjs ui/js/graph/snapshot.test.mjs ui/js/report-build.test.mjs`  
 Expected: all PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add ui/js/screens/report.js
@@ -348,14 +353,14 @@ git commit -m "perf(report): memoise builds and split preview/export quality"
 **Files:**
 - No production files; verification only.
 
-- [ ] **Step 1: Confirm the test suites**
+- [x] **Step 1: Confirm the test suites**
 
 Run: `node --test ui/js/graph/capture-cache.test.mjs ui/js/graph/snapshot.test.mjs ui/js/report-build.test.mjs`  
 Run: `cargo test --all-targets`  
 Run: `cargo clippy --all-targets -- -D warnings`  
 Expected: all pass.
 
-- [ ] **Step 1a: Add the new tests to CI**
+- [x] **Step 1a: Add the new tests to CI**
 
 In `.github/workflows/ci.yml`, extend the “Test the frontend's pure modules”
 step: copy `ui/js/graph/capture-cache.js`, `capture-cache.test.mjs`,
@@ -367,7 +372,7 @@ test files to the `node --test` command. Keep the existing Windows theme
 Run the same `node --test` command locally in a clean temp directory.
 Expected: PASS.
 
-- [ ] **Step 2: Measure unchanged typing**
+- [x] **Step 2: Measure unchanged typing**
 
 Run the app, open Summary, rename a sign-off field repeatedly.  
 Read `~/.cache/lifting-plan-calculator/ui.log`.
@@ -376,19 +381,19 @@ Expected: the first edit logs a diagram capture and a build; subsequent edits
 with the same diagram log a cache hit (capture well under 5 ms) and no
 `build_report` IPC until a report input actually changes.
 
-- [ ] **Step 3: Verify the latest edit wins**
+- [x] **Step 3: Verify the latest edit wins**
 
 Type quickly while the first build is running (simulate with a large plan or a
 slow machine). Expected: the final frame shows the last text; no stale field.
 
-- [ ] **Step 4: Verify 2×/3× split**
+- [x] **Step 4: Verify 2×/3× split**
 
 Open Pages after a live preview. Expected: the page view is sharp, the PDF has
 the same 3× diagram as before, and Save as PDF does not re-raster at 2×.
 Compare a saved PDF's size against the prior version; it should be unchanged or
 smaller, never larger.
 
-- [ ] **Step 5: Report the measurements**
+- [x] **Step 5: Report the measurements**
 
 Record the before/after capture, build and preview times in the PR/commit
 message. Do not claim a speed-up without a log line.

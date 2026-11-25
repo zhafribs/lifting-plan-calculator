@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+### Changed
+
+- **The report reuses its working-range diagram and skips unchanged rebuilds.**
+  The diagram is cached by crane state and quality, edits made during a build
+  win, and the live preview captures at 2× while Page view and Save/Print keep
+  the 3× print image. Report content and layout are unchanged.
+
 ### Security
 
 - **`url` 2.5.9 closes a stack overflow.** The lockfile moves from 2.5.8 to

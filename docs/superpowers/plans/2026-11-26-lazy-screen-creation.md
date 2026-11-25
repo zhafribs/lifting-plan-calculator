@@ -1,6 +1,6 @@
 # Lazy Screen Creation Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Build each tab the first time it is opened, cache it afterwards, and keep Summary's working-range diagram working even when the Graph tab was never opened.
 
@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-26-lazy-screen-creation.md`
 
-**Status (2026-11-26):** Tasks 1–2 implemented; Task 3 verification and review in progress.
+**Status (2026-11-26):** Tasks 1–3 implemented; three-seat review passed.
 **Measured on this machine:** default launch builds one screen (`screen overall: 1ms`);
 `--screen=report` builds `graph` (2 ms) before `report` (5 ms). Before this change
 all ten screens were constructed at launch.
@@ -47,7 +47,7 @@ all ten screens were constructed at launch.
 - Produces: `createScreenRegistry(factories: Record<string, () => object>) -> { get(key: string): object|null, has(key: string): boolean }`
 - A factory returns the existing screen object shape: `{ root, sync?, render?, show?, setSections? }`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `ui/js/screen-registry.test.mjs`:
 
@@ -110,12 +110,12 @@ test("a failed factory is not cached and can be retried", () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests and confirm they fail**
+- [x] **Step 2: Run the tests and confirm they fail**
 
 Run: `node --test ui/js/screen-registry.test.mjs`  
 Expected: FAIL because `./screen-registry.js` does not exist.
 
-- [ ] **Step 3: Implement the registry**
+- [x] **Step 3: Implement the registry**
 
 Create `ui/js/screen-registry.js`:
 
@@ -123,24 +123,24 @@ Create `ui/js/screen-registry.js`:
 - `get(key)` returns null when absent, otherwise creates once and caches the
   successful result. A throw propagates and leaves the cache untouched.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `node --test ui/js/screen-registry.test.mjs`  
 Expected: PASS (4 tests).
 
-- [ ] **Step 5: Add the test to CI and the local command**
+- [x] **Step 5: Add the test to CI and the local command**
 
 In `.github/workflows/ci.yml`, copy `ui/js/screen-registry.js` and
 `screen-registry.test.mjs` into `$work` and add `$work/screen-registry.test.mjs`
 to the `node --test` list. Add the same file to the frontend test command in
 `AGENTS.md`.
 
-- [ ] **Step 6: Run the CI-shaped test set**
+- [x] **Step 6: Run the CI-shaped test set**
 
 Run the `node --test` command from `.github/workflows/ci.yml` in a clean temp
 directory. Expected: all pass.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add ui/js/screen-registry.js ui/js/screen-registry.test.mjs \
@@ -159,7 +159,7 @@ git commit -m "perf(ui): add a lazy screen registry"
 - Consumes: `createScreenRegistry` from Task 1.
 - Produces: internal `screen(key, create)` logging wrapper; `screens.get(key)` in `go` and `showReport`.
 
-- [ ] **Step 1: Replace the eager object with factories**
+- [x] **Step 1: Replace the eager object with factories**
 
 In `ui/js/app.js`, import `createScreenRegistry`. Replace the
 `screens = { overall: createOverallScreen(ctx), ... }` object with:
@@ -194,7 +194,7 @@ const screens = createScreenRegistry({
 });
 ```
 
-- [ ] **Step 2: Use `get`/`has` at every call site**
+- [x] **Step 2: Use `get`/`has` at every call site**
 
 - `go(key)`: `const next = screens.get(key); if (!next) return;` then use `next`
   for `current`.
@@ -203,13 +203,13 @@ const screens = createScreenRegistry({
 - Start-screen selection: `screens.has(info.start_screen) ? info.start_screen : "overall"`.
 - No other `screens[...]` or `screens.<key>` references remain.
 
-- [ ] **Step 3: Check syntax and the registry tests**
+- [x] **Step 3: Check syntax and the registry tests**
 
 Run: `node --check ui/js/app.js`  
 Run: `node --test ui/js/screen-registry.test.mjs`  
 Expected: both pass.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add ui/js/app.js
@@ -223,14 +223,14 @@ git commit -m "perf(ui): create screens on first visit"
 **Files:**
 - No production changes unless a test exposes a defect.
 
-- [ ] **Step 1: Confirm the default launch is lazy**
+- [x] **Step 1: Confirm the default launch is lazy**
 
 Run the app normally, then read `~/.cache/lifting-plan-calculator/ui.log`.
 
 Expected: one `screen overall: Nms` line; no crane, graph, report or settings
 construction.
 
-- [ ] **Step 2: Visit every tab once**
+- [x] **Step 2: Visit every tab once**
 
 Open Overall, Crane, Outrigger, Graph, Uniform, Nonuniform, Tandem, Summary,
 Settings and About. Return to two of them.
@@ -238,40 +238,40 @@ Settings and About. Return to two of them.
 Expected: one `screen <key>` line per tab, no second line on return. No tab is
 blank and each shows current data.
 
-- [ ] **Step 3: Open Summary before Graph**
+- [x] **Step 3: Open Summary before Graph**
 
 Use `cargo run -- --screen=report`.
 
 Expected: `screen graph` is created before `screen report`; the page view
 contains the working-range diagram when the diagram box is ticked.
 
-- [ ] **Step 4: Check the cross-tab report path**
+- [x] **Step 4: Check the cross-tab report path**
 
 From Crane, Outrigger, Uniform, Nonuniform and Tandem, press **Show report**.
 
 Expected: Summary opens with the requested sections; the diagram is present;
 no blank or duplicate screen.
 
-- [ ] **Step 5: Check keyboard and start-screen flags**
+- [x] **Step 5: Check keyboard and start-screen flags**
 
 Use `Ctrl+1`…`Ctrl+8`, the rail, and two `--screen=` values (for example
 `--screen=uniform` and `--screen=about`). Expected: the named screen appears;
 unknown values fall back to Overall.
 
-- [ ] **Step 6: Run the full gates**
+- [x] **Step 6: Run the full gates**
 
 Run: `node --test` with the CI list from `.github/workflows/ci.yml`  
 Run: `cd src-tauri && cargo test --all-targets && cargo clippy --all-targets -- -D warnings`  
 Run: the `node --check` loop from `AGENTS.md`.  
 Expected: all pass.
 
-- [ ] **Step 7: Measure startup**
+- [x] **Step 7: Measure startup**
 
 Compare the first `app main start` to first-tab timing before and after, using
 the `screen <key>: Nms` line. Record the result in the PR/commit body; do not
 claim a win without a log line.
 
-- [ ] **Step 8: Three-seat review**
+- [x] **Step 8: Three-seat review**
 
 Run the gate from `AGENTS.md`:
 
@@ -283,6 +283,10 @@ Run the gate from `AGENTS.md`:
   code, honesty about the Graph dependency.
 
 Each seat scores out of 10 with cited evidence; every seat must reach 8.0.
+
+**Result (2026-11-26):** Safety & QA **9.0**, Security & Build **9.0**,
+Design & Steward **8.5**. The registry's inherited-key guard, the architecture
+recipe and the measurement record were all closed before landing.
 
 ---
 

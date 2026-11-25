@@ -9,6 +9,9 @@
 
 ### Security
 
+- **`cookie` 0.18.3 closes RUSTSEC-2026-0594.** The lockfile moves from 0.18.2
+  for the private-nonce fork advisory; it is a transitive Tauri/wry dependency
+  and no code changed.
 - **`url` 2.5.9 closes a stack overflow.** The lockfile moves from 2.5.8 to
   pick up the fix for RUSTSEC-2026-0592. No code changed.
 

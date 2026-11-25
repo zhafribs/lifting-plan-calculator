@@ -13,7 +13,6 @@ test("a factory is not called until its screen is requested", () => {
   assert.equal(screens.has("crane"), true);
   assert.equal(screens.get("crane").root, "crane");
   assert.deepEqual(calls, ["crane"]);
-  assert.deepEqual(screens.created(), ["crane"]);
 });
 
 test("the first instance is cached", () => {
@@ -28,7 +27,7 @@ test("the first instance is cached", () => {
   assert.equal(calls, 1);
 });
 
-test("an unknown key is null and calls no factory", () => {
+test("an unknown or inherited key is null and calls no factory", () => {
   let calls = 0;
   const screens = createScreenRegistry({
     overall: () => {
@@ -36,8 +35,10 @@ test("an unknown key is null and calls no factory", () => {
       return {};
     },
   });
-  assert.equal(screens.get("missing"), null);
-  assert.equal(screens.has("missing"), false);
+  for (const key of ["missing", "toString", "constructor", "__proto__"]) {
+    assert.equal(screens.get(key), null, key);
+    assert.equal(screens.has(key), false, key);
+  }
   assert.equal(calls, 0);
 });
 
@@ -53,5 +54,4 @@ test("a failed factory is not cached and can be retried", () => {
   assert.throws(() => screens.get("overall"), /boom/);
   assert.equal(screens.get("overall").root, "overall");
   assert.equal(calls, 2);
-  assert.deepEqual(screens.created(), ["overall"]);
 });

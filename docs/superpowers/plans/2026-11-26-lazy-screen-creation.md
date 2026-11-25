@@ -10,6 +10,11 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-26-lazy-screen-creation.md`
 
+**Status (2026-11-26):** Tasks 1–2 implemented; Task 3 verification and review in progress.
+**Measured on this machine:** default launch builds one screen (`screen overall: 1ms`);
+`--screen=report` builds `graph` (2 ms) before `report` (5 ms). Before this change
+all ten screens were constructed at launch.
+
 ## Global Constraints
 
 - No new dependency, npm build step or CSP change.
@@ -36,9 +41,10 @@
 - Create: `ui/js/screen-registry.test.mjs`
 - Modify: `.github/workflows/ci.yml` (frontend test list)
 - Modify: `AGENTS.md` (local test command)
+- Modify: `docs/architecture.md` and `CHANGELOG.md`
 
 **Interfaces:**
-- Produces: `createScreenRegistry(factories: Record<string, () => object>) -> { get(key: string): object|null, has(key: string): boolean, created(): string[] }`
+- Produces: `createScreenRegistry(factories: Record<string, () => object>) -> { get(key: string): object|null, has(key: string): boolean }`
 - A factory returns the existing screen object shape: `{ root, sync?, render?, show?, setSections? }`.
 
 - [ ] **Step 1: Write the failing tests**
@@ -60,7 +66,6 @@ test("a factory is not called until its screen is requested", () => {
   assert.equal(screens.has("crane"), true);
   assert.equal(screens.get("crane").root, "crane");
   assert.deepEqual(calls, ["crane"]);
-  assert.deepEqual(screens.created(), ["crane"]);
 });
 
 test("the first instance is cached", () => {
@@ -75,7 +80,7 @@ test("the first instance is cached", () => {
   assert.equal(calls, 1);
 });
 
-test("an unknown key is null and calls no factory", () => {
+test("an unknown or inherited key is null and calls no factory", () => {
   let calls = 0;
   const screens = createScreenRegistry({
     overall: () => {
@@ -83,8 +88,10 @@ test("an unknown key is null and calls no factory", () => {
       return {};
     },
   });
-  assert.equal(screens.get("missing"), null);
-  assert.equal(screens.has("missing"), false);
+  for (const key of ["missing", "toString", "constructor", "__proto__"]) {
+    assert.equal(screens.get(key), null, key);
+    assert.equal(screens.has(key), false, key);
+  }
   assert.equal(calls, 0);
 });
 
@@ -100,7 +107,6 @@ test("a failed factory is not cached and can be retried", () => {
   assert.throws(() => screens.get("overall"), /boom/);
   assert.equal(screens.get("overall").root, "overall");
   assert.equal(calls, 2);
-  assert.deepEqual(screens.created(), ["overall"]);
 });
 ```
 
@@ -113,10 +119,9 @@ Expected: FAIL because `./screen-registry.js` does not exist.
 
 Create `ui/js/screen-registry.js`:
 
-- `has(key)` uses `Object.hasOwn(factories, key)`.
+- `has(key)` uses `Object.prototype.hasOwnProperty.call(factories, key)`, so inherited names such as `toString` are not screens.
 - `get(key)` returns null when absent, otherwise creates once and caches the
   successful result. A throw propagates and leaves the cache untouched.
-- `created()` returns the cached keys in creation order.
 
 - [ ] **Step 4: Run the tests**
 

@@ -72,8 +72,11 @@ Rust (src-tauri/src)
 ## Where to add something
 
 - **A screen**: new `screens/<name>.js` exporting `create<Name>Screen(ctx)`, one
-  entry in `NAV` in `app.js`, one `create…Screen(ctx)` beside the others. It gets
-  state through `ctx.store`, never from another screen.
+  entry in `NAV` in `app.js`, and one `screen("<name>", () => create<Name>Screen(ctx))`
+  entry in the registry in `app.js`. Screens are built on first visit. It gets
+  state through `ctx.store`, never from another screen. The one exception is
+  Report, which asks the registry for Graph first because Graph registers the
+  working-range capture; keep that exception local and commented.
 - **A report section**: new `report_<section>.rs` with one `pub fn …_section`,
   called from `report.rs`. Styling goes in `report_style.rs`.
 - **A command**: the function in `commands.rs` (or the module that owns the

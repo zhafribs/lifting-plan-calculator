@@ -2,6 +2,9 @@
 
 ### Changed
 
+- **Tabs are built on first visit.** Startup constructs only the landing screen;
+  the rest load when opened, and Summary still captures the current diagram. No
+  visible change to a tab.
 - **The report reuses its working-range diagram and skips unchanged rebuilds.**
   The diagram is cached by crane state and quality, edits made during a build
   win, and the live preview captures at 2× while Page view and Save/Print keep

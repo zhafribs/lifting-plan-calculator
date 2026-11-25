@@ -67,7 +67,8 @@ jobs:
             ui/js/theme.js ui/js/theme.test.mjs \
             ui/js/graph/capture-cache.js ui/js/graph/capture-cache.test.mjs \
             ui/js/graph/snapshot.js ui/js/graph/snapshot.test.mjs \
-            ui/js/report-build.js ui/js/report-build.test.mjs "$work/"
+            ui/js/report-build.js ui/js/report-build.test.mjs \
+            ui/js/screen-registry.js ui/js/screen-registry.test.mjs "$work/"
           # theme.js imports the accent maths from here.
           cp ui/js/windows-theme.js "$work/"
           # The Windows theme test reads the stylesheet through a relative URL,
@@ -81,7 +82,8 @@ jobs:
           node --test "$work/pdf-math.test.mjs" "$work/jib.test.mjs" \
             "$work/print-palette.test.mjs" "$work/theme.test.mjs" \
             "$work/capture-cache.test.mjs" "$work/snapshot.test.mjs" \
-            "$work/report-build.test.mjs" "$work/js/windows-theme.test.mjs"
+            "$work/report-build.test.mjs" "$work/screen-registry.test.mjs" \
+            "$work/js/windows-theme.test.mjs"
 
       # The vendored PDF parser is pinned by hash: a different file is a
       # deliberate change, not an update.

@@ -639,11 +639,14 @@ export function createReportScreen(ctx) {
   );
 
   const schedulePreview = debounce(() => {
-    // Typing refreshes the live frame at once; the page view follows a moment
-    // after the typing stops, so it catches up on its own.
-    rebuild("preview").then(() => {
-      if (previewMode === "pages") schedulePdf();
-    });
+    // Only the visible mode pays for a build. With Pages open the live frame is
+    // hidden, so the page view is the one that catches up; switching back to
+    // Live rebuilds the 2x frame.
+    if (previewMode === "pages") {
+      schedulePdf();
+      return;
+    }
+    rebuild("preview");
   }, 250);
 
   async function buildNow(quality) {
@@ -744,7 +747,12 @@ export function createReportScreen(ctx) {
     }
     frameWrap.hidden = mode !== "live";
     pdfWrap.hidden = mode !== "pages";
-    if (mode === "live") fitLive();
+    if (mode === "live") {
+      fitLive();
+      // The export build may be the last one; the live frame still has that
+      // HTML, but the preview quality follows the next preview build.
+      if (lastQuality !== "preview") rebuild("preview");
+    }
     previewPane.classList.toggle("is-pages", mode === "pages");
     if (mode === "pages") refreshPdf();
   }

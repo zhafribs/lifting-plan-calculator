@@ -296,6 +296,8 @@ Replace `buildNow()` so it:
 - otherwise calls `api.buildReport(...)` as today, stores `lastKey = key`,
   `lastHtml = html`, `lastQuality = quality`, and logs `capture`/`build` timings.
 - declare `let lastQuality = ""` beside `lastHtml`.
+- set `frame.srcdoc` for both qualities: the report opens on Pages, so an export
+  build must also leave the Live frame populated.
 
 Keep the existing `srcdoc` substitution and error message.
 
@@ -320,10 +322,11 @@ Opening in a browser uses `ensureHtml("export")` so the saved file has the print
 
 - [ ] **Step 4: Keep the live frame and page view independent**
 
-- `schedulePreview` continues to write the preview HTML into `frame.srcdoc`.
+- `schedulePreview` builds the preview only while Live is the visible mode; in
+  Pages it schedules the export build instead, so a hidden frame is not rebuilt.
 - `refreshPdf` uses `ensureHtml("export")` and the PDF bytes.
 - Switching to Pages without an edit builds the export quality once; switching back
-  to Live rebuilds preview only if the state changed.
+  to Live rebuilds the preview if the last build was export quality.
 
 - [ ] **Step 5: Verify the wiring**
 

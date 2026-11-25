@@ -4,6 +4,7 @@
 import { el, svgIcon } from "./dom.js";
 import { api, errorText } from "./api.js";
 import { createStore } from "./store.js";
+import { createScreenRegistry } from "./screen-registry.js";
 import { fmt } from "./format.js";
 import {
   platformScope,
@@ -373,18 +374,33 @@ async function main() {
     updateBar.classList.add("on");
   }
 
-  const screens = {
-    overall: createOverallScreen(ctx),
-    crane: createCraneScreen(ctx),
-    outrigger: createOutriggerScreen(ctx),
-    graph: createGraphScreen(ctx),
-    uniform: createUniformScreen(ctx),
-    nonuniform: createNonuniformScreen(ctx),
-    tandem: createTandemScreen(ctx),
-    report: createReportScreen(ctx),
-    settings: createSettingsScreen(ctx),
-    about: createAboutScreen(ctx),
-  };
+  function screen(key, create) {
+    return () => {
+      const started = performance.now();
+      const instance = create();
+      window.uilog &&
+        window.uilog(`screen ${key}: ${Math.round(performance.now() - started)}ms`);
+      return instance;
+    };
+  }
+
+  const screens = createScreenRegistry({
+    overall: screen("overall", () => createOverallScreen(ctx)),
+    crane: screen("crane", () => createCraneScreen(ctx)),
+    outrigger: screen("outrigger", () => createOutriggerScreen(ctx)),
+    graph: screen("graph", () => createGraphScreen(ctx)),
+    uniform: screen("uniform", () => createUniformScreen(ctx)),
+    nonuniform: screen("nonuniform", () => createNonuniformScreen(ctx)),
+    tandem: screen("tandem", () => createTandemScreen(ctx)),
+    report: screen("report", () => {
+      // The Graph screen registers the offscreen renderer Summary captures.
+      // Build it without showing it, so the diagram exists on a first visit.
+      screens.get("graph");
+      return createReportScreen(ctx);
+    }),
+    settings: screen("settings", () => createSettingsScreen(ctx)),
+    about: screen("about", () => createAboutScreen(ctx)),
+  });
 
   let currentKey = null;
   let current = null;
@@ -491,9 +507,10 @@ async function main() {
   }
 
   function go(key) {
-    if (!screens[key]) return;
+    const next = screens.get(key);
+    if (!next) return;
     currentKey = key;
-    current = screens[key];
+    current = next;
     for (const [name, button] of Object.entries(navButtons)) {
       button.classList.toggle("active", name === key);
       if (name === key) button.setAttribute("aria-current", "page");
@@ -513,7 +530,8 @@ async function main() {
   }
 
   function showReport(sections) {
-    if (screens.report.setSections) screens.report.setSections(sections);
+    const report = screens.get("report");
+    if (report.setSections) report.setSections(sections);
     go("report");
   }
 
@@ -583,7 +601,7 @@ async function main() {
         }
       });
     }
-    go(info.start_screen && screens[info.start_screen] ? info.start_screen : "overall");
+    go(screens.has(info.start_screen) ? info.start_screen : "overall");
   } catch (error) {
     window.uilog && window.uilog(`app_info failed: ${errorText(error)}`);
     go("overall");

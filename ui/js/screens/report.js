@@ -5,6 +5,7 @@ import { api, errorText } from "../api.js";
 import { card, field, numberInput, textInput, withUnit } from "../components.js";
 import { captureWorkingDiagram } from "../graph/snapshot.js";
 import { createPdfViewer } from "../pdf-viewer.js";
+import { buildReportKey, createSingleFlight } from "../report-build.js";
 
 export function createReportScreen(ctx) {
   const { store, catalog, toast } = ctx;
@@ -21,6 +22,8 @@ export function createReportScreen(ctx) {
     tandem: false,
   };
   let lastHtml = "";
+  let lastKey = "";
+  let lastQuality = "";
   let lastSavedPath = null;
   const DEFAULT_FOOTER =
     "Prepared with Lifting Plan Calculator by Zhafri Syazwi — zhafribs@gmail.com";
@@ -375,7 +378,7 @@ export function createReportScreen(ctx) {
     closeMargins();
     // The page view carries the margin in its cache key; a forced refresh makes
     // the change visible without waiting for the next keystroke.
-    await rebuild();
+    await rebuild("export");
     if (previewMode === "pages") refreshPdf({ force: true });
   }
 
@@ -449,7 +452,7 @@ export function createReportScreen(ctx) {
       class: "btn primary wide",
       onClick: async () => {
         try {
-          const html = await ensureHtml();
+          const html = await ensureHtml("export");
           const path = await api.saveReport(html, "lifting-plan.html");
           if (path) {
             lastSavedPath = path;
@@ -470,7 +473,7 @@ export function createReportScreen(ctx) {
       class: "btn wide",
       onClick: async () => {
         try {
-          await ensureHtml();
+          await ensureHtml("export");
           frame.contentWindow.focus();
           frame.contentWindow.print();
         } catch (error) {
@@ -488,7 +491,7 @@ export function createReportScreen(ctx) {
       class: "btn wide",
       onClick: async () => {
         try {
-          const html = await ensureHtml();
+          const html = await ensureHtml("export");
           // The footer is drawn onto the PDF's pages after printing, so the
           // export needs the same reference and credit the preview showed.
           const path = await api.savePdf(
@@ -520,7 +523,7 @@ export function createReportScreen(ctx) {
         try {
           let path = lastSavedPath;
           if (!path) {
-            const html = await ensureHtml();
+            const html = await ensureHtml("export");
             path = await api.saveReport(html, "lifting-plan.html");
             if (path) lastSavedPath = path;
           }
@@ -638,12 +641,12 @@ export function createReportScreen(ctx) {
   const schedulePreview = debounce(() => {
     // Typing refreshes the live frame at once; the page view follows a moment
     // after the typing stops, so it catches up on its own.
-    rebuild().then(() => {
+    rebuild("preview").then(() => {
       if (previewMode === "pages") schedulePdf();
     });
   }, 250);
 
-  async function buildNow() {
+  async function buildNow(quality) {
     const include = Object.entries(sections)
       .filter(([key, on]) => on && key !== "plan" && key !== "lines")
       .map(([key]) => key);
@@ -652,8 +655,32 @@ export function createReportScreen(ctx) {
     if (!sections.plan) include.push("no-plan");
     if (!sections.lines) include.push("no-lines");
     try {
-      const diagram = diagramInput.checked ? captureWorkingDiagram() : null;
+      const captureStarted = performance.now();
+      const diagram = diagramInput.checked
+        ? captureWorkingDiagram({ scale: quality === "export" ? 3 : 2 })
+        : null;
       if (diagramInput.checked && !diagram) diagramInput.checked = false;
+      if (diagramInput.checked) timed("diagram", captureStarted, quality);
+
+      const inputs = {
+        state: store.state,
+        include,
+        issuedAt,
+        signoff,
+        footerText,
+        margins,
+        pageBreaks: [...pageBreaks],
+        diagramScale,
+        diagram,
+        quality,
+      };
+      const key = buildReportKey(inputs);
+      if (key === lastKey) {
+        window.uilog && window.uilog(`report build: skipped (${quality}, unchanged)`);
+        return lastHtml;
+      }
+
+      const buildStarted = performance.now();
       const html = await api.buildReport(
         store.state,
         include,
@@ -666,32 +693,43 @@ export function createReportScreen(ctx) {
         diagramScale,
       );
       lastHtml = html;
+      lastKey = key;
+      lastQuality = quality;
+      timed("build", buildStarted, quality);
       // srcdoc pages do not resolve the wrapper's relative asset paths, so the
-      // stylesheet and scripts are pinned against the app's own base URL.
+      // stylesheet and scripts are pinned against the app's own base URL. The
+      // frame is kept current even for an export build: the screen opens on
+      // Pages, and switching to Live must not show an empty frame.
       const katexBase = new URL("vendor/katex/", document.baseURI).href;
       frame.srcdoc = html.split('"vendor/katex/').join(`"${katexBase}`);
+      return html;
     } catch (error) {
-      frame.srcdoc = `<p style="font-family: sans-serif; color: #9b1c1c; padding: 16px">${escapeHtml(errorText(error))}</p>`;
+      if (quality === "preview") {
+        frame.srcdoc = `<p style="font-family: sans-serif; color: #9b1c1c; padding: 16px">${escapeHtml(errorText(error))}</p>`;
+        return lastHtml;
+      }
+      throw error;
     }
   }
 
-  let building = null;
+  // One build at a time, and a later edit replaces the pending one: a reader
+  // who leaves a field while the report is rebuilding gets the latest text, not
+  // the build that started first.
+  const build = createSingleFlight(buildNow);
 
-  // One build at a time: a reader who leaves a field while the report is still
-  // being rebuilt waits for that rebuild rather than redrawing the old one.
-  function rebuild() {
-    if (!building) {
-      building = buildNow().finally(() => {
-        building = null;
-      });
-    }
-    return building;
+  function rebuild(quality = "preview") {
+    return build(quality);
   }
 
-  async function ensureHtml() {
-    if (building) await building;
-    if (!lastHtml) await rebuild();
+  async function ensureHtml(quality = "preview") {
+    if (!lastHtml || lastQuality !== quality) await rebuild(quality);
     return lastHtml;
+  }
+
+  function timed(label, started, detail = "") {
+    const ms = Math.round(performance.now() - started);
+    window.uilog && window.uilog(`report ${label}: ${ms}ms${detail ? ` ${detail}` : ""}`);
+    return ms;
   }
 
   function footerParams() {
@@ -725,7 +763,7 @@ export function createReportScreen(ctx) {
     const zoomBefore = hadPages ? viewer.zoom : 0;
     const scrollBefore = hadPages ? viewer.element.scrollTop : 0;
     try {
-      const html = await ensureHtml();
+      const html = await ensureHtml("export");
       if (!force && html === lastPdfHtml) return;
       const bytes = await api.previewPdf(html, footerParams(), margins);
       // Tauri returns the raw response as an ArrayBuffer; accept a typed array

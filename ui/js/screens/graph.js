@@ -10,6 +10,7 @@
 import { el } from "../dom.js";
 import { card, field, kvRows, numberInput } from "../components.js";
 import * as geo from "../graph/geometry.js";
+import { captureKey, createCaptureCache } from "../graph/capture-cache.js";
 import { registerGraphCapture } from "../graph/snapshot.js";
 import { printify } from "../graph/print-palette.js";
 import { jibAvailability } from "../jib.js";
@@ -62,6 +63,7 @@ export function createGraphScreen(ctx) {
 
   // The screen's own document: a copy of the geometry defaults.
   const state = { ...geo.DEFAULT_STATE };
+  const captureCache = createCaptureCache(2);
   const view = { scale: 12.0, cx: 0.0, cy: 15.0 };
   const box = { w: 0, h: 0 };
   let dragging = null; // "tip" | "crane" | "pan"
@@ -1124,8 +1126,13 @@ export function createGraphScreen(ctx) {
   // Render the diagram offscreen at report resolution. This must work even
   // when the Graph tab has never been shown, and it re-syncs from the crane
   // tab first so a jib change is reflected without toggling anything.
-  function renderDiagram(width, height) {
+  function renderDiagram(width, height, scale = 3) {
     syncFromWorkbook(false);
+    const key = captureKey(state, width, height, scale);
+    const cached = captureCache.get(key);
+    // A report edit that leaves the crane alone must not pay for a new canvas,
+    // a pixel pass and a PNG encode.
+    if (cached) return cached;
     const savedBox = { ...box };
     const savedView = { ...view };
     const savedDims = showDims;
@@ -1137,9 +1144,9 @@ export function createGraphScreen(ctx) {
       box.h = height;
       fitViewFor(width, height);
       showDims = true;
-      // Three pixels per CSS pixel: the diagram prints about 159 mm wide,
-      // which is 1878 px at 300 dpi, so 2700 px has headroom and stays sharp.
-      const scale = 3;
+      // The print capture is three pixels per CSS pixel: the diagram prints
+      // about 159 mm wide, which is 1878 px at 300 dpi, so 2700 px stays sharp.
+      // The live preview asks for 2x; it is never printed.
       // The screen sizes are small at page width; 1.25 lifts them to the
       // report's own label size (about 6 pt) without changing the on-screen view.
       labelScale = 1.25;
@@ -1156,7 +1163,9 @@ export function createGraphScreen(ctx) {
       const shot = g.getImageData(0, 0, off.width, off.height);
       printify(shot.data);
       g.putImageData(shot, 0, 0);
-      return off.toDataURL("image/png");
+      const url = off.toDataURL("image/png");
+      captureCache.set(key, url);
+      return url;
     } finally {
       box.w = savedBox.w;
       box.h = savedBox.h;
@@ -1171,7 +1180,9 @@ export function createGraphScreen(ctx) {
 
   syncEnabled();
   updateReadout();
-  registerGraphCapture(() => renderDiagram(900, 700));
+  registerGraphCapture(({ width = 900, height = 700, scale = 3 } = {}) =>
+    renderDiagram(width, height, scale),
+  );
 
   // The screen is re-rendered each time it is opened (and never rebuilt), so
   // first show fits the view; later shows just repaint what the user left.

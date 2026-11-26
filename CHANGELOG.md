@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+Nothing yet.
+
+## [2.17.16] - 2026-11-26
+
 ### Changed
 
 - **Tabs are built on first visit.** Startup constructs only the landing screen;

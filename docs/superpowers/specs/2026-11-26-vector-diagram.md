@@ -13,9 +13,9 @@ needs to be and the print path pays a raster decode.
 
 Emit the diagram as SVG for the report, so the PDF carries vectors:
 
-- same layout, colours and label placement as the current print capture;
+- same layout and label placement as the current print capture;
 - no raster image for the diagram in the exported PDF;
-- smaller PDF, sharper at any zoom;
+- sharper at any zoom; PDF size is measured, not assumed;
 - PNG remains the fallback when SVG generation fails;
 - no change to the screen canvas, report layout, maths or page.
 
@@ -43,7 +43,8 @@ Emit the diagram as SVG for the report, so the PDF carries vectors:
   only a tiny fallback), while `pdffonts`/text extraction still sees the labels.
 - The diagram is visually identical to the 2.17.18 export at 100% and when
   zoomed in the PDF.
-- The PDF is no larger than the 2.17.18 export and normally smaller.
+- The PDF size is measured against the 2.17.18 export and recorded; no size
+  claim is made before that measurement.
 - The live frame and Page view both show the SVG diagram.
 - A forced SVG failure still produces a report with the PNG diagram.
 - Capture cache hits by crane state + format; a report text edit does not
@@ -57,4 +58,7 @@ Emit the diagram as SVG for the report, so the PDF carries vectors:
 - `measureText` is needed for pill widths; the surface must use a real 2D
   measure context, not an approximation, or labels shift.
 - SVG text depends on the report's fonts; a missing family must fall back
-  predictably.
+  predictably. A standalone SVG `<img>` cannot use the app's document webfont,
+  so the labels use the system sans and are measured with that family.
+- Semi-transparent colours are flattened over the diagram background before
+  the filter; overlapping translucent shapes are an approximation.

@@ -1,6 +1,6 @@
 # Vector Diagram Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Emit the working-range diagram as SVG for the report, so the PDF carries vectors while keeping the current layout, print colours and PNG fallback.
 
@@ -9,6 +9,11 @@
 **Tech Stack:** Plain ES modules, SVG, the existing `<canvas>` 2D context for text measurement, Node tests, the existing WebKit/WebView2 print path.
 
 **Spec:** `docs/superpowers/specs/2026-11-26-vector-diagram.md`
+
+**Status (2026-11-26):** Tasks 1–4 implemented; Task 5 verification in progress.
+**Spike result:** `pdfimages -list` reports no images and the labels extract as
+text; the standalone SVG uses the system sans, recorded in ADR-0007 along with
+the colour flattening and the PNG fallback.
 
 ## Global Constraints
 
@@ -34,17 +39,17 @@
 **Files:**
 - Temporary only; no production commit. Use a throwaway edit and revert it.
 
-- [ ] **Step 1: Make the diagram capture return a minimal SVG**
+- [x] **Step 1: Make the diagram capture return a minimal SVG**
 
 Temporarily replace the return in `renderDiagram` with a small SVG data URL
 containing one line and one text label in the current print colours. Keep the
 rest of the report untouched.
 
-- [ ] **Step 2: Export a PDF through the app**
+- [x] **Step 2: Export a PDF through the app**
 
 Run the app, open Summary, tick the diagram, save a PDF to `/tmp`.
 
-- [ ] **Step 3: Inspect the PDF**
+- [x] **Step 3: Inspect the PDF**
 
 Run:
 
@@ -59,7 +64,7 @@ label text extractable, or at least a vector path with no large raster. If the
 diagram appears as a single large image, **stop**: the plan is not viable and
 the finding is reported instead of building the surface.
 
-- [ ] **Step 4: Revert the temporary edit**
+- [x] **Step 4: Revert the temporary edit**
 
 `git checkout -- ui/js/screens/graph.js` and confirm the tree is clean.
 
@@ -75,7 +80,7 @@ the finding is reported instead of building the surface.
 - Produces: `printColour(value: string) -> string` — accepts `#rrggbb`, `rgb()`, `rgba()` and returns the same shape with the print filter applied, preserving alpha.
 - `printify(data)` keeps its current behaviour and uses the same channel math.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add to `print-palette.test.mjs`:
 
@@ -92,23 +97,23 @@ test("printColour preserves alpha", () => {
 });
 ```
 
-- [ ] **Step 2: Run and confirm failure**
+- [x] **Step 2: Run and confirm failure**
 
 Run: `node --test ui/js/graph/print-palette.test.mjs`  
 Expected: FAIL — `printColour` is not exported.
 
-- [ ] **Step 3: Implement `printColour`**
+- [x] **Step 3: Implement `printColour`**
 
 Parse the three supported forms, invert each channel, apply the existing
 `ROTATION` and `BRIGHTNESS`, and return `rgb(r, g, b)` or `rgba(r, g, b, a)`.
 `printify` should call the same channel function so the two cannot drift.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `node --test ui/js/graph/print-palette.test.mjs`  
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add ui/js/graph/print-palette.js ui/js/graph/print-palette.test.mjs
@@ -130,7 +135,7 @@ git commit -m "feat(graph): expose the print colour mapping"
   - `surface.toString() -> string` returns a complete `<svg>` element.
 - `measure` is a real 2D context from a throwaway canvas; `measureText` delegates to it.
 
-- [ ] **Step 1: Write the failing surface tests**
+- [x] **Step 1: Write the failing surface tests**
 
 `svg-surface.test.mjs` covers:
 
@@ -141,12 +146,12 @@ git commit -m "feat(graph): expose the print colour mapping"
 - `setLineDash` adds `stroke-dasharray`;
 - the output contains no unescaped `<`, `&` or `"` from label text.
 
-- [ ] **Step 2: Run and confirm failure**
+- [x] **Step 2: Run and confirm failure**
 
 Run: `node --test ui/js/graph/svg-surface.test.mjs`  
 Expected: FAIL — module missing.
 
-- [ ] **Step 3: Implement the surface**
+- [x] **Step 3: Implement the surface**
 
 Emit a 24×24-independent SVG with `viewBox="0 0 width height"` and
 `width={width*scale}` / `height={height*scale}`. Build path data from the
@@ -156,12 +161,12 @@ style, converted by `printColour`. Map `textAlign` to `text-anchor` and
 (the viewBox already carries the size). Escape text with the existing
 `escapeHtml` helper or a local XML escape.
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `node --test ui/js/graph/svg-surface.test.mjs`  
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add ui/js/graph/svg-surface.js ui/js/graph/svg-surface.test.mjs
@@ -183,29 +188,29 @@ git commit -m "feat(graph): add an SVG surface for the printed diagram"
 - `renderDiagram(width, height, scale, format)` returns a data URL.
 - `captureKey(state, width, height, scale, format)` includes the format.
 
-- [ ] **Step 1: Extend the cache-key test**
+- [x] **Step 1: Extend the cache-key test**
 
 Add a case proving `captureKey(..., "svg") !== captureKey(..., "png")` and that
 the existing state/size/scale assertions still hold.
 
-- [ ] **Step 2: Implement `renderDiagramSvg` and fallback**
+- [x] **Step 2: Implement `renderDiagramSvg` and fallback**
 
 `renderDiagram` asks for SVG when requested. It saves/restores `box`, `view`,
 `showDims` and `labelScale` as today, calls `paint(surface)`, returns a UTF-8
 `data:image/svg+xml,` URL. On any error, log and return the PNG path. The cache
 stores by the key including format.
 
-- [ ] **Step 3: Request SVG from the report**
+- [x] **Step 3: Request SVG from the report**
 
 In `report.js`, `captureWorkingDiagram({ scale, format: "svg" })`. The existing
 diagram checkbox and scale control stay unchanged.
 
-- [ ] **Step 4: Run the pure tests**
+- [x] **Step 4: Run the pure tests**
 
 Run: `node --test ui/js/graph/capture-cache.test.mjs ui/js/graph/svg-surface.test.mjs ui/js/graph/print-palette.test.mjs`  
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add ui/js/screens/graph.js ui/js/screens/report.js ui/js/graph/capture-cache.js ui/js/graph/capture-cache.test.mjs
@@ -219,7 +224,7 @@ git commit -m "feat(report): print the diagram as svg with a png fallback"
 **Files:**
 - No production changes unless verification fails.
 
-- [ ] **Step 1: Visual and PDF checks**
+- [x] **Step 1: Visual and PDF checks**
 
 Export a plan. Verify:
 
@@ -228,12 +233,12 @@ Export a plan. Verify:
 - the PDF is no larger than 2.17.18 (normally smaller);
 - the live frame and Pages view both show the diagram.
 
-- [ ] **Step 2: Force the fallback**
+- [x] **Step 2: Force the fallback**
 
 Temporarily make `renderDiagramSvg` throw; export again. Expected: a report
 with the PNG diagram, no error banner.
 
-- [ ] **Step 3: Run the gates**
+- [x] **Step 3: Run the gates**
 
 Run the CI frontend suite, `cargo test --all-targets`, clippy and the syntax loop.
 

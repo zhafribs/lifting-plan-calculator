@@ -454,7 +454,7 @@ export function createReportScreen(ctx) {
   const saveButton = el(
     "button",
     {
-      class: "btn primary wide",
+      class: "btn ghost small",
       onClick: async () => {
         try {
           const html = await ensureHtml("export");
@@ -493,7 +493,7 @@ export function createReportScreen(ctx) {
   const pdfButton = el(
     "button",
     {
-      class: "btn wide",
+      class: "btn primary wide",
       onClick: async () => {
         try {
           const html = await ensureHtml("export");
@@ -523,7 +523,7 @@ export function createReportScreen(ctx) {
   const openButton = el(
     "button",
     {
-      class: "btn wide",
+      class: "btn ghost small",
       onClick: async () => {
         try {
           let path = lastSavedPath;
@@ -629,14 +629,13 @@ export function createReportScreen(ctx) {
             { class: "stack" },
             el("p", {
               class: "faint small",
-              text: "Working-range diagram: use Use in report in the Graph tab.",
+              text: "Working-range diagram: choose Use in report in the Graph tab.",
             }),
-            saveButton,
             pdfButton,
             printButton,
-            openButton,
+            el("div", { class: "row wrap" }, saveButton, openButton),
           ),
-          foot: el("span", { class: "faint", text: "Save as PDF writes A4 with 1-inch margins, with the footer on every page. Saved HTML keeps a copy of the KaTeX assets beside it; when printing it, keep Margins on Default (1 inch)." }),
+          foot: el("span", { class: "faint", text: "Save as PDF writes A4 with 1-inch margins and the footer on every page. Saved HTML needs its KaTeX folder beside it; print it with Default margins." }),
         }),
       ),
       previewPane,

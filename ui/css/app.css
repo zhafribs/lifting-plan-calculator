@@ -221,17 +221,13 @@ input, select, button, textarea { font: inherit; color: inherit; }
 .nav-item:hover { background: var(--surface-2); color: var(--text); }
 
 .nav-item.active {
-  background: linear-gradient(90deg, var(--accent-soft), transparent 85%);
+  background: var(--accent-soft);
   border-color: var(--border);
   color: var(--text);
   font-weight: 600;
 }
 
 .nav-item.active svg { color: var(--accent); opacity: 1; }
-.nav-item.active::before {
-  content: "";
-  position: absolute;
-}
 
 .nav-item .key {
   margin-left: auto;
@@ -358,7 +354,6 @@ input, select, button, textarea { font: inherit; color: inherit; }
   gap: 10px;
   padding: 10px 14px;
   border-bottom: 1px solid var(--border-soft);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent);
 }
 
 .card-head h2 {
@@ -1051,8 +1046,7 @@ table.grid td.num { text-align: right; }
 
 .toast {
   background: var(--surface-3);
-  border: 1px solid var(--border-strong);
-  border-left: 3px solid var(--accent);
+  border: 1px solid var(--accent-line);
   border-radius: 9px;
   padding: 11px 14px;
   max-width: 420px;
@@ -1061,8 +1055,8 @@ table.grid td.num { text-align: right; }
   animation: slide-in 0.18s ease;
 }
 
-.toast.error { border-left-color: var(--over-text); }
-.toast.ok { border-left-color: var(--ok-text); }
+.toast.error { border-color: var(--over); }
+.toast.ok { border-color: var(--ok); }
 
 @keyframes slide-in {
   from { transform: translateY(8px); opacity: 0; }

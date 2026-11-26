@@ -2,6 +2,16 @@
 
 Nothing yet.
 
+## [2.17.22] - 2026-11-26
+
+### Fixed
+
+- **The working-range diagram follows the colour scheme.** A light scheme now
+  draws the chart in the colours the report prints instead of the dark canvas
+  on a light window; the warning red is darkened so the below-ground label
+  stays readable. A dark scheme keeps the dark chart, and the printed diagram
+  is unchanged.
+
 ## [2.17.21] - 2026-11-26
 
 ### Added

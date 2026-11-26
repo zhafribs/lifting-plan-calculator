@@ -11,6 +11,8 @@
 **Spec:** `docs/superpowers/specs/2026-11-26-vector-diagram.md`
 
 **Status (2026-11-26):** Tasks 1–4 implemented; Task 5 verification in progress.
+The PDF size and the forced PNG fallback are not yet recorded, so Steps 5.1–5.2
+stay open.
 **Spike result:** `pdfimages -list` reports no images and the labels extract as
 text; the standalone SVG uses the system sans, recorded in ADR-0007 along with
 the colour flattening and the PNG fallback.
@@ -28,7 +30,8 @@ the colour flattening and the PNG fallback.
 
 - The spike must prove the diagram is vector in the exported PDF, not merely an SVG that WebKit rasterises.
 - `measureText` must use a real 2D context so pill and label widths do not shift.
-- Colour mapping must match `printify` within the existing ±2-channel tolerance.
+- Opaque and high-alpha colours match `printify` within ±2 over the diagram
+  background; low-alpha overlaps are the documented approximation.
 - A failed SVG build must still produce a report with the PNG diagram.
 - A text-only report edit must not rebuild either format.
 
@@ -77,7 +80,7 @@ the finding is reported instead of building the surface.
 - Modify: `ui/js/graph/print-palette.test.mjs`
 
 **Interfaces:**
-- Produces: `printColour(value: string) -> string` — accepts `#rrggbb`, `rgb()`, `rgba()` and returns the same shape with the print filter applied, preserving alpha.
+- Produces: `printColour(value: string, backdrop?: string) -> string` — accepts `#rrggbb`, `rgb()`, `rgba()`; flattens alpha at or above 0.5 over the backdrop and returns `rgb()`, keeps lower alpha as `rgba()`.
 - `printify(data)` keeps its current behaviour and uses the same channel math.
 
 - [x] **Step 1: Write the failing tests**
@@ -92,8 +95,9 @@ test("printColour matches the pixel filter for hex and rgb", () => {
   assert.equal(printColour("rgb(255, 183, 3)"), "rgb(150, 72, 0)");
 });
 
-test("printColour preserves alpha", () => {
-  assert.match(printColour("rgba(92, 179, 255, 0.5)"), /^rgba\(.*0\.5\)$/);
+test("printColour flattens high alpha and keeps low alpha", () => {
+  assert.match(printColour("rgba(92, 179, 255, 0.5)"), /^rgb\(/);
+  assert.match(printColour("rgba(92, 179, 255, 0.1)"), /^rgba\(/);
 });
 ```
 
@@ -224,7 +228,7 @@ git commit -m "feat(report): print the diagram as svg with a png fallback"
 **Files:**
 - No production changes unless verification fails.
 
-- [x] **Step 1: Visual and PDF checks**
+- [ ] **Step 1: Visual and PDF checks**
 
 Export a plan. Verify:
 
@@ -233,7 +237,7 @@ Export a plan. Verify:
 - the PDF is no larger than 2.17.18 (normally smaller);
 - the live frame and Pages view both show the diagram.
 
-- [x] **Step 2: Force the fallback**
+- [ ] **Step 2: Force the fallback**
 
 Temporarily make `renderDiagramSvg` throw; export again. Expected: a report
 with the PNG diagram, no error banner.

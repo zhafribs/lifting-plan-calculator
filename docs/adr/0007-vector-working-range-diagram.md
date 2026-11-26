@@ -24,9 +24,10 @@ Two constraints surfaced in the spike:
 
 - `paint()` writes into a small Canvas2D-compatible SVG surface. The screen
   canvas is unchanged.
-- Print colours are flattened over the diagram background (`#141922`) and then
-  filtered, so semi-transparent accents keep their old printed hue. Overlapping
-  translucent shapes are an approximation.
+- High-alpha print colours are flattened over the diagram background
+  (`#141922`) and then filtered, so the radius accent keeps its old printed hue.
+  Low-alpha fills stay translucent so the grid is not erased; their hue is a few
+  levels away from the old composited pixel.
 - Diagram labels use `sans-serif` both in the SVG and in the measure context, so
   pill widths match what prints. The screen and the rest of the app keep Inter;
   the printed diagram face can differ from the previous PNG.

@@ -22,8 +22,9 @@ function channel(row, red, green, blue) {
   return Math.round(clamp01(clamp01(mixed) * BRIGHTNESS) * 255);
 }
 
-// The same mapping for a CSS colour, so an SVG uses exactly what the bitmap
-// filter produced. Alpha is preserved.
+// The same mapping for a CSS colour. High alpha is flattened over the diagram
+// backdrop before filtering (the old composited pixel); low alpha keeps its
+// alpha so a 10% envelope fill still lets the grid show through.
 export function printColour(value, backdrop = "#141922") {
   if (typeof value !== "string") return value;
   const text = value.trim();
@@ -47,10 +48,11 @@ export function printColour(value, backdrop = "#141922") {
     blue = Number(rgb[3]);
     alpha = rgb[4] === undefined ? null : Number(rgb[4]);
   }
-  if (alpha !== null && alpha < 1) {
-    // The old path composites over the dark diagram, then applies the filter to
-    // the finished pixel. Do the same before the transform so an SVG line does
-    // not sit on the printed white with a different hue.
+  if (alpha !== null && alpha >= 0.5) {
+    // High-alpha accents are flattened over the dark diagram before the filter,
+    // matching the old composited pixel. Low-alpha fills keep their alpha so a
+    // 10% envelope still lets the grid show through; at that alpha the hue
+    // difference is a few levels, not the 80 of the old flatten-everything path.
     const bg = /^#([0-9a-f]{6})$/i.exec(backdrop);
     const base = bg
       ? [
@@ -66,7 +68,9 @@ export function printColour(value, backdrop = "#141922") {
   }
   const source = [1 - red / 255, 1 - green / 255, 1 - blue / 255];
   const out = ROTATION.map((row) => channel(row, ...source));
-  return `rgb(${out[0]}, ${out[1]}, ${out[2]})`;
+  return alpha === null
+    ? `rgb(${out[0]}, ${out[1]}, ${out[2]})`
+    : `rgba(${out[0]}, ${out[1]}, ${out[2]}, ${alpha})`;
 }
 
 // Rewrites RGBA bytes in place; alpha is left alone.

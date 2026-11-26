@@ -79,6 +79,13 @@ test("rgba fill is flattened before the print filter", () => {
   assert.doesNotMatch(svg, /opacity/);
 });
 
+test("a low-alpha fill keeps fill-opacity", () => {
+  const s = surface();
+  s.fillStyle = "rgba(92, 179, 255, 0.10)";
+  s.fillRect(0, 0, 10, 10);
+  assert.match(s.toString(), /fill-opacity="0.1"/);
+});
+
 test("a font override is used for text and measurement", () => {
   const measure = { font: "", measureText: (text) => ({ width: text.length * 8 }) };
   const s = createSvgSurface({ width: 100, height: 80, measure, fontFamily: "sans-serif" });

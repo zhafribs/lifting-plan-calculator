@@ -21,7 +21,11 @@ function escapeXml(value) {
 }
 
 function colourAttrs(value, kind, backdrop) {
-  return `${kind}="${escapeXml(printColour(value, backdrop))}"`;
+  const colour = printColour(value, backdrop);
+  const rgba = /^rgba\(\s*([^)]+)\)$/i.exec(colour);
+  if (!rgba) return `${kind}="${escapeXml(colour)}"`;
+  const parts = rgba[1].split(",").map((part) => part.trim());
+  return `${kind}="rgb(${parts[0]}, ${parts[1]}, ${parts[2]})" ${kind}-opacity="${escapeXml(parts[3])}"`;
 }
 
 export function createSvgSurface({
@@ -115,7 +119,6 @@ export function createSvgSurface({
 
   function setFont(value) {
     font = String(value);
-    if (measure) measure.font = effectiveFont();
     const match = /^(\d+)\s+([\d.]+)px\s+(.+)$/.exec(font);
     if (match) {
       fontWeight = match[1];
@@ -124,6 +127,7 @@ export function createSvgSurface({
     } else if (fontOverride) {
       fontFamily = fontOverride;
     }
+    if (measure) measure.font = effectiveFont();
   }
 
   function effectiveFont() {

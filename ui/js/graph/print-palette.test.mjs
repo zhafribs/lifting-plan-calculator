@@ -59,6 +59,10 @@ test("the radius dimension colour keeps its old printed hue", () => {
   });
 });
 
+test("a low-alpha fill keeps its alpha so the grid stays visible", () => {
+  assert.match(printColour("rgba(92, 179, 255, 0.10)"), /^rgba\(/);
+});
+
 test("printColour composites alpha over the diagram before filtering", () => {
   const alpha = 0.5;
   const foreground = [92, 179, 255];

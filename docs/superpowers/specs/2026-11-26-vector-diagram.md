@@ -60,5 +60,5 @@ Emit the diagram as SVG for the report, so the PDF carries vectors:
 - SVG text depends on the report's fonts; a missing family must fall back
   predictably. A standalone SVG `<img>` cannot use the app's document webfont,
   so the labels use the system sans and are measured with that family.
-- Semi-transparent colours are flattened over the diagram background before
-  the filter; overlapping translucent shapes are an approximation.
+- High-alpha colours are flattened over the diagram background before the
+  filter; low-alpha fills stay translucent so the grid remains visible.

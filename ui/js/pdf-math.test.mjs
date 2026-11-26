@@ -13,6 +13,7 @@ import {
   fitWidth,
   keptPages,
   pageLabel,
+  pageFirstBox,
   stepZoom,
 } from "./pdf-math.js";
 
@@ -72,4 +73,21 @@ test("the page label is one-based and clamped", () => {
   assert.equal(pageLabel(0, 7), "Page 1 of 7");
   assert.equal(pageLabel(99, 7), "Page 7 of 7");
   assert.equal(pageLabel(1, 0), "No pages");
+});
+
+test("pageFirstBox matches the viewer's fit and the print margins", () => {
+  const box = pageFirstBox({
+    viewerWidth: 626,
+    margins: { top: 25.4, right: 25.4, bottom: 25.4, left: 25.4 },
+  });
+  assert.ok(Math.abs(box.zoom - (626 - 48) / 595.28) < 1e-9);
+  assert.ok(Math.abs(box.width - 578) < 1);
+  assert.ok(Math.abs(box.height - 817.5) < 1);
+  assert.ok(Math.abs(box.padding.left - 69.91) < 0.05);
+  // The body is laid out in CSS pixels, the page in points.
+  assert.ok(Math.abs(box.textZoom - box.zoom * 0.75) < 1e-9);
+});
+
+test("pageFirstBox has no box without a pane", () => {
+  assert.equal(pageFirstBox({ viewerWidth: 0, margins: { top: 0, right: 0, bottom: 0, left: 0 } }), null);
 });

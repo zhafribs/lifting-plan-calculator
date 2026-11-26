@@ -5,6 +5,7 @@ import { api, errorText } from "../api.js";
 import { card, field, numberInput, textInput, withUnit } from "../components.js";
 import { captureWorkingDiagram } from "../graph/snapshot.js";
 import { createPdfViewer } from "../pdf-viewer.js";
+import { pageFirstBox } from "../pdf-math.js";
 import { buildReportKey, createSingleFlight, ensureQuality } from "../report-build.js";
 
 export function createReportScreen(ctx) {
@@ -166,6 +167,8 @@ export function createReportScreen(ctx) {
   // match nothing, so the report's own KaTeX pass would not run.
   const frame = el("iframe", { "aria-label": "Report preview" });
   const frameWrap = el("div", { class: "report-frame" }, frame);
+  // The page-first box while the PDF prints; null when no preview is showing.
+  let pageFirst = null;
 
   // The frame reports its KaTeX pass by message: an opaque-origin document
   // cannot be read from here.
@@ -193,7 +196,9 @@ export function createReportScreen(ctx) {
   const pdfStatus = el("span", { class: "faint pdf-status" });
   const viewer = createPdfViewer({
     onChange: ({ pages, label, zoom, busy }) => {
-      pdfPageLabel.textContent = label;
+      // While the first page stands in, the viewer has no document yet; its
+      // "No pages" would contradict the page on screen.
+      pdfPageLabel.textContent = pageFirst && pages === 0 ? "Page 1" : label;
       pdfStatus.textContent = busy || pdfBusy ? "Rendering…" : "";
       zoomLabel.textContent = `${Math.round(zoom * 100)}%`;
       for (const control of zoomControls) control.disabled = pages === 0;
@@ -430,7 +435,11 @@ export function createReportScreen(ctx) {
     const doc = frame.contentDocument;
     if (!doc || !doc.body) return;
     const textWidthPx = ((210 - margins.left - margins.right) * 96) / 25.4;
-    const scale = Math.min(2, Math.max(0.35, frameWrap.clientWidth / textWidthPx));
+    // The page-first window is sized in the PDF's points; the body is laid out
+    // in CSS pixels, so it takes the ratio the box already carries.
+    const scale = pageFirst
+      ? pageFirst.textZoom
+      : Math.min(2, Math.max(0.35, frameWrap.clientWidth / textWidthPx));
     doc.body.style.width = `${textWidthPx}px`;
     doc.body.style.margin = "0 auto";
     doc.body.style.zoom = String(scale);
@@ -459,7 +468,10 @@ export function createReportScreen(ctx) {
   window.addEventListener(
     "resize",
     debounce(() => {
-      if (previewMode === "pages") viewer.refit();
+      // The preview is placed from the pane's size; a resize during the print
+      // window has to move it, not just re-fit a document that is not there.
+      if (pageFirst) showPageFirst();
+      else if (previewMode === "pages") viewer.refit();
     }, 150),
   );
 
@@ -760,12 +772,65 @@ export function createReportScreen(ctx) {
     return { reference: signoff.reference, center: footerText };
   }
 
+  // The printed page 1 takes about a second to produce on a long plan. While it
+  // prints, the live frame — which already holds the export HTML — is shown
+  // through a page-shaped window, so the wait has the real report in it. The
+  // PDF replaces it when it arrives and stays the authoritative page.
+  function showPageFirst() {
+    if (previewMode !== "pages" || viewer.pages > 0) return;
+    const visible = viewer.element.getBoundingClientRect();
+    // The pane's own padding is the page's gutter; read it rather than copy it.
+    const gutter = parseFloat(getComputedStyle(viewer.element).paddingTop) || 18;
+    // The viewer fits to its content box, which excludes the scrollbar; the
+    // bounding rect does not, so the two must not be mixed. The page starts one
+    // gutter in and is clipped at the scrollport's bottom edge.
+    const width = viewer.element.clientWidth;
+    const available = viewer.element.clientHeight - gutter;
+    const box = pageFirstBox({ viewerWidth: width, margins });
+    if (!box || !(available > 0)) return;
+    pageFirst = box;
+    const host = previewPane.getBoundingClientRect();
+    const inner = width - gutter * 2;
+    // Only the part of the page the pane can show: the page is taller than the
+    // pane at fit width, and the PDF is clipped at the same edge.
+    const clipped = box.height > available;
+    frameWrap.classList.add("page-first");
+    frameWrap.classList.toggle("page-first-clipped", clipped);
+    frameWrap.hidden = false;
+    frameWrap.style.top = `${visible.top - host.top + gutter}px`;
+    frameWrap.style.left = `${
+      visible.left - host.left + gutter + Math.max(0, (inner - box.width) / 2)
+    }px`;
+    frameWrap.style.width = `${box.width}px`;
+    frameWrap.style.height = `${clipped ? available : box.height}px`;
+    frameWrap.style.padding = `${box.padding.top}px ${box.padding.right}px ${
+      clipped ? 0 : box.padding.bottom
+    }px ${box.padding.left}px`;
+    fitLive();
+    pdfSkeleton.hidden = true;
+    pdfPageLabel.textContent = "Page 1";
+  }
+
+  function hidePageFirst() {
+    if (!frameWrap.classList.contains("page-first")) return;
+    frameWrap.classList.remove("page-first", "page-first-clipped");
+    pageFirst = null;
+    for (const name of ["top", "left", "width", "height", "padding"]) {
+      frameWrap.style[name] = "";
+    }
+    frameWrap.hidden = previewMode !== "live";
+    pdfSkeleton.hidden = viewer.pages > 0;
+    if (viewer.pages === 0) pdfPageLabel.textContent = "No pages";
+    if (!frameWrap.hidden) fitLive();
+  }
+
   function setPreviewMode(mode) {
     if (mode === previewMode) return;
     previewMode = mode;
     for (const [key, button] of Object.entries(modeButtons)) {
       button.classList.toggle("on", key === mode);
     }
+    hidePageFirst();
     frameWrap.hidden = mode !== "live";
     pdfWrap.hidden = mode !== "pages";
     if (mode === "live") {
@@ -797,6 +862,7 @@ export function createReportScreen(ctx) {
     try {
       const html = await ensureHtml("export");
       if (!force && html === lastPdfHtml) return;
+      showPageFirst();
       const previewStarted = performance.now();
       const bytes = await api.previewPdf(html, footerParams(), margins);
       // Tauri returns the raw response as an ArrayBuffer; accept a typed array
@@ -821,6 +887,7 @@ export function createReportScreen(ctx) {
         setPreviewMode("live");
       }
     } finally {
+      hidePageFirst();
       pdfBusy = false;
       pdfSkeleton.hidden = true;
       pdfStatus.textContent = "";

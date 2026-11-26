@@ -19,6 +19,34 @@ export function fitWidth(containerWidth, pageWidth, padding = 48) {
   return clampZoom((containerWidth - padding) / pageWidth);
 }
 
+/** The page-first preview: an A4 box at the viewer's fit width, with the
+ *  report's print margins, and the body scale the report is laid out at.
+ *  PDF points and CSS pixels differ by 72/96, which is the easy mistake. */
+export function pageFirstBox({
+  viewerWidth,
+  margins,
+  pageWidth = 595.28,
+  pageHeight = 841.89,
+  padding = 48,
+}) {
+  if (!(viewerWidth > 0)) return null;
+  const zoom = fitWidth(viewerWidth, pageWidth, padding);
+  const ptPerMm = 72 / 25.4;
+  const by = (mm) => mm * ptPerMm * zoom;
+  return {
+    zoom,
+    width: pageWidth * zoom,
+    height: pageHeight * zoom,
+    padding: {
+      top: by(margins.top),
+      right: by(margins.right),
+      bottom: by(margins.bottom),
+      left: by(margins.left),
+    },
+    textZoom: zoom * (72 / 96),
+  };
+}
+
 /** The zoom that puts a whole page in view. */
 export function fitPage(containerWidth, containerHeight, page, padding = 48) {
   if (!(containerWidth > 0) || !(containerHeight > 0) || !page) return 1;

@@ -307,43 +307,64 @@ async function main() {
   await loadAppearance();
 
   const liveStatus = document.getElementById("live-status");
+  const liveAlert = document.getElementById("live-alert");
+
+  function announce(region, text) {
+    if (!region) return;
+    // Clear first so a repeated message is a change the AT can announce.
+    region.textContent = "";
+    requestAnimationFrame(() => {
+      region.textContent = text;
+    });
+  }
 
   function toast(text, kind = "") {
-    const node = el("div", {
-      class: `toast ${kind}`.trim(),
-      role: kind === "error" ? "alert" : null,
-      "aria-atomic": kind === "error" ? "true" : null,
-    });
+    const returnFocus = document.activeElement;
+    // The announcement goes through a region that exists before the message, so
+    // the toast itself stays plain content and its close button is not read as
+    // part of the alert.
+    const node = el("div", { class: `toast ${kind}`.trim() });
+    function dismiss() {
+      const hadFocus = node.contains(document.activeElement);
+      const sibling = node.nextElementSibling || node.previousElementSibling;
+      const next = hadFocus && sibling ? sibling.querySelector(".toast-close") : null;
+      node.remove();
+      if (next) next.focus();
+      else if (hadFocus && returnFocus && returnFocus !== document.body && document.contains(returnFocus)) {
+        returnFocus.focus();
+      }
+    }
+    const label = text.length > 60 ? `${text.slice(0, 57)}…` : text;
     const close = el(
       "button",
       {
         class: "toast-close",
         type: "button",
-        "aria-label": `Dismiss: ${text}`,
-        onClick: () => node.remove(),
+        "aria-label": `Dismiss: ${label}`,
+        onClick: dismiss,
       },
       svgIcon("close", 12),
     );
     node.append(el("span", { class: "toast-text", text }), close);
+    node.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") dismiss();
+    });
     toastBox.append(node);
     // A failure stays until dismissed, so a repeating failure must not grow the
-    // DOM without bound. A transient notice gives way first; an error is only
-    // dropped when the stack is all errors.
+    // DOM without bound. A transient notice gives way first; a success never
+    // pushes an error out, so it is the one dropped when the list is all errors.
     while (toastBox.children.length > 4) {
       const others = [...toastBox.children].filter((child) => child !== node);
-      const victim = others.find((child) => !child.classList.contains("error")) || others[0];
+      const victim =
+        others.find((child) => !child.classList.contains("error")) ||
+        (node.classList.contains("error") ? null : node) ||
+        others[0];
       if (!victim) break;
       victim.remove();
     }
+    announce(kind === "error" ? liveAlert : liveStatus, text);
     if (kind === "error") return; // a failure stays until dismissed
-    if (liveStatus) {
-      // Clear first so a repeated message is a change the AT can announce.
-      liveStatus.textContent = "";
-      requestAnimationFrame(() => {
-        liveStatus.textContent = text;
-      });
-    }
-    setTimeout(() => node.remove(), 6000);
+    setTimeout(dismiss, 6000);
   }
 
   const store = createStore({ onError: (error) => toast(errorText(error), "error") });

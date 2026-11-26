@@ -25,6 +25,7 @@ export function createReportScreen(ctx) {
   let lastKey = "";
   let lastQuality = "";
   let lastSavedPath = null;
+  let lastSavedHtml = "";
   const DEFAULT_FOOTER =
     "Prepared with Lifting Plan Calculator by Zhafri Syazwi — zhafribs@gmail.com";
   let footerText = DEFAULT_FOOTER;
@@ -461,6 +462,7 @@ export function createReportScreen(ctx) {
           const path = await api.saveReport(html, "lifting-plan.html");
           if (path) {
             lastSavedPath = path;
+            lastSavedHtml = html;
             toast(`Report saved to ${path}`, "ok");
           }
         } catch (error) {
@@ -526,11 +528,16 @@ export function createReportScreen(ctx) {
       class: "btn ghost small",
       onClick: async () => {
         try {
+          // Never open a plan from before the latest edit. Reuse the saved file
+          // only when it is byte-identical to the current export.
+          const html = await ensureHtml("export");
           let path = lastSavedPath;
-          if (!path) {
-            const html = await ensureHtml("export");
+          if (!path || lastSavedHtml !== html) {
             path = await api.saveReport(html, "lifting-plan.html");
-            if (path) lastSavedPath = path;
+            if (path) {
+              lastSavedPath = path;
+              lastSavedHtml = html;
+            }
           }
           if (path) await api.openReportFile(path);
         } catch (error) {
@@ -631,7 +638,7 @@ export function createReportScreen(ctx) {
             printButton,
             el("div", { class: "row wrap" }, saveButton, openButton),
           ),
-          foot: el("span", { class: "faint", text: "Save as PDF writes A4 with the margins set in the preview bar and the footer on every page. Saved HTML needs its KaTeX folder beside it; Print uses the browser dialog, so keep Default margins." }),
+          foot: el("span", { class: "faint", text: "Save as PDF writes A4 with the margins set in the preview bar and the footer on every page. Saved HTML needs its KaTeX folder beside it; print it or use Print with Default margins." }),
         }),
       ),
       previewPane,

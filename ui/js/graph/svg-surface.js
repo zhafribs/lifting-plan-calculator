@@ -20,15 +20,18 @@ function escapeXml(value) {
   );
 }
 
-function colourAttrs(value, kind) {
-  const colour = printColour(value);
-  const rgba = /^rgba\(\s*([^)]+)\)$/i.exec(colour);
-  if (!rgba) return `${kind}="${escapeXml(colour)}"`;
-  const parts = rgba[1].split(",").map((part) => part.trim());
-  return `${kind}="rgb(${parts[0]}, ${parts[1]}, ${parts[2]})" ${kind}-opacity="${parts[3]}"`;
+function colourAttrs(value, kind, backdrop) {
+  return `${kind}="${escapeXml(printColour(value, backdrop))}"`;
 }
 
-export function createSvgSurface({ width, height, scale = 1, measure = null } = {}) {
+export function createSvgSurface({
+  width,
+  height,
+  scale = 1,
+  measure = null,
+  fontFamily: fontOverride = null,
+  backdrop = "#141922",
+} = {}) {
   const elements = [];
   let path = "";
   let current = null;
@@ -112,13 +115,19 @@ export function createSvgSurface({ width, height, scale = 1, measure = null } = 
 
   function setFont(value) {
     font = String(value);
-    if (measure) measure.font = font;
+    if (measure) measure.font = effectiveFont();
     const match = /^(\d+)\s+([\d.]+)px\s+(.+)$/.exec(font);
     if (match) {
       fontWeight = match[1];
       fontSize = match[2];
-      fontFamily = match[3];
+      fontFamily = fontOverride || match[3];
+    } else if (fontOverride) {
+      fontFamily = fontOverride;
     }
+  }
+
+  function effectiveFont() {
+    return `${fontWeight} ${fontSize}px ${fontFamily}`;
   }
 
   const surface = {
@@ -182,19 +191,19 @@ export function createSvgSurface({ width, height, scale = 1, measure = null } = 
     fill() {
       if (!path) return;
       elements.push(
-        `<path d="${escapeXml(path)}" ${colourAttrs(fillStyle, "fill")} stroke="none"/>`,
+        `<path d="${escapeXml(path)}" ${colourAttrs(fillStyle, "fill", backdrop)} stroke="none"/>`,
       );
     },
     stroke() {
       if (!path) return;
       const dash = dashed.length ? ` stroke-dasharray="${dashed.map(n).join(" ")}"` : "";
       elements.push(
-        `<path d="${escapeXml(path)}" fill="none" ${colourAttrs(strokeStyle, "stroke")} stroke-width="${n(lineWidth)}" stroke-linecap="${escapeXml(lineCap)}"${dash}/>`,
+        `<path d="${escapeXml(path)}" fill="none" ${colourAttrs(strokeStyle, "stroke", backdrop)} stroke-width="${n(lineWidth)}" stroke-linecap="${escapeXml(lineCap)}"${dash}/>`,
       );
     },
     fillRect(x, y, w, h) {
       elements.push(
-        `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" ${colourAttrs(fillStyle, "fill")}/>`,
+        `<rect x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" ${colourAttrs(fillStyle, "fill", backdrop)}/>`,
       );
     },
     fillText(text, x, y) {
@@ -208,21 +217,20 @@ export function createSvgSurface({ width, height, scale = 1, measure = null } = 
               ? ' dominant-baseline="text-after-edge"'
               : "";
       elements.push(
-        `<text x="${n(x)}" y="${n(y)}" ${colourAttrs(fillStyle, "fill")} font-family="${escapeXml(fontFamily)}" font-size="${n(Number(fontSize))}" font-weight="${escapeXml(fontWeight)}" text-anchor="${anchor}"${baseline}>${escapeXml(text)}</text>`,
+        `<text x="${n(x)}" y="${n(y)}" ${colourAttrs(fillStyle, "fill", backdrop)} font-family="${escapeXml(fontFamily)}" font-size="${n(Number(fontSize))}" font-weight="${escapeXml(fontWeight)}" text-anchor="${anchor}"${baseline}>${escapeXml(text)}</text>`,
       );
       return { width: measure ? measure.measureText(text).width : 0 };
     },
     measureText(text) {
       if (!measure) return { width: 0 };
-      measure.font = font;
+      measure.font = effectiveFont();
       return measure.measureText(text);
     },
     setLineDash(values) {
       dashed = Array.isArray(values) ? values : [];
     },
     setTransform() {
-      // The SVG viewBox carries the size; the coordinates are already in the
-      // requested width/height.
+      throw new Error("The SVG surface does not support canvas transforms.");
     },
     toString() {
       return `<svg xmlns="http://www.w3.org/2000/svg" width="${n(width * scale)}" height="${n(height * scale)}" viewBox="0 0 ${n(width)} ${n(height)}">${elements.join("")}</svg>`;

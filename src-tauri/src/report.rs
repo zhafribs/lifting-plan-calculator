@@ -1668,11 +1668,16 @@ mod tests {
 
     #[test]
     fn an_untrusted_diagram_source_is_ignored() {
-        let inputs = ReportInputs {
-            working_diagram: Some("https://example.com/x.png".to_string()),
-            ..ReportInputs::default()
-        };
-        assert!(!build_report_html(&inputs, &[]).contains("<div class=\"working-diagram\">"));
+        for source in [
+            "https://example.com/x.png".to_string(),
+            "data:text/html;base64,PHNjcmlwdD4=".to_string(),
+        ] {
+            let inputs = ReportInputs {
+                working_diagram: Some(source),
+                ..ReportInputs::default()
+            };
+            assert!(!build_report_html(&inputs, &[]).contains("<div class=\"working-diagram\">"));
+        }
     }
 
     #[test]

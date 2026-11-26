@@ -786,6 +786,9 @@ export function createReportScreen(ctx) {
     }
     pdfBusy = true;
     pdfStatus.textContent = "Rendering…";
+    // Only the first render needs the page shape; a re-render keeps the pages
+    // already on screen until the new PDF replaces them.
+    pdfSkeleton.hidden = viewer.pages > 0;
     // A first render opens at fit-width, so the view keeps tracking the pane.
     // Only a re-render puts the reader back where they were.
     const hadPages = viewer.pages > 0;

@@ -6,8 +6,10 @@
   says "Preparing page 1…" instead of leaving the pane blank behind the
   Rendering status; page 1 appears as soon as the print returns.
 - **The working-range diagram prints as SVG.** The report carries vectors
-  instead of a 2700×2100 PNG: sharper at any zoom and smaller in the PDF. The
-  PNG path remains the fallback, and the print colours are unchanged.
+  instead of a 2700×2100 PNG: sharper at any zoom. The print colours are
+  flattened over the diagram background first, so the old semi-transparent
+  accents keep their printed hue. Diagram labels use the system sans inside the
+  standalone SVG; the PNG path remains the fallback.
 
 ## [2.17.18] - 2026-11-26
 

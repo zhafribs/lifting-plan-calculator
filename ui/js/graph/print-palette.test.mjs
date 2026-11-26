@@ -52,6 +52,24 @@ test("printColour matches the pixel filter within rounding", () => {
   }
 });
 
-test("printColour preserves alpha", () => {
-  assert.match(printColour("rgba(92, 179, 255, 0.5)"), /^rgba\(.*0\.5\)$/);
+test("the radius dimension colour keeps its old printed hue", () => {
+  const actual = channels(printColour("rgba(255, 183, 3, 0.67)", "#141922"));
+  [181, 131, 4].forEach((value, index) => {
+    assert.ok(Math.abs(actual[index] - value) <= 2, `channel ${index}: ${actual[index]}`);
+  });
+});
+
+test("printColour composites alpha over the diagram before filtering", () => {
+  const alpha = 0.5;
+  const foreground = [92, 179, 255];
+  const background = [20, 25, 34];
+  const mixed = foreground.map(
+    (value, index) => value * alpha + background[index] * (1 - alpha),
+  );
+  const expected = new Uint8ClampedArray([...mixed, 255]);
+  printify(expected);
+  const actual = channels(printColour("rgba(92, 179, 255, 0.5)", "#141922"));
+  actual.forEach((value, index) => {
+    assert.ok(Math.abs(value - expected[index]) <= 2, `channel ${index}`);
+  });
 });

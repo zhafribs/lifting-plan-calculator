@@ -24,7 +24,7 @@ function channel(row, red, green, blue) {
 
 // The same mapping for a CSS colour, so an SVG uses exactly what the bitmap
 // filter produced. Alpha is preserved.
-export function printColour(value) {
+export function printColour(value, backdrop = "#141922") {
   if (typeof value !== "string") return value;
   const text = value.trim();
   let red;
@@ -47,11 +47,26 @@ export function printColour(value) {
     blue = Number(rgb[3]);
     alpha = rgb[4] === undefined ? null : Number(rgb[4]);
   }
+  if (alpha !== null && alpha < 1) {
+    // The old path composites over the dark diagram, then applies the filter to
+    // the finished pixel. Do the same before the transform so an SVG line does
+    // not sit on the printed white with a different hue.
+    const bg = /^#([0-9a-f]{6})$/i.exec(backdrop);
+    const base = bg
+      ? [
+          Number.parseInt(bg[1].slice(0, 2), 16),
+          Number.parseInt(bg[1].slice(2, 4), 16),
+          Number.parseInt(bg[1].slice(4, 6), 16),
+        ]
+      : [20, 25, 34];
+    red = red * alpha + base[0] * (1 - alpha);
+    green = green * alpha + base[1] * (1 - alpha);
+    blue = blue * alpha + base[2] * (1 - alpha);
+    alpha = null;
+  }
   const source = [1 - red / 255, 1 - green / 255, 1 - blue / 255];
   const out = ROTATION.map((row) => channel(row, ...source));
-  return alpha === null
-    ? `rgb(${out[0]}, ${out[1]}, ${out[2]})`
-    : `rgba(${out[0]}, ${out[1]}, ${out[2]}, ${alpha})`;
+  return `rgb(${out[0]}, ${out[1]}, ${out[2]})`;
 }
 
 // Rewrites RGBA bytes in place; alpha is left alone.

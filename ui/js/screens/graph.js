@@ -1156,7 +1156,14 @@ export function createGraphScreen(ctx) {
           // The PDF keeps the diagram as vectors: no canvas, no pixel pass and
           // no PNG encode. The print colours are applied as the SVG is built.
           const measure = document.createElement("canvas").getContext("2d");
-          const surface = createSvgSurface({ width, height, scale, measure });
+          if (!measure) throw new Error("no 2d measure context");
+          const surface = createSvgSurface({
+            width,
+            height,
+            scale,
+            measure,
+            fontFamily: "sans-serif",
+          });
           paint(surface);
           const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(surface.toString())}`;
           captureCache.set(key, url);

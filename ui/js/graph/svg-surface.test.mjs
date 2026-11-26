@@ -70,11 +70,37 @@ test("a dashed stroke carries stroke-dasharray", () => {
   assert.match(svg, /stroke-dasharray="7 5"/);
 });
 
-test("rgba fill keeps its alpha", () => {
+test("rgba fill is flattened before the print filter", () => {
   const s = surface();
   s.fillStyle = "rgba(92, 179, 255, 0.5)";
   s.fillRect(0, 0, 10, 10);
   const svg = s.toString();
   assert.match(svg, /fill="rgb\(/);
-  assert.match(svg, /fill-opacity="0.5"/);
+  assert.doesNotMatch(svg, /opacity/);
+});
+
+test("a font override is used for text and measurement", () => {
+  const measure = { font: "", measureText: (text) => ({ width: text.length * 8 }) };
+  const s = createSvgSurface({ width: 100, height: 80, measure, fontFamily: "sans-serif" });
+  s.font = "700 12px Inter";
+  s.fillText("x", 0, 0);
+  assert.match(s.toString(), /font-family="sans-serif"/);
+  assert.match(measure.font, /sans-serif/);
+});
+
+test("a full circle is emitted as two arcs", () => {
+  const s = surface();
+  s.beginPath();
+  s.arc(10, 10, 5, 0, Math.PI * 2);
+  s.stroke();
+  assert.equal((s.toString().match(/ A 5 5 /g) || []).length, 2);
+});
+
+test("arcTo emits a rounded corner", () => {
+  const s = surface();
+  s.beginPath();
+  s.moveTo(0, 10);
+  s.arcTo(10, 10, 10, 0, 5);
+  s.stroke();
+  assert.match(s.toString(), /A 5 5 0 0 [01]/);
 });

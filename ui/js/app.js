@@ -389,7 +389,7 @@ async function main() {
         return instance;
       } catch (error) {
         // The global handler still shows the failure; this names the screen in
-        // the one diagnostic the app writes.
+        // the app's log.
         window.uilog && window.uilog(`screen ${key} failed: ${errorText(error)}`);
         throw error;
       }

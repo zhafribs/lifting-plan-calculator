@@ -93,7 +93,8 @@ Repo-level gates:
 ./packaging/check-vendored.sh                 # vendored PDF parser is hash-pinned
 ./packaging/check-release-notes.sh --self-test
 ./packaging/check-release-notes.sh            # every tag has notes
-cargo audit --file src-tauri/Cargo.lock --deny warnings   # allowlist: .cargo/audit.toml
+cargo audit --file src-tauri/Cargo.lock --deny warnings
+cargo audit --file tools/sign-manifest/Cargo.lock --deny warnings   # allowlist: .cargo/audit.toml
 ```
 
 Builds: `./build-appimage.sh` (host) or `./build-appimage-portable.sh`

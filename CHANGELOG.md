@@ -3,12 +3,17 @@
 ### Changed
 
 - **Toasts announce themselves.** Success and information use `role="status"`;
-  failures use `role="alert"`, so a screen reader hears the result. Save as HTML
+  failures use `role="alert"`, so assistive tech can announce the result. Save as HTML
   now has its own code icon instead of sharing the PDF file icon.
 - **Diagnostics name a failed screen.** A screen factory that throws is logged
   as `screen <key> failed` before the error reaches the global handler.
-- **The signer lockfile is audited in CI.** The unused Inter italic asset is
-  gone.
+- **The unused Inter italic asset is gone.** Nothing loaded it; the remaining
+  variable face is unchanged.
+
+### Security
+
+- **The signer lockfile is audited in CI.** `tools/sign-manifest/Cargo.lock`
+  now goes through the same `cargo audit --deny warnings` gate as the app.
 
 ## [2.17.17] - 2026-11-26
 

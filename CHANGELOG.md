@@ -1,10 +1,14 @@
 ## [Unreleased]
 
+Nothing yet.
+
+## [2.17.18] - 2026-11-26
+
 ### Changed
 
 - **Toasts announce themselves.** Success and information use `role="status"`;
-  failures use `role="alert"`, so assistive tech can announce the result. Save as HTML
-  now has its own code icon instead of sharing the PDF file icon.
+  failures use `role="alert"`, so assistive tech can announce the result. Save
+  as HTML now has its own code icon instead of sharing the PDF file icon.
 - **Diagnostics name a failed screen.** A screen factory that throws is logged
   as `screen <key> failed` before the error reaches the global handler.
 - **The unused Inter italic asset is gone.** Nothing loaded it; the remaining

@@ -1,12 +1,17 @@
 ## [Unreleased]
 
+Nothing yet.
+
+## [2.17.20] - 2026-11-26
+
 ### Changed
 
 - **The printed diagram keeps Inter.** A 71 KB subset of the bundled face is
   embedded in the SVG, so the PDF labels no longer fall back to the system sans;
-  the subset is measured with the same metrics the screen uses. The same plan
-  exports about 23% smaller than with the raster diagram.
-- **Error toasts stay until dismissed.** Every toast has a close button, and
+  the labels are measured with the document Inter, whose metrics the subset
+  matches. The same plan exports about 23% smaller than with the raster diagram.
+- **Error toasts stay until dismissed.** Every toast has a close button, at most
+  four are kept, and a transient notice gives way before a failure does;
   success/information messages also go through a polite live region so assistive
   tech can announce them without an assertive interruption.
 

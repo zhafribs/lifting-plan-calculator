@@ -10,11 +10,14 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-26-vector-diagram.md`
 
-**Status (2026-11-26):** Tasks 1–5 complete; the three seats passed at 8.5.
+**Status (2026-11-26):** Tasks 1–5 complete and shipped in 2.17.19. The
+system-sans version passed the three seats at 8.5; the embedded Inter subset
+that followed was reviewed separately in record 0067.
 **Spike result:** `pdfimages -list` reports no images and the labels extract as
-text; the first spike used the system sans, and the shipped SVG embeds a 71 KB
-Inter subset so the labels keep the app face. ADR-0007 records that, the colour
-flattening and the PNG fallback.
+text. The first spike used the system sans; the shipped SVG embeds a 71 KB Inter
+subset so the labels keep the app face. A few punctuation glyphs in the labels
+(such as `=`) may not come out of text extraction; the printed page is correct.
+ADR-0007 records that, the colour flattening and the PNG fallback.
 
 ## Global Constraints
 
@@ -240,8 +243,8 @@ Export a plan. Verify:
 - the live frame and Pages view both show the diagram.
 
 **Recorded:** the same plan exported through the app, once with the SVG and once
-with the PNG diagram: **689,927 B vs 895,745 B**, so the SVG export is 205,818 B
-(23.0%) smaller. `pdfimages -list` lists only the PNG run's 2700×2100 image;
+with the PNG diagram 2.17.18 used: **689,927 B vs 895,745 B**, so the SVG export
+is 205,818 B (23.0%) smaller. `pdfimages -list` lists only the PNG run's 2700×2100 image;
 `pdffonts` shows `InterVariable` in the SVG run, so the labels keep the app face.
 
 - [x] **Step 2: Force the fallback**
@@ -263,7 +266,8 @@ data URL, cache), Design & Steward (surface boundary, tests, honesty).
 
 **Result:** Safety & QA 8.5, Security & Build 8.5, Design & Steward 8.5. The
 grid/colour, placeholder, font and record blockers were fixed before landing.
-The PDF-size comparison in Step 1 is the only open item; no size claim ships.
+That review covered the system-sans SVG; the embedded Inter subset and the toast
+changes were reviewed again in record 0067.
 
 ---
 

@@ -14,8 +14,9 @@
 The PDF size and the forced PNG fallback are not yet recorded, so Steps 5.1–5.2
 stay open.
 **Spike result:** `pdfimages -list` reports no images and the labels extract as
-text; the standalone SVG uses the system sans, recorded in ADR-0007 along with
-the colour flattening and the PNG fallback.
+text; the first spike used the system sans, and the shipped SVG embeds a 71 KB
+Inter subset so the labels keep the app face. ADR-0007 records that, the colour
+flattening and the PNG fallback.
 
 ## Global Constraints
 
@@ -138,6 +139,8 @@ git commit -m "feat(graph): expose the print colour mapping"
   - methods used by `graph.js`: `beginPath`, `moveTo`, `lineTo`, `arc`, `arcTo`, `closePath`, `fill`, `stroke`, `fillRect`, `fillText`, `setLineDash`, `setTransform`, `measureText`
   - `surface.toString() -> string` returns a complete `<svg>` element.
 - `measure` is a real 2D context from a throwaway canvas; `measureText` delegates to it.
+- `fontData`/`fontName` embed the Inter subset; `measureFamily` keeps the
+  document metrics.
 
 - [x] **Step 1: Write the failing surface tests**
 
@@ -160,8 +163,9 @@ Expected: FAIL — module missing.
 Emit a 24×24-independent SVG with `viewBox="0 0 width height"` and
 `width={width*scale}` / `height={height*scale}`. Build path data from the
 primitives; emit one `<path>` per `fill()`/`stroke()` call with the current
-style, converted by `printColour`. Map `textAlign` to `text-anchor` and
-`textBaseline` to `dominant-baseline`. Ignore `setTransform` scale for geometry
+style, converted by `printColour`. Embed the Inter subset as `@font-face` and
+use `InterDiagram` for text while measuring with the document Inter. Map
+`textAlign` to `text-anchor` and `textBaseline` to `dominant-baseline`. Ignore `setTransform` scale for geometry
 (the viewBox already carries the size). Escape text with the existing
 `escapeHtml` helper or a local XML escape.
 

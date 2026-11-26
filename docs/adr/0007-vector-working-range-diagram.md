@@ -14,8 +14,9 @@ vectors: `pdfimages -list` reported no images and the labels extracted as text.
 Two constraints surfaced in the spike:
 
 1. A standalone SVG image cannot use the app's document `@font-face`; the labels
-   fell back to DejaVu Sans. Embedding the 344 KB Inter face was possible but
-   would put the whole font in every capture.
+   fell back to DejaVu Sans in the first spike. A 71 KB Basic-Latin/degree
+   subset of Inter, embedded in the SVG, keeps the label face without carrying
+   the full 344 KB variable font.
 2. The old `printify` filtered the **composited** pixel, while mapping a
    semi-transparent colour before compositing shifted the radius line by up to
    80 blue levels.
@@ -28,9 +29,9 @@ Two constraints surfaced in the spike:
   (`#141922`) and then filtered, so the radius accent keeps its old printed hue.
   Low-alpha fills stay translucent so the grid is not erased; their hue is a few
   levels away from the old composited pixel.
-- Diagram labels use `sans-serif` both in the SVG and in the measure context, so
-  pill widths match what prints. The screen and the rest of the app keep Inter;
-  the printed diagram face can differ from the previous PNG.
+- The SVG embeds the Inter subset as a data URL; labels use `InterDiagram` and
+  the measure context uses the document's Inter, whose metrics match. The
+  printed diagram keeps the screen face, and the PDF embeds the small subset.
 - The PNG path remains the fallback and is used if the surface, the measure
   context or an unsupported transform fails.
 - The capture cache keys the format, so an SVG and a PNG cannot be confused.
@@ -38,7 +39,7 @@ Two constraints surfaced in the spike:
 ## Consequences
 
 - The exported diagram is vector; labels remain text.
-- The printed diagram's typeface is the system sans, not the app's Inter.
+- The printed diagram keeps Inter; the SVG carries a 71 KB subset.
 - The PDF size is measured against 2.17.18 when an export is available; no size
   claim is recorded yet.
 - The SVG is larger as an HTML data URL than the PNG for simple plans, but the
@@ -46,9 +47,11 @@ Two constraints surfaced in the spike:
 
 ## Alternatives rejected
 
-- **Embed the full Inter woff2 in every SVG.** It worked in the spike and
-  produced a small PDF, but adds 344 KB to every capture and the data URL; the
-  asynchronous font load would complicate a synchronous capture.
+- **Embed the full 344 KB Inter variable font.** It worked in the spike but is
+  five times the subset; Basic Latin and the degree sign are all the diagram
+  prints.
+- **Use the system sans.** It removed the label face the screen and the report
+  had always shown; the subset is small enough to avoid that.
 - **CSS filter on the SVG.** The print pipeline rasterises filtered content,
   which is exactly what this change avoids.
 - **Text-to-path conversion.** It needs a font parser and loses extractable

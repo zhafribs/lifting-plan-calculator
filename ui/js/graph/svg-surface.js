@@ -34,6 +34,9 @@ export function createSvgSurface({
   scale = 1,
   measure = null,
   fontFamily: fontOverride = null,
+  fontData = null,
+  fontName = "InterDiagram",
+  measureFamily = null,
   backdrop = "#141922",
 } = {}) {
   const elements = [];
@@ -127,11 +130,11 @@ export function createSvgSurface({
     } else if (fontOverride) {
       fontFamily = fontOverride;
     }
-    if (measure) measure.font = effectiveFont();
+    if (measure) measure.font = effectiveFont(measureFamily || fontFamily);
   }
 
-  function effectiveFont() {
-    return `${fontWeight} ${fontSize}px ${fontFamily}`;
+  function effectiveFont(family = fontFamily) {
+    return `${fontWeight} ${fontSize}px ${family}`;
   }
 
   const surface = {
@@ -227,7 +230,7 @@ export function createSvgSurface({
     },
     measureText(text) {
       if (!measure) return { width: 0 };
-      measure.font = effectiveFont();
+      measure.font = effectiveFont(measureFamily || fontFamily);
       return measure.measureText(text);
     },
     setLineDash(values) {
@@ -237,7 +240,10 @@ export function createSvgSurface({
       throw new Error("The SVG surface does not support canvas transforms.");
     },
     toString() {
-      return `<svg xmlns="http://www.w3.org/2000/svg" width="${n(width * scale)}" height="${n(height * scale)}" viewBox="0 0 ${n(width)} ${n(height)}">${elements.join("")}</svg>`;
+      const style = fontData
+        ? `<style>@font-face{font-family:"${fontName}";src:url(${fontData}) format("woff2");font-weight:100 900;font-style:normal;}</style>`
+        : "";
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="${n(width * scale)}" height="${n(height * scale)}" viewBox="0 0 ${n(width)} ${n(height)}">${style}${elements.join("")}</svg>`;
     },
   };
 

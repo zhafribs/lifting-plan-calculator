@@ -12,6 +12,7 @@ import { card, field, kvRows, numberInput } from "../components.js";
 import * as geo from "../graph/geometry.js";
 import { captureKey, createCaptureCache } from "../graph/capture-cache.js";
 import { createSvgSurface } from "../graph/svg-surface.js";
+import { DIAGRAM_FONT } from "../graph/diagram-font.js";
 import { registerGraphCapture } from "../graph/snapshot.js";
 import { printify } from "../graph/print-palette.js";
 import { jibAvailability } from "../jib.js";
@@ -1162,7 +1163,10 @@ export function createGraphScreen(ctx) {
             height,
             scale,
             measure,
-            fontFamily: "sans-serif",
+            fontFamily: "InterDiagram",
+            measureFamily: "Inter",
+            fontData: DIAGRAM_FONT,
+            fontName: "InterDiagram",
           });
           paint(surface);
           const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(surface.toString())}`;

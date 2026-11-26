@@ -59,6 +59,6 @@ Emit the diagram as SVG for the report, so the PDF carries vectors:
   measure context, not an approximation, or labels shift.
 - SVG text depends on the report's fonts; a missing family must fall back
   predictably. A standalone SVG `<img>` cannot use the app's document webfont,
-  so the labels use the system sans and are measured with that family.
+  so a small Inter subset is embedded and measured with the document's metrics.
 - High-alpha colours are flattened over the diagram background before the
   filter; low-alpha fills stay translucent so the grid remains visible.

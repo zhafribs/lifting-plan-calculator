@@ -88,11 +88,21 @@ test("a low-alpha fill keeps fill-opacity", () => {
 
 test("a font override is used for text and measurement", () => {
   const measure = { font: "", measureText: (text) => ({ width: text.length * 8 }) };
-  const s = createSvgSurface({ width: 100, height: 80, measure, fontFamily: "sans-serif" });
+  const s = createSvgSurface({
+    width: 100,
+    height: 80,
+    measure,
+    fontFamily: "InterDiagram",
+    measureFamily: "Inter",
+    fontData: "data:font/woff2;base64,AAAA",
+    fontName: "InterDiagram",
+  });
   s.font = "700 12px Inter";
   s.fillText("x", 0, 0);
-  assert.match(s.toString(), /font-family="sans-serif"/);
-  assert.match(measure.font, /sans-serif/);
+  const svg = s.toString();
+  assert.match(svg, /@font-face\{font-family:"InterDiagram"/);
+  assert.match(svg, /font-family="InterDiagram"/);
+  assert.match(measure.font, /Inter/);
 });
 
 test("a full circle is emitted as two arcs", () => {

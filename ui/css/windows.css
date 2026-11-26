@@ -560,8 +560,8 @@
   box-shadow: var(--shadow);
 }
 
-:root[data-platform="windows"] .toast.error { border-color: var(--over); }
-:root[data-platform="windows"] .toast.ok { border-color: var(--ok); }
+:root[data-platform="windows"] .toast.error { border-color: var(--over-text); }
+:root[data-platform="windows"] .toast.ok { border-color: var(--ok-text); }
 
 :root[data-platform="windows"] .margin-panel {
   border-radius: var(--radius);

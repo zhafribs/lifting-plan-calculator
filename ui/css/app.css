@@ -1055,8 +1055,8 @@ table.grid td.num { text-align: right; }
   animation: slide-in 0.18s ease;
 }
 
-.toast.error { border-color: var(--over); }
-.toast.ok { border-color: var(--ok); }
+.toast.error { border-color: var(--over-text); }
+.toast.ok { border-color: var(--ok-text); }
 
 @keyframes slide-in {
   from { transform: translateY(8px); opacity: 0; }

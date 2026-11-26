@@ -241,7 +241,7 @@ export function createSvgSurface({
     },
     toString() {
       const style = fontData
-        ? `<style>@font-face{font-family:"${fontName}";src:url(${fontData}) format("woff2");font-weight:100 900;font-style:normal;}</style>`
+        ? `<style>@font-face{font-family:"${escapeXml(fontName)}";src:url(${escapeXml(fontData)}) format("woff2");font-weight:100 900;font-style:normal;}</style>`
         : "";
       return `<svg xmlns="http://www.w3.org/2000/svg" width="${n(width * scale)}" height="${n(height * scale)}" viewBox="0 0 ${n(width)} ${n(height)}">${style}${elements.join("")}</svg>`;
     },

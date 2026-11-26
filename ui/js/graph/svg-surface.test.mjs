@@ -79,6 +79,10 @@ test("rgba fill is flattened before the print filter", () => {
   assert.doesNotMatch(svg, /opacity/);
 });
 
+test("without fontData there is no font-face style", () => {
+  assert.doesNotMatch(surface().toString(), /@font-face/);
+});
+
 test("a low-alpha fill keeps fill-opacity", () => {
   const s = surface();
   s.fillStyle = "rgba(92, 179, 255, 0.10)";

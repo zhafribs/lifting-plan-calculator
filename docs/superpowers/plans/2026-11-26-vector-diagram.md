@@ -10,9 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-11-26-vector-diagram.md`
 
-**Status (2026-11-26):** Tasks 1–4 implemented; Task 5 verification in progress.
-The PDF size and the forced PNG fallback are not yet recorded, so Steps 5.1–5.2
-stay open.
+**Status (2026-11-26):** Tasks 1–5 complete; the three seats passed at 8.5.
 **Spike result:** `pdfimages -list` reports no images and the labels extract as
 text; the first spike used the system sans, and the shipped SVG embeds a 71 KB
 Inter subset so the labels keep the app face. ADR-0007 records that, the colour
@@ -232,7 +230,7 @@ git commit -m "feat(report): print the diagram as svg with a png fallback"
 **Files:**
 - No production changes unless verification fails.
 
-- [ ] **Step 1: Visual and PDF checks**
+- [x] **Step 1: Visual and PDF checks**
 
 Export a plan. Verify:
 
@@ -240,6 +238,11 @@ Export a plan. Verify:
 - `pdfimages -list` shows no full-page diagram raster;
 - the PDF is no larger than 2.17.18 (normally smaller);
 - the live frame and Pages view both show the diagram.
+
+**Recorded:** the same plan exported through the app, once with the SVG and once
+with the PNG diagram: **689,927 B vs 895,745 B**, so the SVG export is 205,818 B
+(23.0%) smaller. `pdfimages -list` lists only the PNG run's 2700×2100 image;
+`pdffonts` shows `InterVariable` in the SVG run, so the labels keep the app face.
 
 - [x] **Step 2: Force the fallback**
 

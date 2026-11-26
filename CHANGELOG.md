@@ -1,5 +1,15 @@
 ## [Unreleased]
 
+Nothing yet.
+
+## [2.17.21] - 2026-11-26
+
+### Added
+
+- **The Pages view shows the report's first page while the PDF prints.** The
+  report appears at the printed page's size straight away and the PDF replaces
+  it when it arrives; the printed page remains the one that counts.
+
 ### Fixed
 
 - **The printed diagram no longer draws stray diagonals across the chart.**

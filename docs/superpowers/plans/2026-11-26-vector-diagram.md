@@ -237,19 +237,26 @@ Export a plan. Verify:
 - the PDF is no larger than 2.17.18 (normally smaller);
 - the live frame and Pages view both show the diagram.
 
-- [ ] **Step 2: Force the fallback**
+- [x] **Step 2: Force the fallback**
 
 Temporarily make `renderDiagramSvg` throw; export again. Expected: a report
 with the PNG diagram, no error banner.
+
+**Recorded:** `diagram svg failed: forced fallback` in `ui.log`, then a 205 ms
+PNG capture; the page view still carried the diagram.
 
 - [x] **Step 3: Run the gates**
 
 Run the CI frontend suite, `cargo test --all-targets`, clippy and the syntax loop.
 
-- [ ] **Step 4: Three-seat review**
+- [x] **Step 4: Three-seat review**
 
 Safety & QA (diagram content, fallback, PDF), Security & Build (no new surface,
 data URL, cache), Design & Steward (surface boundary, tests, honesty).
+
+**Result:** Safety & QA 8.5, Security & Build 8.5, Design & Steward 8.5. The
+grid/colour, placeholder, font and record blockers were fixed before landing.
+The PDF-size comparison in Step 1 is the only open item; no size claim ships.
 
 ---
 

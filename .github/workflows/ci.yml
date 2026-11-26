@@ -244,11 +244,14 @@ jobs:
       - name: Install cargo-audit
         run: cargo install cargo-audit --locked
 
-      # Gating. The two advisories this project cannot act on are listed, with
+      # Gating. The advisories this project cannot act on are listed, with
       # their reasons, in .cargo/audit.toml; anything else is a red build, and
-      # `--deny warnings` covers unmaintained and unsound crates too.
-      - name: Audit the lockfile
-        run: cargo audit --file src-tauri/Cargo.lock --deny warnings
+      # `--deny warnings` covers unmaintained and unsound crates too. The
+      # release signer has its own lockfile and must be audited too.
+      - name: Audit the lockfiles
+        run: |
+          cargo audit --file src-tauri/Cargo.lock --deny warnings
+          cargo audit --file tools/sign-manifest/Cargo.lock --deny warnings
 
   # The Windows export path (Edge, the process spawning and the platform
   # branches of the PDF code) is never compiled by the Linux jobs.

@@ -78,6 +78,7 @@ const ICONS = {
   menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
   close: '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
   file: '<path d="M7 3.5h7.5L19 8v12.5H7z"/><path d="M14.5 3.5V8H19"/>',
+  code: '<path d="M9 7.5 4.5 12 9 16.5M15 7.5 19.5 12 15 16.5"/>',
   print:
     '<path d="M7 8.5V4h10v4.5"/><rect x="4" y="8.5" width="16" height="7.5" rx="1.5"/><path d="M7 14h10v6H7z"/>',
   external: '<path d="M13.5 5H19v5.5"/><path d="M19 5l-8 8"/><path d="M17 13.5V19H5V7h5.5"/>',

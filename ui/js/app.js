@@ -307,7 +307,12 @@ async function main() {
   await loadAppearance();
 
   function toast(text, kind = "") {
-    const node = el("div", { class: `toast ${kind}`.trim(), text });
+    const node = el("div", {
+      class: `toast ${kind}`.trim(),
+      text,
+      role: kind === "error" ? "alert" : "status",
+      "aria-atomic": "true",
+    });
     toastBox.append(node);
     setTimeout(() => node.remove(), 6000);
   }
@@ -377,10 +382,17 @@ async function main() {
   function screen(key, create) {
     return () => {
       const started = performance.now();
-      const instance = create();
-      window.uilog &&
-        window.uilog(`screen ${key}: ${Math.round(performance.now() - started)}ms`);
-      return instance;
+      try {
+        const instance = create();
+        window.uilog &&
+          window.uilog(`screen ${key}: ${Math.round(performance.now() - started)}ms`);
+        return instance;
+      } catch (error) {
+        // The global handler still shows the failure; this names the screen in
+        // the one diagnostic the app writes.
+        window.uilog && window.uilog(`screen ${key} failed: ${errorText(error)}`);
+        throw error;
+      }
     };
   }
 

@@ -470,7 +470,7 @@ export function createReportScreen(ctx) {
         }
       },
     },
-    svgIcon("file", 15),
+    svgIcon("code", 15),
     "Save as HTML...",
   );
 

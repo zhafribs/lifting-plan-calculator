@@ -326,6 +326,9 @@ async function main() {
     );
     node.append(el("span", { class: "toast-text", text }), close);
     toastBox.append(node);
+    // A failure stays until dismissed, so a repeating failure must not grow the
+    // DOM without bound: the oldest notice gives way to the newest.
+    while (toastBox.children.length > 4) toastBox.firstElementChild.remove();
     if (kind === "error") return; // a failure stays until dismissed
     if (liveStatus) {
       // Clear first so a repeated message is a change the AT can announce.

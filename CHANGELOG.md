@@ -1,6 +1,10 @@
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+
+- **The Pages view shows a page-shaped placeholder while the PDF prints.** It
+  says "Preparing page 1…" instead of leaving the pane blank behind the
+  Rendering status; page 1 appears as soon as the print returns.
 
 ## [2.17.18] - 2026-11-26
 

@@ -199,7 +199,18 @@ export function createReportScreen(ctx) {
       for (const control of zoomControls) control.disabled = pages === 0;
     },
   });
-  const pdfWrap = el("div", { class: "report-pdf" }, viewer.element);
+  const pdfSkeleton = el(
+    "div",
+    { class: "pdf-skeleton", "aria-hidden": "true" },
+    el(
+      "div",
+      { class: "pdf-skeleton-card" },
+      el("div", { class: "pdf-skeleton-page" }),
+      el("span", { text: "Preparing page 1\u2026" }),
+    ),
+  );
+  pdfSkeleton.hidden = true;
+  const pdfWrap = el("div", { class: "report-pdf" }, viewer.element, pdfSkeleton);
 
   const zoomLabel = el("span", { class: "zoom-label", text: "100%" });
   const zoomControls = [];
@@ -808,6 +819,7 @@ export function createReportScreen(ctx) {
       }
     } finally {
       pdfBusy = false;
+      pdfSkeleton.hidden = true;
       pdfStatus.textContent = "";
       if (pdfStale) {
         pdfStale = false;

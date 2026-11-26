@@ -1044,7 +1044,22 @@ table.grid td.num { text-align: right; }
   z-index: 60;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   background: var(--surface-3);
   border: 1px solid var(--border-strong);
   border-radius: 9px;
@@ -1054,6 +1069,26 @@ table.grid td.num { text-align: right; }
   font-size: 12.5px;
   animation: slide-in 0.18s ease;
 }
+
+.toast-text { flex: 1; min-width: 0; }
+
+.toast-close {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin: -3px -6px -3px 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.toast-close:hover { color: var(--text); background: var(--surface-hi); }
+.toast-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 .toast.error { border-color: var(--over-text); }
 .toast.ok { border-color: var(--ok-text); }

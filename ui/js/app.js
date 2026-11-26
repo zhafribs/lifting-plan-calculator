@@ -306,14 +306,34 @@ async function main() {
 
   await loadAppearance();
 
+  const liveStatus = document.getElementById("live-status");
+
   function toast(text, kind = "") {
     const node = el("div", {
       class: `toast ${kind}`.trim(),
-      text,
-      role: kind === "error" ? "alert" : "status",
-      "aria-atomic": "true",
+      role: kind === "error" ? "alert" : null,
+      "aria-atomic": kind === "error" ? "true" : null,
     });
+    const close = el(
+      "button",
+      {
+        class: "toast-close",
+        type: "button",
+        "aria-label": "Dismiss",
+        onClick: () => node.remove(),
+      },
+      svgIcon("close", 12),
+    );
+    node.append(el("span", { class: "toast-text", text }), close);
     toastBox.append(node);
+    if (kind === "error") return; // a failure stays until dismissed
+    if (liveStatus) {
+      // Clear first so a repeated message is a change the AT can announce.
+      liveStatus.textContent = "";
+      requestAnimationFrame(() => {
+        liveStatus.textContent = text;
+      });
+    }
     setTimeout(() => node.remove(), 6000);
   }
 

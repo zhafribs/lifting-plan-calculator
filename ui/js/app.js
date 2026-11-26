@@ -205,6 +205,7 @@ async function main() {
   let lastWindowTheme = null;
 
   function paintAppearance() {
+    const previousScheme = document.documentElement.dataset.theme;
     const applied = applyTheme(document.documentElement, {
       preference: appearance.preference,
       systemDark: desktopIsDark(appearance.scheme, darkQuery.matches),
@@ -218,6 +219,11 @@ async function main() {
         `theme: scheme=${applied.scheme} preference=${appearance.preference} ` +
           `accent=${applied.vars.accent} source=${appearance.accentSource} tinted=${applied.tinted}`,
       );
+    // The chart paints on a canvas, so it cannot follow the CSS variables. Tell
+    // it only when the scheme actually changed.
+    if (applied.scheme !== previousScheme) {
+      window.dispatchEvent(new CustomEvent("lpc:theme", { detail: applied.scheme }));
+    }
     // Windows draws the title bar and Mica from the native window theme, so an
     // in-app override has to reach the window too or the chrome keeps the
     // desktop's scheme. Other platforms ignore the call.

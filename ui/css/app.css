@@ -1230,7 +1230,8 @@ table.grid td.num { text-align: right; }
   height: calc(100vh - var(--topbar-h) - 190px);
   min-height: 400px;
   max-height: 660px;
-  background: #141922;
+  /* Only shows before the first paint; the bitmap covers it afterwards. */
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
   cursor: grab;

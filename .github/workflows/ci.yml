@@ -68,6 +68,7 @@ jobs:
             ui/js/graph/capture-cache.js ui/js/graph/capture-cache.test.mjs \
             ui/js/graph/snapshot.js ui/js/graph/snapshot.test.mjs \
             ui/js/graph/svg-surface.js ui/js/graph/svg-surface.test.mjs \
+            ui/js/graph/diagram-palette.js ui/js/graph/diagram-palette.test.mjs \
             ui/js/report-build.js ui/js/report-build.test.mjs \
             ui/js/screen-registry.js ui/js/screen-registry.test.mjs "$work/"
           # theme.js imports the accent maths from here.
@@ -83,7 +84,8 @@ jobs:
           node --test "$work/pdf-math.test.mjs" "$work/jib.test.mjs" \
             "$work/print-palette.test.mjs" "$work/theme.test.mjs" \
             "$work/capture-cache.test.mjs" "$work/snapshot.test.mjs" \
-            "$work/svg-surface.test.mjs" "$work/report-build.test.mjs" \
+            "$work/svg-surface.test.mjs" "$work/diagram-palette.test.mjs" \
+            "$work/report-build.test.mjs" \
             "$work/screen-registry.test.mjs" "$work/js/windows-theme.test.mjs"
 
       # The vendored PDF parser is pinned by hash: a different file is a

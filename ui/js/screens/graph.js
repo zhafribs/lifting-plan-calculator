@@ -15,29 +15,15 @@ import { createSvgSurface } from "../graph/svg-surface.js";
 import { DIAGRAM_FONT } from "../graph/diagram-font.js";
 import { registerGraphCapture } from "../graph/snapshot.js";
 import { printify } from "../graph/print-palette.js";
+import { DIAGRAM_DARK, PRINT_PALETTE, diagramPalette } from "../graph/diagram-palette.js";
 import { jibAvailability } from "../jib.js";
 
 const DEG = "\u00b0";
 const NOTHING = "\u2014";
 
-// Palette, matched to the original Crane Graph canvas.
-const COL_BG = "#141922";
-const COL_GRID = "#1f2735";
-const COL_AXIS = "#5f7191";
-const COL_AXIS_TEXT = "#7d8ba3";
-const COL_ENV_FILL = "rgba(92,179,255,0.10)";
-const COL_ENV_STROKE = "rgba(92,179,255,0.69)";
-const COL_ENV_EDGE = "rgba(92,179,255,0.35)";
-const COL_BOOM_ARC = "rgba(143,183,255,0.33)";
-const COL_BOOM = "#ffb703";
-const COL_JIB = "#5cb3ff";
-const COL_JOINT = "#e8eaf0";
-const COL_DIM_R = "rgba(255,183,3,0.67)";
-const COL_DIM_H = "rgba(143,183,255,0.67)";
-const COL_ANGLE = "rgba(223,230,240,0.59)";
-const COL_PILL_BG = "rgba(16,21,30,0.88)";
-const COL_TEXT = "#dfe6f0";
-const COL_HANDLE = "#ffffff";
+// The palette the draw helpers read for the current paint. Painting is
+// synchronous, so the caller's choice cannot leak into another canvas.
+let P = DIAGRAM_DARK;
 
 const FONT = ` Inter, "DejaVu Sans", system-ui, sans-serif`;
 const TIP_HIT_R = 14;
@@ -165,7 +151,7 @@ export function createGraphScreen(ctx) {
     x = geo.clamp(x, 2, Math.max(2, box.w - w - 2));
     y = geo.clamp(y, 2, Math.max(2, box.h - h - 2));
     roundRect(g, x, y, w, h, 4);
-    g.fillStyle = COL_PILL_BG;
+    g.fillStyle = P.pillBg;
     g.fill();
     g.fillStyle = colour;
     g.textAlign = "center";
@@ -176,7 +162,7 @@ export function createGraphScreen(ctx) {
   function drawGrid(g) {
     const step = gridStep();
     const [x0, x1, y0, y1] = visibleWorld();
-    g.strokeStyle = COL_GRID;
+    g.strokeStyle = P.grid;
     g.lineWidth = 1;
     g.beginPath();
     for (let xs = Math.floor(x0 / step) * step; xs <= x1; xs += step) {
@@ -204,7 +190,7 @@ export function createGraphScreen(ctx) {
     const step = gridStep();
     const [x0, x1, y0, y1] = visibleWorld();
     setFont(g, 400, 10);
-    g.strokeStyle = COL_AXIS;
+    g.strokeStyle = P.axis;
     g.lineWidth = 1;
     const gy = w2s(0, 0)[1];
 
@@ -222,7 +208,7 @@ export function createGraphScreen(ctx) {
         g.lineTo(xs - 7, gy + 8);
       }
       g.stroke();
-      g.fillStyle = COL_AXIS_TEXT;
+      g.fillStyle = P.axisText;
       g.textAlign = "left";
       g.textBaseline = "alphabetic";
       for (let xs = Math.floor(x0 / step) * step; xs <= x1; xs += step) {
@@ -241,7 +227,7 @@ export function createGraphScreen(ctx) {
       g.lineTo(axX, box.h);
       g.stroke();
     }
-    g.fillStyle = COL_AXIS_TEXT;
+    g.fillStyle = P.axisText;
     g.textAlign = "right";
     g.textBaseline = "middle";
     for (let ys = Math.floor(y0 / step) * step; ys <= y1; ys += step) {
@@ -271,11 +257,11 @@ export function createGraphScreen(ctx) {
       g.moveTo(px, py);
       for (const [sx, sy] of pts) g.lineTo(sx, sy);
       g.closePath();
-      g.fillStyle = COL_ENV_FILL;
+      g.fillStyle = P.envFill;
       g.fill();
 
       // arc stroke
-      g.strokeStyle = COL_ENV_STROKE;
+      g.strokeStyle = P.envStroke;
       g.lineWidth = 2;
       g.beginPath();
       g.moveTo(pts[0][0], pts[0][1]);
@@ -284,7 +270,7 @@ export function createGraphScreen(ctx) {
 
       // edge (radius) lines
       g.setLineDash([7, 5]);
-      g.strokeStyle = COL_ENV_EDGE;
+      g.strokeStyle = P.envEdge;
       g.lineWidth = 1;
       g.beginPath();
       g.moveTo(px, py);
@@ -303,7 +289,7 @@ export function createGraphScreen(ctx) {
         .envelopePoints(pivot, state.boom_length, state.env_min, state.env_max, 48)
         .map(([x, y]) => w2s(x, y));
       g.setLineDash([7, 5]);
-      g.strokeStyle = COL_BOOM_ARC;
+      g.strokeStyle = P.boomArc;
       g.lineWidth = 1;
       g.beginPath();
       g.moveTo(arc[0][0], arc[0][1]);
@@ -314,7 +300,7 @@ export function createGraphScreen(ctx) {
 
     // envelope angle labels at the arc ends
     setFont(g, 400, 10);
-    g.fillStyle = COL_JIB;
+    g.fillStyle = P.jib;
     g.textAlign = "left";
     g.textBaseline = "alphabetic";
     for (const item of [
@@ -339,7 +325,7 @@ export function createGraphScreen(ctx) {
     // working radius: horizontal dashed line from the x = 0 axis to the tip,
     // the basis the load chart's radii are measured from
     g.setLineDash([7, 5]);
-    g.strokeStyle = COL_DIM_R;
+    g.strokeStyle = P.dimR;
     g.lineWidth = 1;
     g.beginPath();
     g.moveTo(zx, py);
@@ -356,12 +342,12 @@ export function createGraphScreen(ctx) {
     g.lineTo(zx, py + 5);
     g.stroke();
     const radius = geo.workingRadius(tip);
-    pill(g, (zx + tx) / 2.0, py - 12, `R = ${radius.toFixed(2)} m`, COL_BOOM, 10);
+    pill(g, (zx + tx) / 2.0, py - 12, `R = ${radius.toFixed(2)} m`, P.boom, 10);
 
     // tip height: dashed line from ground up to the tip
     if (gy >= -50 && gy <= box.h + 50) {
       g.setLineDash([7, 5]);
-      g.strokeStyle = COL_DIM_H;
+      g.strokeStyle = P.dimH;
       g.lineWidth = 1;
       g.beginPath();
       g.moveTo(tx, ty);
@@ -374,7 +360,7 @@ export function createGraphScreen(ctx) {
       g.lineTo(tx + 5, gy);
       g.stroke();
       const height = tip[1];
-      const colour = height < 0 ? "#ff6b6b" : COL_JIB;
+      const colour = height < 0 ? P.danger : P.jib;
       pill(g, tx + 8, (ty + gy) / 2.0, `H = ${height.toFixed(2)} m`, colour, 10);
     }
   }
@@ -384,7 +370,7 @@ export function createGraphScreen(ctx) {
     const radius = 30.0;
     const angle = state.angle;
     const steps = Math.max(2, Math.floor(Math.abs(angle) / 2) + 1);
-    g.strokeStyle = COL_ANGLE;
+    g.strokeStyle = P.angle;
     g.lineWidth = 1;
     g.beginPath();
     for (let i = 0; i <= steps; i += 1) {
@@ -396,7 +382,7 @@ export function createGraphScreen(ctx) {
     }
     g.stroke();
     setFont(g, 700, 9);
-    g.fillStyle = COL_TEXT;
+    g.fillStyle = P.text;
     const mid = (angle / 2.0) * (Math.PI / 180);
     g.textAlign = "left";
     g.textBaseline = "alphabetic";
@@ -410,16 +396,16 @@ export function createGraphScreen(ctx) {
   function drawCrane(g) {
     const [px, py] = w2s(state.crane_x, state.crane_y);
     const hot = hover === "crane" || dragging === "crane";
-    const border = hot ? COL_HANDLE : COL_JIB;
+    const border = hot ? P.handle : P.jib;
 
     // outrigger base bar + feet
     g.lineWidth = 1;
-    g.strokeStyle = COL_AXIS;
-    g.fillStyle = "#34405a";
+    g.strokeStyle = P.axis;
+    g.fillStyle = P.craneBase;
     roundRect(g, px - 22, py + 4, 44, 8, 3);
     g.fill();
     g.stroke();
-    g.fillStyle = "#5f7191";
+    g.fillStyle = P.axis;
     roundRect(g, px - 24, py + 11, 9, 6, 2);
     g.fill();
     g.stroke();
@@ -430,25 +416,25 @@ export function createGraphScreen(ctx) {
     // superstructure (behind the boom = -X side) + counterweight
     g.strokeStyle = border;
     g.lineWidth = hot ? 2 : 1;
-    g.fillStyle = "#2f6fbf";
+    g.fillStyle = P.craneBody;
     roundRect(g, px - 16, py - 16, 15, 16, 3);
     g.fill();
     g.stroke();
-    g.fillStyle = "#233047";
+    g.fillStyle = P.craneWeight;
     roundRect(g, px - 23, py - 11, 7, 11, 2);
     g.fill();
     g.stroke();
 
     // slew / pivot
-    g.fillStyle = COL_JOINT;
-    g.strokeStyle = "#141922";
+    g.fillStyle = P.joint;
+    g.strokeStyle = P.bg;
     g.lineWidth = 1;
     g.beginPath();
     g.arc(px, py, 4, 0, Math.PI * 2);
     g.fill();
     g.stroke();
 
-    pill(g, px, py + 30, `(${fmtG(state.crane_x)}, ${fmtG(state.crane_y)})`, COL_TEXT, 9);
+    pill(g, px, py + 30, `(${fmtG(state.crane_x)}, ${fmtG(state.crane_y)})`, P.text, 9);
   }
 
   function drawBoom(g) {
@@ -461,7 +447,7 @@ export function createGraphScreen(ctx) {
     const [tx, ty] = w2s(tip[0], tip[1]);
 
     g.lineCap = "round";
-    g.strokeStyle = COL_BOOM;
+    g.strokeStyle = P.boom;
     g.lineWidth = 5;
     g.beginPath();
     g.moveTo(px, py);
@@ -469,14 +455,14 @@ export function createGraphScreen(ctx) {
     g.stroke();
 
     if (jib > 0) {
-      g.strokeStyle = COL_JIB;
+      g.strokeStyle = P.jib;
       g.lineWidth = 3;
       g.beginPath();
       g.moveTo(bx, by);
       g.lineTo(tx, ty);
       g.stroke();
-      g.fillStyle = COL_JOINT;
-      g.strokeStyle = "#141922";
+      g.fillStyle = P.joint;
+      g.strokeStyle = P.bg;
       g.lineWidth = 1;
       g.beginPath();
       g.arc(bx, by, 4, 0, Math.PI * 2);
@@ -492,12 +478,12 @@ export function createGraphScreen(ctx) {
 
     // Tip location on the diagram itself (always visible), in the same style
     // as the crane location pill, matching the readout's 2-decimal precision.
-    pill(g, tx, ty + 24, `(${tip[0].toFixed(2)}, ${tip[1].toFixed(2)})`, COL_TEXT, 9);
+    pill(g, tx, ty + 24, `(${tip[0].toFixed(2)}, ${tip[1].toFixed(2)})`, P.text, 9);
 
     const hot = hover === "tip" || dragging === "tip";
     const radius = hot ? 9 : 7;
-    g.fillStyle = COL_BOOM;
-    g.strokeStyle = hot ? COL_HANDLE : "#141922";
+    g.fillStyle = P.boom;
+    g.strokeStyle = hot ? P.handle : P.bg;
     g.lineWidth = 2;
     g.beginPath();
     g.arc(tx, ty, radius, 0, Math.PI * 2);
@@ -505,15 +491,16 @@ export function createGraphScreen(ctx) {
     g.stroke();
     if (hot) {
       setFont(g, 700, 9);
-      g.fillStyle = COL_TEXT;
+      g.fillStyle = P.text;
       g.textAlign = "left";
       g.textBaseline = "alphabetic";
       g.fillText(`(${tip[0].toFixed(1)}, ${tip[1].toFixed(1)})`, tx + 14, ty + 4);
     }
   }
 
-  function paint(g) {
-    g.fillStyle = COL_BG;
+  function paint(g, palette = DIAGRAM_DARK) {
+    P = palette;
+    g.fillStyle = P.bg;
     g.fillRect(0, 0, box.w, box.h);
     drawGrid(g);
     drawAxesGround(g);
@@ -534,7 +521,7 @@ export function createGraphScreen(ctx) {
     if (canvas.height !== bh) canvas.height = bh;
     const g = canvas.getContext("2d");
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    paint(g);
+    paint(g, diagramPalette(document.documentElement.dataset.theme));
   }
 
   // --- interaction -----------------------------------------------------------
@@ -1168,7 +1155,7 @@ export function createGraphScreen(ctx) {
             fontData: DIAGRAM_FONT,
             fontName: "InterDiagram",
           });
-          paint(surface);
+          paint(surface, PRINT_PALETTE);
           const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(surface.toString())}`;
           captureCache.set(key, url);
           return url;
@@ -1185,7 +1172,7 @@ export function createGraphScreen(ctx) {
       const g = off.getContext("2d");
       if (!g) return null;
       g.setTransform(scale, 0, 0, scale, 0, 0);
-      paint(g);
+      paint(g, PRINT_PALETTE);
       // The report prints on white, so the palette is turned over here. A CSS
       // filter would look the same, but the print pipeline rasterises a filtered
       // image again and the diagram comes out soft.
@@ -1212,6 +1199,10 @@ export function createGraphScreen(ctx) {
   registerGraphCapture(({ width = 900, height = 700, scale = 3, format = "png" } = {}) =>
     renderDiagram(width, height, scale, format),
   );
+
+  // The chart follows the scheme; the screen outlives a theme change, so it
+  // repaints its canvas rather than keeping the palette it was built with.
+  window.addEventListener("lpc:theme", redraw);
 
   // The screen is re-rendered each time it is opened (and never rebuilt), so
   // first show fits the view; later shows just repaint what the user left.

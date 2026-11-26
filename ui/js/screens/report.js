@@ -627,15 +627,11 @@ export function createReportScreen(ctx) {
           body: el(
             "div",
             { class: "stack" },
-            el("p", {
-              class: "faint small",
-              text: "Working-range diagram: choose Use in report in the Graph tab.",
-            }),
             pdfButton,
             printButton,
             el("div", { class: "row wrap" }, saveButton, openButton),
           ),
-          foot: el("span", { class: "faint", text: "Save as PDF writes A4 with 1-inch margins and the footer on every page. Saved HTML needs its KaTeX folder beside it; print it with Default margins." }),
+          foot: el("span", { class: "faint", text: "Save as PDF writes A4 with 1-inch margins and the footer on every page. Saved HTML needs its KaTeX folder beside it; Print uses the browser dialog, so keep Default margins." }),
         }),
       ),
       previewPane,

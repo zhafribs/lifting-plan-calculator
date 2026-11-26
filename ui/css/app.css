@@ -1046,7 +1046,7 @@ table.grid td.num { text-align: right; }
 
 .toast {
   background: var(--surface-3);
-  border: 1px solid var(--accent-line);
+  border: 1px solid var(--border-strong);
   border-radius: 9px;
   padding: 11px 14px;
   max-width: 420px;

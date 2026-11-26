@@ -560,6 +560,8 @@
   box-shadow: var(--shadow);
 }
 
+/* Windows .toast (0,3,0) outranks the base .toast.error/.ok, so the
+   status border is repeated at this specificity. */
 :root[data-platform="windows"] .toast.error { border-color: var(--over-text); }
 :root[data-platform="windows"] .toast.ok { border-color: var(--ok-text); }
 

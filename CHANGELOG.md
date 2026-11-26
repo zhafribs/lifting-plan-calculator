@@ -4,8 +4,9 @@
 
 - **The report's export actions have a hierarchy.** Save as PDF is the primary
   action, Print is secondary, and Save as HTML / Open in browser are tertiary.
-  The working-range note no longer repeats "use Use", and toasts use a 1px
-  status border instead of a 3px side tab.
+  The misleading "Use in report" note is gone, the active-nav and card-head
+  gradients are removed, and toasts use a 1px status border instead of a 3px
+  side tab.
 
 ## [2.17.16] - 2026-11-26
 

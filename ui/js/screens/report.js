@@ -638,7 +638,7 @@ export function createReportScreen(ctx) {
             printButton,
             el("div", { class: "row wrap" }, saveButton, openButton),
           ),
-          foot: el("span", { class: "faint", text: "Save as PDF writes A4 with the margins set in the preview bar and the footer on every page. Saved HTML needs its KaTeX folder beside it; print it or use Print with Default margins." }),
+          foot: el("span", { class: "faint", text: "Save as PDF writes A4 with the margins set in the preview bar and the footer on every page. Saved HTML needs its KaTeX folder beside it; keep Default margins for either print path." }),
         }),
       ),
       previewPane,

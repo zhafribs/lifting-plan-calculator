@@ -6,7 +6,8 @@
   action, Print is secondary, and Save as HTML / Open in browser are tertiary.
   The misleading "Use in report" note is gone, the active-nav and card-head
   gradients are removed, and toasts use a 1px status border instead of a 3px
-  side tab.
+  side tab. Open in browser writes the current report first, so after an edit it
+  can ask for a filename.
 
 ## [2.17.16] - 2026-11-26
 

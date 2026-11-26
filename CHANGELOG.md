@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+Nothing yet.
+
+## [2.17.19] - 2026-11-26
+
 ### Changed
 
 - **The Pages view shows a page-shaped placeholder while the PDF prints.** It

@@ -332,7 +332,7 @@ pub struct ReportInputs {
     /// Overall Weight tab lists them.
     pub load_items: Vec<LoadItem>,
     pub tackle_items: Vec<TackleItem>,
-    /// The Graph tab's working-range diagram, as a PNG data URL, or None.
+    /// The Graph tab's working-range diagram, as a PNG or SVG data URL, or None.
     pub working_diagram: Option<String>,
     /// The diagram's width as a percentage of its column; None is 100.
     pub diagram_scale: Option<f64>,
@@ -926,7 +926,10 @@ pub fn build_report_html(inputs: &ReportInputs, include: &[String]) -> String {
     let working_diagram = inputs
         .working_diagram
         .as_deref()
-        .filter(|source| source.starts_with("data:image/png;base64,"));
+        .filter(|source| {
+            source.starts_with("data:image/png;base64,")
+                || source.starts_with("data:image/svg+xml;charset=utf-8,")
+        });
     let (reference, footer_center) =
         footer_texts(&reference, inputs.footer_center.as_deref());
     // The report screen can hide the plan header and the line lists; every
@@ -1650,6 +1653,17 @@ mod tests {
         let html = build_report_html(&inputs, &["crane".to_string()]);
         assert!(html.contains("<img src=\"data:image/png;base64,AAAA\""));
         assert!(html.contains("Working range diagram"));
+    }
+
+    #[test]
+    fn the_plan_accepts_an_svg_diagram() {
+        let source = "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3C%2Fsvg%3E";
+        let inputs = ReportInputs {
+            working_diagram: Some(source.to_string()),
+            ..ReportInputs::default()
+        };
+        let html = build_report_html(&inputs, &[]);
+        assert!(html.contains("<img src=\"data:image/svg+xml;charset=utf-8,"));
     }
 
     #[test]

@@ -5,7 +5,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { printify } from "./print-palette.js";
+import { printColour, printify } from "./print-palette.js";
 
 const CASES = [
   [[20, 25, 34], [244, 249, 255]], // background
@@ -34,4 +34,24 @@ test("alpha is left alone", () => {
   const data = new Uint8ClampedArray([20, 25, 34, 128]);
   printify(data);
   assert.equal(data[3], 128);
+});
+
+function channels(value) {
+  return [...value.matchAll(/[\d.]+/g)].slice(0, 3).map((match) => Number(match[0]));
+}
+
+test("printColour matches the pixel filter within rounding", () => {
+  for (const [input, expected] of [
+    ["#141922", [244, 249, 255]],
+    ["rgb(255, 183, 3)", [150, 72, 0]],
+  ]) {
+    const actual = channels(printColour(input));
+    actual.forEach((value, index) => {
+      assert.ok(Math.abs(value - expected[index]) <= 2, `${input} channel ${index}`);
+    });
+  }
+});
+
+test("printColour preserves alpha", () => {
+  assert.match(printColour("rgba(92, 179, 255, 0.5)"), /^rgba\(.*0\.5\)$/);
 });

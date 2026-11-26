@@ -23,6 +23,10 @@ test("the key changes with state, size and scale", () => {
     captureKey(state, 900, 700, 3),
     captureKey(state, 800, 700, 3),
   );
+  assert.notEqual(
+    captureKey(state, 900, 700, 3, "svg"),
+    captureKey(state, 900, 700, 3, "png"),
+  );
 });
 
 test("the cache hits, and evicts the least recently used entry", () => {

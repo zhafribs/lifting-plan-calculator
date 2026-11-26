@@ -5,6 +5,9 @@
 - **The Pages view shows a page-shaped placeholder while the PDF prints.** It
   says "Preparing page 1…" instead of leaving the pane blank behind the
   Rendering status; page 1 appears as soon as the print returns.
+- **The working-range diagram prints as SVG.** The report carries vectors
+  instead of a 2700×2100 PNG: sharper at any zoom and smaller in the PDF. The
+  PNG path remains the fallback, and the print colours are unchanged.
 
 ## [2.17.18] - 2026-11-26
 

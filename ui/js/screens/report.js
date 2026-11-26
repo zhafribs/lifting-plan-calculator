@@ -129,7 +129,7 @@ export function createReportScreen(ctx) {
       schedulePdf(0);
       return;
     }
-    const url = captureWorkingDiagram({ scale: previewMode === "pages" ? 3 : 2 });
+    const url = captureWorkingDiagram({ scale: previewMode === "pages" ? 3 : 2, format: "svg" });
     if (!url) {
       diagramInput.checked = false;
       diagramScaleInput.disabled = true;
@@ -678,7 +678,7 @@ export function createReportScreen(ctx) {
     try {
       const captureStarted = performance.now();
       const diagram = diagramInput.checked
-        ? captureWorkingDiagram({ scale: quality === "export" ? 3 : 2 })
+        ? captureWorkingDiagram({ scale: quality === "export" ? 3 : 2, format: "svg" })
         : null;
       if (diagramInput.checked && !diagram) diagramInput.checked = false;
       if (diagramInput.checked) timed("diagram", captureStarted, quality);

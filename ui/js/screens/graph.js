@@ -11,6 +11,7 @@ import { el } from "../dom.js";
 import { card, field, kvRows, numberInput } from "../components.js";
 import * as geo from "../graph/geometry.js";
 import { captureKey, createCaptureCache } from "../graph/capture-cache.js";
+import { createSvgSurface } from "../graph/svg-surface.js";
 import { registerGraphCapture } from "../graph/snapshot.js";
 import { printify } from "../graph/print-palette.js";
 import { jibAvailability } from "../jib.js";
@@ -1126,9 +1127,9 @@ export function createGraphScreen(ctx) {
   // Render the diagram offscreen at report resolution. This must work even
   // when the Graph tab has never been shown, and it re-syncs from the crane
   // tab first so a jib change is reflected without toggling anything.
-  function renderDiagram(width, height, scale = 3) {
+  function renderDiagram(width, height, scale = 3, format = "png") {
     syncFromWorkbook(false);
-    const key = captureKey(state, width, height, scale);
+    const key = captureKey(state, width, height, scale, format);
     const cached = captureCache.get(key);
     // A report edit that leaves the crane alone must not pay for a new canvas,
     // a pixel pass and a PNG encode.
@@ -1150,6 +1151,23 @@ export function createGraphScreen(ctx) {
       // The screen sizes are small at page width; 1.25 lifts them to the
       // report's own label size (about 6 pt) without changing the on-screen view.
       labelScale = 1.25;
+      if (format === "svg") {
+        try {
+          // The PDF keeps the diagram as vectors: no canvas, no pixel pass and
+          // no PNG encode. The print colours are applied as the SVG is built.
+          const measure = document.createElement("canvas").getContext("2d");
+          const surface = createSvgSurface({ width, height, scale, measure });
+          paint(surface);
+          const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(surface.toString())}`;
+          captureCache.set(key, url);
+          return url;
+        } catch (error) {
+          // A malformed path or a missing measure context must not lose the
+          // diagram; fall through to the PNG path.
+          window.uilog &&
+            window.uilog(`diagram svg failed: ${error?.message || error}`);
+        }
+      }
       const off = document.createElement("canvas");
       off.width = Math.round(width * scale);
       off.height = Math.round(height * scale);
@@ -1180,8 +1198,8 @@ export function createGraphScreen(ctx) {
 
   syncEnabled();
   updateReadout();
-  registerGraphCapture(({ width = 900, height = 700, scale = 3 } = {}) =>
-    renderDiagram(width, height, scale),
+  registerGraphCapture(({ width = 900, height = 700, scale = 3, format = "png" } = {}) =>
+    renderDiagram(width, height, scale, format),
   );
 
   // The screen is re-rendered each time it is opened (and never rebuilt), so

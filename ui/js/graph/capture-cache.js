@@ -5,11 +5,11 @@
 // The cache is deliberately tiny: the live preview and the print-quality image
 // are the only two variants the report asks for.
 
-export function captureKey(state, width, height, scale) {
+export function captureKey(state, width, height, scale, format = "png") {
   const fields = Object.keys(state)
     .sort()
     .map((name) => [name, state[name]]);
-  return `${width}x${height}@${scale}:${JSON.stringify(fields)}`;
+  return `${width}x${height}@${scale}:${format}:${JSON.stringify(fields)}`;
 }
 
 export function createCaptureCache(limit = 2) {

@@ -109,6 +109,19 @@ test("a font override is used for text and measurement", () => {
   assert.match(measure.font, /Inter/);
 });
 
+test("moveTo starts a new subpath", () => {
+  const s = surface();
+  s.beginPath();
+  s.moveTo(0, 0);
+  s.lineTo(10, 10);
+  s.moveTo(20, 0);
+  s.lineTo(30, 10);
+  s.stroke();
+  const d = /d="([^"]+)"/.exec(s.toString())[1];
+  assert.equal((d.match(/M /g) || []).length, 2);
+  assert.equal((d.match(/L /g) || []).length, 2);
+});
+
 test("a full circle is emitted as two arcs", () => {
   const s = surface();
   s.beginPath();

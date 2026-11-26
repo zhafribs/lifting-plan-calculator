@@ -60,6 +60,13 @@ export function createSvgSurface({
     current = [x, y];
   }
 
+  // A move starts a new subpath; `point` continues the open one. Joining the
+  // two would make every grid line a diagonal into the next one.
+  function move(x, y) {
+    path += `M ${n(x)} ${n(y)}`;
+    current = [x, y];
+  }
+
   function arc(cx, cy, radius, start, end, anticlockwise = false) {
     let delta = end - start;
     if (anticlockwise) {
@@ -185,7 +192,7 @@ export function createSvgSurface({
       current = null;
     },
     moveTo(x, y) {
-      point(x, y);
+      move(x, y);
     },
     lineTo(x, y) {
       point(x, y);

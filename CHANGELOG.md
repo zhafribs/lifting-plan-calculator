@@ -1,6 +1,11 @@
 ## [Unreleased]
 
-Nothing yet.
+### Fixed
+
+- **The printed diagram no longer draws stray diagonals across the chart.**
+  Each grid line now starts its own path instead of continuing the previous one.
+- **A zoomed page can be panned to its left edge.** Above fit width, the page no
+  longer centres itself out of reach; the left side stays scrollable.
 
 ## [2.17.20] - 2026-11-26
 

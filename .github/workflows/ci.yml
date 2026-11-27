@@ -321,8 +321,14 @@ jobs:
           $html = Join-Path $env:RUNNER_TEMP "diagram-probe.html"
           $pdf = Join-Path $env:RUNNER_TEMP "diagram-probe.pdf"
           $profile = Join-Path $env:RUNNER_TEMP "edge-profile"
-          $edge = Join-Path $env:PROGRAMFILES "Microsoft/Edge/Application/msedge.exe"
-          if (-not (Test-Path $edge)) { throw "Microsoft Edge is required for the Windows export path" }
+          # Windows installs Edge under Program Files (x86) on x64; the app
+          # checks the same candidates in render_with_browser.
+          $edge = @(
+            (Join-Path $env:PROGRAMFILES "Microsoft/Edge/Application/msedge.exe"),
+            (Join-Path ${env:PROGRAMFILES(X86)} "Microsoft/Edge/Application/msedge.exe"),
+            (Join-Path $env:LOCALAPPDATA "Microsoft/Edge/Application/msedge.exe")
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $edge) { throw "Microsoft Edge is required for the Windows export path" }
           $url = "file:///" + $html.Replace('\', '/').Replace(' ', '%20')
           $arguments = @(
             "--headless", "--disable-gpu", "--no-pdf-header-footer",

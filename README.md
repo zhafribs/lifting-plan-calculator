@@ -30,8 +30,8 @@
   chart, sizes the slings, and builds a printable plan.
 - Every figure in the printed plan shows its formula and the numbers behind it,
   so a reviewer can check the arithmetic instead of taking it on trust.
-- Plans are not saved between launches. Save the report when you want to keep
-  one.
+- Plans are not saved between launches. **Save plan** on the Summary keeps one;
+  **Save as PDF** or **Save as HTML** keeps a copy to print or share.
 
 New here? Read the [step-by-step tutorial](docs/tutorial.md) or watch the
 [52-second walkthrough](docs/video/tutorial.mp4).
@@ -148,11 +148,12 @@ and the required chart capacity is 27,133.33 kg. The manual check uses a
 
 ## Privacy
 
-- No sign-in. No plan is stored between launches.
+- No sign-in. No plan is stored between launches unless you save one.
 - The app asks GitHub once at launch whether a newer release exists, and again
   only if you press the check button in About. Nothing else is sent.
-- Files are written only when you save a report, download an installer, or the
-  app writes its small startup log at
+- Files are written only when you save a plan or a report, when you change the
+  appearance (the scheme and palette are kept in `appearance.json`), when you
+  download an installer, or when the app writes its small startup log at
   `~/.cache/lifting-plan-calculator/ui.log`.
 
 ## Scope of use

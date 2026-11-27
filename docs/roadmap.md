@@ -1,6 +1,6 @@
 # Remaining work
 
-**Status:** 27 November 2026 · v2.17.23.
+**Status:** 28 November 2026 · v2.17.24.
 
 Verification log: the Windows 11 (VM) smoke pass passed all five checks on
 26 November 2026. The headless-Edge engine check now runs on every CI push
@@ -42,14 +42,16 @@ punctuation goes missing.
   remains for when it is wanted; the audit in `docs/accessibility.md` is the
   evidence that stands today.
 
+## Landed in 2.17.24
+
+- **Saving a plan.** Explicit Save and Open on the Summary, a versioned JSON file
+  with Rust validation at the trust boundary, the issue date kept with the plan,
+  and no auto-save (ADR-0010, spec `2026-11-28-plan-file.md`).
+
 ## Still open
 
-- **Product decisions.** Saving a plan, several lifts per report, language and
-  units — each needs an answer before it becomes work; see
+- **Product decisions.** Several lifts per report, and language and units — see
   `docs/product-decisions.md`.
-- **Saving a plan** has a drafted ADR (`docs/adr/0010-plan-file.md`) and spec
-  (`docs/superpowers/specs/2026-11-28-plan-file.md`), waiting for approval
-  before any code.
 
 ## Limits still accepted
 

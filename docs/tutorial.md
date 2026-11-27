@@ -26,7 +26,7 @@ Think of it as the walkthrough I would give you at a demo table: no jargon, just
 - Have the crane's own load chart ready. The app imports `.xlsx` workbooks and also accepts a single chart point typed by hand.
 - For the outrigger pad, have the ground information ready. The tab uses the BS 8004 Table 1 presumed bearing values; the same table is in `docs/examples/Presumed Allowable Bearing Values (BS 8004 Table 1).xlsx`, with the thickness guidance on its **Thickness** sheet.
 - The **75% rule** is the safety band used throughout: the required chart capacity is the gross load at the hook divided by 0.75. A 20,350 kg lift therefore needs at least **27,133.33 kg** of charted capacity.
-- Nothing is stored between launches. Save the report if you want to keep a plan.
+- No plan is stored between launches unless you save one. **Save plan** on the Summary screen writes the inputs and the report settings; **Save as PDF** writes the plan you print.
 - This is a calculation aid. Check every input and every chart against the source before the lift, and have the finished plan approved by the competent person on site.
 
 ## Quick start
@@ -302,7 +302,7 @@ The preview follows the other tabs live.
 
 ### Fill in the plan details
 
-Enter the **Plan reference**, **Prepared by**, **Checked by** and **Approved by**. These lines are printed on the plan and are not used by the calculation engine.
+Enter the **Plan reference**, **Prepared by**, **Checked by** and **Approved by**. These lines are printed on the plan and are not used by the calculation engine. The **Issued** date is taken from the plan: a saved plan keeps the date it was saved with, and a new plan starts with today's date.
 
 You can also edit the **Footer** centre text. It is printed in the centre of every page.
 
@@ -311,6 +311,8 @@ You can also edit the **Footer** centre text. It is printed in the centre of eve
 - **Pages** shows the report as the PDF pages that will be saved, with page breaks. **Live** shows the HTML preview as you type.
 - Use **Fit width**, the zoom buttons and **Refresh** to inspect a page.
 - **Margins** opens the page margin panel. The default is 25.4 mm, and the presets cover common metric and imperial sizes.
+- **Save plan** writes the inputs and the report settings to a JSON file you choose; no plan is kept between launches unless you save one.
+- **Open plan** loads such a file and replaces the current plan. The workbook's table view is not saved; re-import the workbook if you need the full sheet on screen.
 - **Save as HTML** writes a portable copy with its KaTeX assets beside it.
 - **Save as PDF** writes A4 pages with the margins you set and the footer on every page.
 - **Print** opens the system print dialog.
@@ -368,7 +370,7 @@ Choose **Rectangular** and enter the width you have. The app calculates the mini
 
 ### Where did my plan go?
 
-The app does not store plans between launches. Use **Save as HTML** or **Save as PDF** in Summary to keep a copy.
+The app does not store plans between launches. Use **Save plan** in Summary to keep one, or **Save as HTML** / **Save as PDF** to keep a copy to print or share.
 
 ---
 

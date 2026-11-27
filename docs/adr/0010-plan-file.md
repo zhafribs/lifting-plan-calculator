@@ -1,13 +1,15 @@
 # ADR-0010 — A plan is saved as an explicit, versioned JSON file
 
-- **Status:** proposed, 2026-11-28
+- **Status:** accepted, 2026-11-28
 - **Owners:** Maintainer, Security & Build, Safety & QA, Design & Steward
 - **Applies to:** the app state, the Summary screen, the filesystem
 
 ## Context
 
-The app stores nothing between launches. That is a deliberate privacy property:
-the only automatic writes are the update check and `~/.cache/…/ui.log`. The cost
+The app stores no plan between launches (the appearance setting is kept in
+`appearance.json`). That is a deliberate privacy property:
+the only automatic write is `~/.cache/…/ui.log` (the update check only reads).
+The cost
 is that closing the app loses the plan, and a plan cannot be handed to a
 colleague or reopened later.
 
@@ -29,17 +31,26 @@ scale and the issue date.
   error and leaves the current plan untouched.
 - **The save path validates the same shape**, so the app cannot write a file it
   would refuse to open.
+- **The Graph tab's drawing state is saved with the report.** The configuration,
+  boom and jib lengths, angle, envelope sweep and crane position go into the
+  file, because the diagram's sweep labels are printed figures. Without them, a
+  reopened plan would draw the default diagram.
 - **The issue date belongs to the plan.** A saved plan keeps its date; a new plan
   gets today's.
-- **The privacy contract changes in one sentence:** nothing is stored unless the
-  operator saves a plan; the update check and `ui.log` remain the only automatic
-  writes. `AGENTS.md` and the README must say it in those words.
+- **The privacy contract changes in one sentence:** no plan is stored unless the
+  operator saves one; the appearance setting and `ui.log` are
+  the only other writes; the update check only reads. `AGENTS.md` and the README
+  say it in those words.
+- **Three UI-only outrigger flags ride in `state`.** `crane_mass_linked`,
+  `lift_load_linked` and `crane_capacity_linked` decide whether the form keeps
+  the outrigger in step with the crane and the load. The solver ignores them;
+  without them, reopening a plan would change how the form behaves.
 
 ## Consequences
 
 - A plan can be shared, archived and reopened; the printed result is the saved
   result.
-- The app now has one user-chosen write. It writes only where the dialog points,
+- The app has one more user-chosen write. It writes only where the dialog points,
   once, and never reads any file the operator did not choose.
 - A file from a future version is refused with a message rather than half-read;
   version 1 is the only format today.

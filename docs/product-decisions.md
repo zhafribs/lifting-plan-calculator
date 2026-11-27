@@ -1,13 +1,15 @@
 # Product decisions
 
-**Status:** 27 November 2026. These are questions, not work. Nothing here is
-implemented. Each one needs a decision before a plan; the recommendation is the
-maintainer's, and a decision is recorded as an ADR plus a council record.
+**Status:** 28 November 2026. Decision 1 is decided and implemented. Decisions 2
+and 3 are open questions; nothing in them is implemented. Each needs a decision
+before a plan, and a decision is recorded as an ADR plus a council record.
 
 ## 1. Saving a plan
 
-**Today:** nothing is stored between launches. The privacy contract allows one
-GitHub update check at launch and one file write (`~/.cache/lifting-plan-calculator/ui.log`).
+**Today:** no plan is stored between launches (the appearance setting is). The
+privacy contract allows one GitHub update check at launch, one automatic file
+write (`~/.cache/lifting-plan-calculator/ui.log`), and the appearance file when
+the theme changes.
 Closing the app loses the plan.
 
 **Why it matters:** a lift plan takes long enough to enter that losing it is
@@ -18,7 +20,7 @@ privacy promise, which is currently a selling point.
 
 | Option | What it changes | Cost |
 | --- | --- | --- |
-| **A. Explicit export/import a plan file** (user picks the path) | Nothing is stored unless the user asks; the contract stays true | A schema with a version, validation at the boundary, a save/open dialog, tests |
+| **A. Explicit export/import a plan file** (user picks the path) | No plan is stored unless the user asks; the contract stays true | A schema with a version, validation at the boundary, a save/open dialog, tests |
 | **B. Auto-save the last plan** in the app data folder | Reopens where you left off | Breaks the "nothing stored" promise; needs retention and a delete control |
 | **C. No saving** | — | Work is lost on close |
 
@@ -30,9 +32,9 @@ reader, because the file is untrusted input.
 **A decision needs:** an ADR, the Security seat for the file dialog and the
 schema, the Safety seat for every figure the file carries, and a council record.
 
-**Drafted:** `docs/adr/0010-plan-file.md` and
-`docs/superpowers/specs/2026-11-28-plan-file.md` are ready for review; nothing is
-implemented.
+**Decided 28 November 2026 — A.** Implemented in 2.17.24; see
+`docs/adr/0010-plan-file.md` and
+`docs/superpowers/specs/2026-11-28-plan-file.md`.
 
 ## 2. Several lifts in one report
 

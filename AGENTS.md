@@ -139,9 +139,11 @@ Builds: `./build-appimage.sh` (host) or `./build-appimage-portable.sh`
 - A change to any figure, verdict, limit, or the words describing one summons
   the Domain Safety Engineer; engine/report changes need a council record under
   `docs/council/decisions/` before landing.
-- Privacy contract: nothing is stored between launches, one GitHub update check
-  at launch, and only `~/.cache/lifting-plan-calculator/ui.log` is written.
-  Adding a network call, a file write, or a permission needs the security seat.
+- Privacy contract: no plan is stored between launches unless the operator saves
+  one; the appearance setting is kept in `appearance.json` when it changes;
+  `~/.cache/lifting-plan-calculator/ui.log` is the only automatic write, and one
+  GitHub update check runs at launch. Adding a network call, a file write, or a
+  permission needs the security seat.
 
 ## Style
 

@@ -30,6 +30,10 @@ reader, because the file is untrusted input.
 **A decision needs:** an ADR, the Security seat for the file dialog and the
 schema, the Safety seat for every figure the file carries, and a council record.
 
+**Drafted:** `docs/adr/0010-plan-file.md` and
+`docs/superpowers/specs/2026-11-28-plan-file.md` are ready for review; nothing is
+implemented.
+
 ## 2. Several lifts in one report
 
 **Today:** one lift per report. Tandem is the only multi-crane case. The report

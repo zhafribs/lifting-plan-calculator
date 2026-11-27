@@ -47,6 +47,9 @@ punctuation goes missing.
 - **Product decisions.** Saving a plan, several lifts per report, language and
   units — each needs an answer before it becomes work; see
   `docs/product-decisions.md`.
+- **Saving a plan** has a drafted ADR (`docs/adr/0010-plan-file.md`) and spec
+  (`docs/superpowers/specs/2026-11-28-plan-file.md`), waiting for approval
+  before any code.
 
 ## Limits still accepted
 

@@ -35,15 +35,18 @@ All three lose `=`, `(`, `)`. The full face shows the subset is not the cause;
 both engines write the SVG text as Type 3 fonts, and that text layer is where the
 punctuation goes missing.
 
+## Deferred
+
+- **The screen-reader pass.** On 28 November 2026 the maintainer reviewed the
+  code audit and chose to defer the listening pass. `docs/narrator-pass.md`
+  remains for when it is wanted; the audit in `docs/accessibility.md` is the
+  evidence that stands today.
+
 ## Still open
 
-1. **A real screen-reader pass.** Orca/AT-SPI are not installed here. The code
-   audit and its fixes are in `docs/accessibility.md`; the Windows 11 script is
-   `docs/narrator-pass.md` (Narrator is built in, so the VM can run it). This is
-   the one engineering item not finished.
-2. **Product decisions.** Saving a plan, several lifts per report, language and
-   units — each needs an answer before it becomes work; see
-   `docs/product-decisions.md`.
+- **Product decisions.** Saving a plan, several lifts per report, language and
+  units — each needs an answer before it becomes work; see
+  `docs/product-decisions.md`.
 
 ## Limits still accepted
 

@@ -1,9 +1,10 @@
 # Accessibility
 
-**Status:** 27 November 2026 · review at v2.17.23. A real screen-reader pass has
+**Status:** 28 November 2026 · review at v2.17.23. A real screen-reader pass has
 **not** been run: Orca and AT-SPI tooling are not installed in the development
-environment. This page is a code and keyboard audit, and the checklist for the
-pass that is still owed.
+environment. This page is a code and keyboard audit. The listening pass was
+deferred by the maintainer on 28 November 2026; the Windows script remains in
+[`narrator-pass.md`](narrator-pass.md) if it is wanted later.
 
 ## What the audit found, and what was fixed
 

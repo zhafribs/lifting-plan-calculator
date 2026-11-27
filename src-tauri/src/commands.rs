@@ -391,6 +391,70 @@ pub fn build_report(
     )
 }
 
+/// Save the plan as a versioned JSON file. The same validation that guards an
+/// open runs here, so the app cannot write a file it would refuse to open.
+#[tauri::command]
+pub async fn save_plan(
+    state: AppState,
+    report: crate::plan::PlanReport,
+    suggested_name: String,
+) -> Result<Option<String>, String> {
+    let suggested_name = report_file_name(&suggested_name);
+    let handle = rfd::AsyncFileDialog::new()
+        .set_title("Save lifting plan")
+        .set_file_name(&suggested_name)
+        .add_filter("Lifting plan", &["json"])
+        .save_file()
+        .await;
+    let Some(handle) = handle else {
+        return Ok(None);
+    };
+    let mut target = handle.path().to_path_buf();
+    if !target
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .map(|extension| extension.eq_ignore_ascii_case("json"))
+        .unwrap_or(false)
+    {
+        target.set_extension("json");
+    }
+
+    let plan = crate::plan::PlanFile {
+        format: crate::plan::FORMAT.to_string(),
+        version: crate::plan::VERSION,
+        state,
+        report,
+    };
+    let bytes = plan.to_bytes()?;
+    write_bytes(&bytes, &target, "plan")?;
+    Ok(Some(target.to_string_lossy().to_string()))
+}
+
+/// Read a plan the operator chooses. The file is untrusted: it is size-capped,
+/// parsed and validated before any of it reaches the app.
+#[tauri::command]
+pub async fn open_plan() -> Result<Option<crate::plan::PlanFile>, String> {
+    let handle = rfd::AsyncFileDialog::new()
+        .set_title("Open lifting plan")
+        .add_filter("Lifting plan", &["json"])
+        .add_filter("All files", &["*"])
+        .pick_file()
+        .await;
+    let Some(handle) = handle else {
+        return Ok(None);
+    };
+    let path = handle.path().to_path_buf();
+    let size = std::fs::metadata(&path)
+        .map_err(|error| format!("That plan could not be read: {error}"))?
+        .len();
+    if size > crate::plan::MAX_BYTES {
+        return Err("That plan file is larger than 4 MB.".to_string());
+    }
+    let bytes = std::fs::read(&path)
+        .map_err(|error| format!("That plan could not be read: {error}"))?;
+    crate::plan::PlanFile::parse(&bytes).map(Some)
+}
+
 /// Save the report beside a copy of its KaTeX assets, so the file typesets its
 /// equations wherever it is opened. Returns the chosen path, or None when the
 /// dialog was cancelled.
@@ -874,20 +938,19 @@ fn staged_path(target: &Path) -> std::path::PathBuf {
         .file_name()
         .map(|name| name.to_string_lossy().to_string())
         .unwrap_or_else(|| "lifting-plan.pdf".to_string());
-    target.with_file_name(format!(".{name}.part-{}", std::process::id()))
+    target.with_file_name(format!(".{name}.lpc-part-{}", std::process::id()))
 }
 
 /// Write finished PDF bytes to the path the operator chose, through the same
 /// staging file as a render, so a failure never leaves a partial plan.
-fn write_bytes(bytes: &[u8], target: &Path) -> Result<(), String> {
+fn write_bytes(bytes: &[u8], target: &Path, what: &str) -> Result<(), String> {
     sweep_stale_attempts(target);
     let staging = staged_path(target);
-    std::fs::write(&staging, bytes)
-        .map_err(|error| {
-            let _ = std::fs::remove_file(&staging);
-            format!("The PDF could not be written to that folder: {error}")
-        })?;
-    move_into_place(&staging, target, "PDF")
+    std::fs::write(&staging, bytes).map_err(|error| {
+        let _ = std::fs::remove_file(&staging);
+        format!("The {what} could not be written to that folder: {error}")
+    })?;
+    move_into_place(&staging, target, what)
 }
 
 /// Retry a file operation a few times: on Windows a just-written PDF can be
@@ -933,7 +996,7 @@ fn sweep_stale_attempts(target: &Path) {
     let (Some(parent), Some(name)) = (target.parent(), target.file_name()) else {
         return;
     };
-    let prefix = format!(".{}.", name.to_string_lossy());
+    let prefix = format!(".{}.lpc-part-", name.to_string_lossy());
     let Ok(entries) = std::fs::read_dir(parent) else {
         return;
     };
@@ -1090,7 +1153,7 @@ pub async fn save_pdf(
     tauri::async_runtime::spawn_blocking(move || match cached {
         // The operator is saving what the preview showed: write those bytes,
         // so the file cannot differ from the pages on screen.
-        Some(bytes) => write_bytes(&bytes, &target_for_render),
+        Some(bytes) => write_bytes(&bytes, &target_for_render, "PDF"),
         // One print at a time, so saving and previewing cannot fight over the
         // GTK main thread.
         None => {
@@ -1362,7 +1425,7 @@ mod pdf_export_tests {
             .file_name()
             .unwrap()
             .to_string_lossy()
-            .starts_with(&format!(".plan.pdf.part-{}", std::process::id())));
+            .starts_with(&format!(".plan.pdf.lpc-part-{}", std::process::id())));
 
         std::fs::write(&target, b"previous plan").unwrap();
         std::fs::write(&staging, b"new plan").unwrap();
@@ -1406,8 +1469,8 @@ mod pdf_export_tests {
         let dir = std::env::temp_dir().join(format!("lpc-sweep-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let target = dir.join("plan.pdf");
-        let stale = dir.join(".plan.pdf.part-999");
-        let unrelated = dir.join(".other.pdf.part-999");
+        let stale = dir.join(".plan.pdf.lpc-part-999");
+        let unrelated = dir.join(".other.pdf.lpc-part-999");
         std::fs::write(&stale, b"leftover").unwrap();
         std::fs::write(&unrelated, b"not ours").unwrap();
         // Age the leftover beyond the hour the sweep waits for.
@@ -1419,10 +1482,17 @@ mod pdf_export_tests {
         assert!(!stale.exists(), "an old leftover for this plan is removed");
         assert!(unrelated.exists(), "another plan's file is never touched");
 
-        let recent = dir.join(".plan.pdf.part-1000");
+        let recent = dir.join(".plan.pdf.lpc-part-1000");
         std::fs::write(&recent, b"in flight").unwrap();
+        // A user file that merely starts with the plan's name is not ours.
+        let user = dir.join(".plan.pdf.notes");
+        std::fs::write(&user, b"mine").unwrap();
+        let file = std::fs::File::options().write(true).open(&user).unwrap();
+        file.set_modified(old).unwrap();
+
         sweep_stale_attempts(&target);
         assert!(recent.exists(), "a save happening now is left alone");
+        assert!(user.exists(), "a user file with a similar name is left alone");
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -1480,7 +1550,7 @@ mod pdf_export_tests {
         let target = dir.join("plan.pdf");
         std::fs::write(&target, b"old").unwrap();
 
-        write_bytes(b"%PDF-1.7 preview", &target).unwrap();
+        write_bytes(b"%PDF-1.7 preview", &target, "PDF").unwrap();
         assert_eq!(std::fs::read(&target).unwrap(), b"%PDF-1.7 preview");
         // Nothing is left beside it.
         let leftovers: Vec<_> = std::fs::read_dir(&dir)

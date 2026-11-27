@@ -42,6 +42,9 @@ export const api = {
   saveReport: (html, suggestedName) => invoke("save_report", { html, suggestedName }),
   savePdf: (html, suggestedName, footer, margins) =>
     invoke("save_pdf", { html, suggestedName, footer, margins }),
+  savePlan: (state, report, suggestedName) =>
+    invoke("save_plan", { state, report, suggestedName }),
+  openPlan: () => invoke("open_plan"),
   // The report as PDF bytes, for the Summary page view (an ArrayBuffer).
   previewPdf: (html, footer, margins) => invoke("preview_pdf", { html, footer, margins }),
   openReportFile: (path) => invoke("open_report_file", { path }),

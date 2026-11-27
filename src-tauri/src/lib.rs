@@ -14,6 +14,7 @@ pub mod model;
 pub mod nonuniform;
 pub mod outrigger;
 pub mod pdf;
+pub mod plan;
 #[cfg(target_os = "linux")]
 pub mod pdf_print;
 #[cfg(target_os = "windows")]
@@ -43,6 +44,8 @@ pub fn run() {
             commands::build_report,
             commands::save_report,
             commands::save_pdf,
+            commands::save_plan,
+            commands::open_plan,
             commands::preview_pdf,
             commands::open_report_file,
             commands::appearance,

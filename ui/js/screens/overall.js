@@ -36,13 +36,18 @@ export function createOverallScreen(ctx) {
     "button",
     {
       class: "btn add wide",
-      onClick: () =>
+      onClick: () => {
+        if (store.state.load_items.length >= 500) {
+          ctx.toast("A plan can have at most 500 load lines.", "error");
+          return;
+        }
         store.update((state) => {
           state.load_items.push({
             ...blankLoadItem(),
             lift: state.load_items.at(-1)?.lift?.trim() || "Lift 1",
           });
-        }),
+        });
+      },
     },
     svgIcon("plus", 15),
     "Add load item",
@@ -52,13 +57,18 @@ export function createOverallScreen(ctx) {
     "button",
     {
       class: "btn add wide",
-      onClick: () =>
+      onClick: () => {
+        if (store.state.tackle_items.length >= 500) {
+          ctx.toast("A plan can have at most 500 tackle lines.", "error");
+          return;
+        }
         store.update((state) => {
           state.tackle_items.push({
             ...blankTackleItem(),
             lift: state.tackle_items.at(-1)?.lift?.trim() || "Lift 1",
           });
-        }),
+        });
+      },
     },
     svgIcon("plus", 15),
     "Add tackle item",

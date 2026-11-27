@@ -67,6 +67,7 @@ jobs:
             ui/js/theme.js ui/js/theme.test.mjs \
             ui/js/graph/capture-cache.js ui/js/graph/capture-cache.test.mjs \
             ui/js/graph/snapshot.js ui/js/graph/snapshot.test.mjs \
+            ui/js/graph/geometry.js \
             ui/js/graph/svg-surface.js ui/js/graph/svg-surface.test.mjs \
             ui/js/graph/diagram-palette.js ui/js/graph/diagram-palette.test.mjs \
             ui/js/graph/diagram-font.js ui/js/graph/diagram-font.test.mjs \

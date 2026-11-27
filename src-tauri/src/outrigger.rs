@@ -281,6 +281,12 @@ pub struct OutriggerInputs {
     pub crane_capacity_t: f64,
     pub foot_length_m: f64,
     pub foot_width_m: f64,
+    /// UI-only: the form keeps these fields in step with the crane and the
+    /// load. The solver ignores them; they ride in the plan so reopening keeps
+    /// the form's behaviour.
+    pub crane_mass_linked: bool,
+    pub lift_load_linked: bool,
+    pub crane_capacity_linked: bool,
 }
 
 impl Default for OutriggerInputs {
@@ -296,6 +302,9 @@ impl Default for OutriggerInputs {
             crane_capacity_t: 0.0,
             foot_length_m: 0.0,
             foot_width_m: 0.0,
+            crane_mass_linked: true,
+            lift_load_linked: true,
+            crane_capacity_linked: true,
         }
     }
 }
@@ -542,6 +551,9 @@ pub fn example_outrigger_inputs() -> OutriggerInputs {
         crane_capacity_t: 50.0,
         foot_length_m: 0.0,
         foot_width_m: 0.0,
+        crane_mass_linked: true,
+        lift_load_linked: true,
+        crane_capacity_linked: true,
     }
 }
 

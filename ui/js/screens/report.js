@@ -3,7 +3,11 @@
 import { el, svgIcon, debounce, escapeHtml } from "../dom.js";
 import { api, errorText } from "../api.js";
 import { card, field, numberInput, textInput, withUnit } from "../components.js";
-import { captureWorkingDiagram } from "../graph/snapshot.js";
+import {
+  applyDiagramState,
+  captureDiagramState,
+  captureWorkingDiagram,
+} from "../graph/snapshot.js";
 import { createPdfViewer } from "../pdf-viewer.js";
 import { pageFirstBox } from "../pdf-math.js";
 import { withTimeout } from "../async.js";
@@ -33,14 +37,17 @@ export function createReportScreen(ctx) {
   let footerText = DEFAULT_FOOTER;
   // The issue stamp belongs to the session, not to each keystroke.
   const now = new Date();
-  const issuedAt = [
+  let issuedAt = [
     String(now.getDate()).padStart(2, "0"),
     String(now.getMonth() + 1).padStart(2, "0"),
     now.getFullYear(),
   ].join("-");
+  const issuedFoot = el("span", { class: "faint", text: `Issued ${issuedAt} — kept with the plan.` });
   // Sign-off lines live here, not in the lift state: they are printed on the
   // plan and never reach the engine.
   const signoff = { reference: "", prepared_by: "", checked_by: "", approved_by: "" };
+  const signoffInputs = {};
+  let footerInput = null;
 
   const planFields = [
     ["reference", "Plan reference"],
@@ -71,6 +78,11 @@ export function createReportScreen(ctx) {
     input.addEventListener("change", () => {
       sections[key] = input.checked;
       breakBoxes[key].disabled = !input.checked;
+      if (!input.checked) {
+        // A page break on a hidden section is a state Save refuses.
+        breakBoxes[key].checked = false;
+        pageBreaks.delete(key);
+      }
       if (input.checked && EXCLUSIVE.includes(key)) {
         for (const other of EXCLUSIVE) {
           if (other === key) continue;
@@ -523,6 +535,132 @@ export function createReportScreen(ctx) {
     "Print",
   );
 
+  // The plan file: the inputs and the report settings, saved only when the
+  // operator chooses. Opening one applies it atomically; the engine recomputes.
+  function reportSettings() {
+    return {
+      sections: Object.keys(sections).filter((key) => sections[key]),
+      page_breaks: [...pageBreaks],
+      diagram: diagramInput.checked,
+      diagram_state: captureDiagramState(),
+      signoff: { ...signoff },
+      footer_text: footerText,
+      margins: { ...margins },
+      diagram_scale: diagramScale,
+      issued_at: issuedAt,
+    };
+  }
+
+  function planFileName() {
+    // A reference can carry anything; the file name cannot.
+    const reference = signoff.reference
+      .trim()
+      .replace(/[^A-Za-z0-9._-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80);
+    return reference ? `${reference}.lpc.json` : "lifting-plan.lpc.json";
+  }
+
+  function applyPlan(file) {
+    const report = file.report || {};
+    store.setState({ ...file.state, chart_table: null });
+    applyDiagramState(report.diagram_state);
+
+    const enabled = new Set(Array.isArray(report.sections) ? report.sections : []);
+    for (const key of Object.keys(sections)) {
+      const on = enabled.has(key);
+      sections[key] = on;
+      checkBoxes[key].checked = on;
+      breakBoxes[key].disabled = !on;
+    }
+    pageBreaks.clear();
+    for (const key of Array.isArray(report.page_breaks) ? report.page_breaks : []) {
+      if (key in breakBoxes && sections[key]) pageBreaks.add(key);
+    }
+    for (const [key, input] of Object.entries(breakBoxes)) {
+      input.checked = pageBreaks.has(key);
+    }
+
+    for (const [key] of planFields) {
+      const value =
+        report.signoff && typeof report.signoff[key] === "string"
+          ? report.signoff[key]
+          : "";
+      signoff[key] = value;
+      if (signoffInputs[key]) signoffInputs[key].value = value;
+    }
+
+    if (typeof report.footer_text === "string") {
+      footerText = report.footer_text;
+      if (footerInput) footerInput.value = footerText;
+    }
+
+    if (report.margins && typeof report.margins === "object") {
+      for (const [key] of marginSides) {
+        const value = Number(report.margins[key]);
+        if (Number.isFinite(value)) marginInputs[key].value = String(value);
+      }
+      const next = readMargins();
+      if (!marginProblem(next)) {
+        margins = next;
+        updateMarginHint();
+      }
+    }
+
+    if (Number.isFinite(report.diagram_scale)) {
+      diagramScale = Math.min(100, Math.max(25, report.diagram_scale));
+      diagramScaleInput.value = String(diagramScale);
+    }
+    diagramInput.checked = report.diagram !== false;
+    diagramScaleInput.disabled = !diagramInput.checked;
+
+    if (typeof report.issued_at === "string" && report.issued_at) {
+      issuedAt = report.issued_at;
+      issuedFoot.textContent = `Issued ${issuedAt} — kept with the plan.`;
+    }
+
+    lastSavedPath = null;
+    lastSavedHtml = "";
+    lastPdfHtml = "";
+    schedulePreview(0);
+    schedulePdf(0);
+  }
+
+  async function savePlan() {
+    try {
+      // The workbook's table view is presentation only; leave it out of the file.
+      const { chart_table: _table, ...state } = store.state;
+      const path = await api.savePlan(state, reportSettings(), planFileName());
+      if (path) toast(`Plan saved to ${path}`, "ok");
+    } catch (error) {
+      toast(errorText(error), "error");
+    }
+  }
+
+  async function openPlan() {
+    try {
+      const file = await api.openPlan();
+      if (!file) return;
+      applyPlan(file);
+      toast("Plan opened.", "ok");
+    } catch (error) {
+      toast(errorText(error), "error");
+    }
+  }
+
+  const savePlanButton = el(
+    "button",
+    { class: "btn ghost small", onClick: savePlan },
+    svgIcon("file", 15),
+    "Save plan...",
+  );
+  const openPlanButton = el(
+    "button",
+    { class: "btn ghost small", onClick: openPlan },
+    svgIcon("file", 15),
+    "Open plan...",
+  );
+
   const pdfButton = el(
     "button",
     {
@@ -630,13 +768,14 @@ export function createReportScreen(ctx) {
                   schedulePreview(0);
                 },
               });
+              signoffInputs[key] = input;
               // The page view is a print, so it redraws when the field is
               // finished with, not on every keystroke.
               input.addEventListener("blur", () => schedulePdf(0));
               return field({ label, input });
             }),
           ),
-          foot: el("span", { class: "faint", text: `Issued ${issuedAt}` }),
+          foot: issuedFoot,
         }),
         card({
           title: "Footer",
@@ -654,6 +793,7 @@ export function createReportScreen(ctx) {
                   },
                 });
                 input.addEventListener("blur", () => schedulePdf(0));
+                footerInput = input;
                 return input;
               })(),
             }),
@@ -665,11 +805,12 @@ export function createReportScreen(ctx) {
           body: el(
             "div",
             { class: "stack" },
+            el("div", { class: "row wrap" }, savePlanButton, openPlanButton),
             pdfButton,
             printButton,
             el("div", { class: "row wrap" }, saveButton, openButton),
           ),
-          foot: el("span", { class: "faint", text: "Save as PDF writes A4 with the margins set in the preview bar and the footer on every page. Saved HTML needs its KaTeX folder beside it; keep Default margins for either print path." }),
+          foot: el("span", { class: "faint", text: "No plan is kept between launches. Save plan writes a file you choose; Open plan replaces the current plan. Save as PDF writes A4 with the margins set in the preview bar and the footer on every page. Saved HTML needs its KaTeX folder beside it; keep Default margins for either print path." }),
         }),
       ),
       previewPane,
@@ -926,7 +1067,14 @@ export function createReportScreen(ctx) {
     // line lists; only this screen's own checkboxes can hide them.
     sections.plan = true;
     sections.lines = true;
-    for (const [key, input] of Object.entries(checkBoxes)) input.checked = sections[key];
+    for (const key of Object.keys(sections)) {
+      checkBoxes[key].checked = sections[key];
+      breakBoxes[key].disabled = !sections[key];
+      if (!sections[key]) {
+        breakBoxes[key].checked = false;
+        pageBreaks.delete(key);
+      }
+    }
     schedulePreview(0);
   }
 

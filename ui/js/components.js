@@ -98,6 +98,7 @@ export function textInput({ value, onInput, placeholder, disabled = false }) {
     placeholder: placeholder || "",
     disabled,
   });
+  input.maxLength = 500;
   input.value = value ?? "";
   input.addEventListener("input", () => {
     if (onInput) onInput(input.value);

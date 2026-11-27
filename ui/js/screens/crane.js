@@ -376,12 +376,23 @@ export function createCraneScreen(ctx) {
     // The table only changes with the workbook (or the fold); untouched across
     // re-solves, it stays put — rewriting it under the operator's scroll is
     // what makes WebKit yank the pane around.
-    if (table === lastTable) return;
-    lastTable = table;
     if (!table || !table.headers?.length) {
+      // Nothing to rewrite under the operator's scroll, so this branch does not
+      // need the dedupe below; the note has to appear even on the first render.
+      lastTable = table;
       workbookBox.replaceChildren();
+      if (state.crane.chart_source === "excel") {
+        workbookBox.append(
+          el("p", {
+            class: "faint small",
+            text: "The workbook table is not saved with the plan; re-import the workbook to see it again.",
+          }),
+        );
+      }
       return;
     }
+    if (table === lastTable) return;
+    lastTable = table;
     const toggle = el(
       "button",
       {

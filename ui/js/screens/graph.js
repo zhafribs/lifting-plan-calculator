@@ -13,7 +13,7 @@ import * as geo from "../graph/geometry.js";
 import { captureKey, createCaptureCache } from "../graph/capture-cache.js";
 import { createSvgSurface } from "../graph/svg-surface.js";
 import { DIAGRAM_FONT } from "../graph/diagram-font.js";
-import { registerGraphCapture } from "../graph/snapshot.js";
+import { registerDiagramState, registerGraphCapture } from "../graph/snapshot.js";
 import { printify } from "../graph/print-palette.js";
 import { DIAGRAM_DARK, PRINT_PALETTE, diagramPalette } from "../graph/diagram-palette.js";
 import { jibAvailability } from "../jib.js";
@@ -1206,6 +1206,23 @@ export function createGraphScreen(ctx) {
   updateReadout();
   registerGraphCapture(({ width = 900, height = 700, scale = 3, format = "png" } = {}) =>
     renderDiagram(width, height, scale, format),
+  );
+  registerDiagramState(
+    () => ({ ...state }),
+    (next) => {
+      // Let the workbook link settle first, then take the plan's drawing as the
+      // state. Marking it a deviation keeps the first capture from overwriting
+      // it from the crane tab; a later crane edit re-syncs as usual.
+      syncFromWorkbook(false);
+      const derived = { ...state };
+      apply(next, { fit: false });
+      deviated = Object.keys(geo.DEFAULT_STATE).some((key) =>
+        typeof derived[key] === "number"
+          ? Math.abs((derived[key] ?? 0) - (state[key] ?? 0)) > 1e-9
+          : derived[key] !== state[key],
+      );
+      if (deviated) renderNote();
+    },
   );
 
   // The chart follows the scheme; the screen outlives a theme change, so it

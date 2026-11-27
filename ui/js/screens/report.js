@@ -6,6 +6,7 @@ import { card, field, numberInput, textInput, withUnit } from "../components.js"
 import { captureWorkingDiagram } from "../graph/snapshot.js";
 import { createPdfViewer } from "../pdf-viewer.js";
 import { pageFirstBox } from "../pdf-math.js";
+import { withTimeout } from "../async.js";
 import { buildReportKey, createSingleFlight, ensureQuality } from "../report-build.js";
 
 export function createReportScreen(ctx) {
@@ -220,7 +221,14 @@ export function createReportScreen(ctx) {
   const zoomLabel = el("span", { class: "zoom-label", text: "100%" });
   const zoomControls = [];
   function zoomButton(label, title, onClick) {
-    const button = el("button", { class: "btn small", title, onClick });
+    // A glyph label needs a name; a word label already is one, and overriding it
+    // would stop "click Fit width" from working.
+    const button = el("button", {
+      class: "btn small",
+      title,
+      ...(label === "\u2212" || label === "+" ? { "aria-label": title } : {}),
+      onClick,
+    });
     button.textContent = label;
     zoomControls.push(button);
     return button;
@@ -870,7 +878,12 @@ export function createReportScreen(ctx) {
       const data = bytes instanceof ArrayBuffer || ArrayBuffer.isView(bytes)
         ? new Uint8Array(bytes.buffer ?? bytes, bytes.byteOffset ?? 0, bytes.byteLength ?? undefined)
         : new Uint8Array(bytes);
-      await viewer.show(data);
+      // A parser that never settles would leave the preview standing forever.
+      await withTimeout(
+        viewer.show(data),
+        15000,
+        "the preview did not finish loading.",
+      );
       lastPdfHtml = html;
       // Keep the reader where they were: same zoom, same scroll.
       if (zoomBefore > 0 && Math.abs(zoomBefore - viewer.zoom) > 0.001) {
@@ -879,6 +892,9 @@ export function createReportScreen(ctx) {
       if (scrollBefore > 0) viewer.element.scrollTop = scrollBefore;
       timed("preview", previewStarted, "export");
     } catch (error) {
+      // A timed-out show may still be running; this stops it from taking the
+      // viewer a second time after the fallback.
+      viewer.abandon();
       const message = errorText(error);
       // A page view needs the print path. When it is unavailable, say why and
       // fall back to the live preview rather than showing an empty pane.

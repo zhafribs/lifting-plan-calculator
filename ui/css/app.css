@@ -1072,6 +1072,18 @@ table.grid td.num { text-align: right; }
 
 .toast-text { flex: 1; min-width: 0; }
 
+.toast-count {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  margin-top: 1px;
+  padding: 1px 5px;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
 .toast-close {
   flex: 0 0 auto;
   display: grid;

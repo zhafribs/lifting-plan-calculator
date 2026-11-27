@@ -77,7 +77,8 @@ Frontend modules that work without a webview:
 ```bash
 node --test ui/js/pdf-math.test.mjs ui/js/jib.test.mjs \
   ui/js/graph/print-palette.test.mjs ui/js/graph/diagram-palette.test.mjs \
-  ui/js/theme.test.mjs ui/js/windows-theme.test.mjs \
+  ui/js/graph/diagram-font.test.mjs ui/js/live-announcer.test.mjs \
+  ui/js/async.test.mjs ui/js/theme.test.mjs ui/js/windows-theme.test.mjs \
   ui/js/graph/capture-cache.test.mjs ui/js/graph/snapshot.test.mjs \
   ui/js/graph/svg-surface.test.mjs ui/js/report-build.test.mjs \
   ui/js/screen-registry.test.mjs
@@ -95,7 +96,7 @@ Repo-level gates:
 ./packaging/check-release-notes.sh --self-test
 ./packaging/check-release-notes.sh            # every tag has notes
 cargo audit --file src-tauri/Cargo.lock --deny warnings
-cargo audit --file tools/sign-manifest/Cargo.lock --deny warnings   # allowlist: .cargo/audit.toml
+(cd tools/sign-manifest && cargo audit --deny warnings)   # its own, empty allowlist
 ```
 
 Builds: `./build-appimage.sh` (host) or `./build-appimage-portable.sh`

@@ -63,7 +63,13 @@ export function createGraphScreen(ctx) {
 
   // The canvas is referenced by the transform helpers and the interaction
   // wiring below, so it must exist before either runs.
-  const canvas = el("canvas", { class: "graph-canvas" });
+  // The values live in the inputs and the readout; the canvas is the picture of
+  // them, not a control, so it is named rather than focusable.
+  const canvas = el("canvas", {
+    class: "graph-canvas",
+    role: "img",
+    "aria-label": "Working range diagram",
+  });
 
   // --- transforms -----------------------------------------------------------
 
@@ -498,7 +504,9 @@ export function createGraphScreen(ctx) {
     }
   }
 
-  function paint(g, palette = DIAGRAM_DARK) {
+  // Every caller passes the palette: the screen its scheme, the print the dark
+  // set the filter expects.
+  function paint(g, palette) {
     P = palette;
     g.fillStyle = P.bg;
     g.fillRect(0, 0, box.w, box.h);

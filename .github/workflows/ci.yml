@@ -69,6 +69,9 @@ jobs:
             ui/js/graph/snapshot.js ui/js/graph/snapshot.test.mjs \
             ui/js/graph/svg-surface.js ui/js/graph/svg-surface.test.mjs \
             ui/js/graph/diagram-palette.js ui/js/graph/diagram-palette.test.mjs \
+            ui/js/graph/diagram-font.js ui/js/graph/diagram-font.test.mjs \
+            ui/js/live-announcer.js ui/js/live-announcer.test.mjs \
+            ui/js/async.js ui/js/async.test.mjs \
             ui/js/report-build.js ui/js/report-build.test.mjs \
             ui/js/screen-registry.js ui/js/screen-registry.test.mjs "$work/"
           # theme.js imports the accent maths from here.
@@ -85,7 +88,8 @@ jobs:
             "$work/print-palette.test.mjs" "$work/theme.test.mjs" \
             "$work/capture-cache.test.mjs" "$work/snapshot.test.mjs" \
             "$work/svg-surface.test.mjs" "$work/diagram-palette.test.mjs" \
-            "$work/report-build.test.mjs" \
+            "$work/diagram-font.test.mjs" "$work/live-announcer.test.mjs" \
+            "$work/async.test.mjs" "$work/report-build.test.mjs" \
             "$work/screen-registry.test.mjs" "$work/js/windows-theme.test.mjs"
 
       # The vendored PDF parser is pinned by hash: a different file is a
@@ -250,16 +254,18 @@ jobs:
       # Gating. The advisories this project cannot act on are listed, with
       # their reasons, in .cargo/audit.toml; anything else is a red build, and
       # `--deny warnings` covers unmaintained and unsound crates too. The
-      # release signer has its own lockfile and must be audited too.
+      # release signer has its own lockfile and its own, empty allowlist: an
+      # exception that is only justified for the app must not hide a signer
+      # advisory.
       - name: Audit the lockfiles
         run: |
           cargo audit --file src-tauri/Cargo.lock --deny warnings
-          cargo audit --file tools/sign-manifest/Cargo.lock --deny warnings
+          (cd tools/sign-manifest && cargo audit --deny warnings)
 
   # The Windows export path (Edge, the process spawning and the platform
   # branches of the PDF code) is never compiled by the Linux jobs.
   windows-check:
-    name: Windows compile
+    name: Windows build and export
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -297,3 +303,34 @@ jobs:
           if ($bytes.Length -lt 1000) { throw "the probe PDF is implausibly small" }
           $header = [System.Text.Encoding]::ASCII.GetString($bytes, 0, 5)
           if ($header -ne "%PDF-") { throw "the probe output is not a PDF" }
+
+      # Compiling and the app's own probe do not touch the diagram: it is drawn
+      # by the frontend. This asks the same Edge to print an SVG with the
+      # embedded Inter subset, and fails if the diagram is rasterised or the
+      # label face is dropped.
+      - name: Build the diagram probe
+        shell: pwsh
+        run: |
+          $html = Join-Path $env:RUNNER_TEMP "diagram-probe.html"
+          node packaging/windows-diagram-probe.mjs $html
+          if ($LASTEXITCODE -ne 0) { throw "the diagram probe could not be built" }
+
+      - name: Print the diagram probe with Edge
+        shell: pwsh
+        run: |
+          $html = Join-Path $env:RUNNER_TEMP "diagram-probe.html"
+          $pdf = Join-Path $env:RUNNER_TEMP "diagram-probe.pdf"
+          $profile = Join-Path $env:RUNNER_TEMP "edge-profile"
+          $edge = Join-Path $env:PROGRAMFILES "Microsoft/Edge/Application/msedge.exe"
+          if (-not (Test-Path $edge)) { throw "Microsoft Edge is required for the Windows export path" }
+          $url = "file:///" + $html.Replace('\', '/').Replace(' ', '%20')
+          $arguments = @(
+            "--headless", "--disable-gpu", "--no-pdf-header-footer",
+            "--user-data-dir=$profile", "--print-to-pdf=$pdf", $url
+          )
+          $proc = Start-Process -FilePath $edge -ArgumentList $arguments -Wait -PassThru -NoNewWindow
+          if ($proc.ExitCode -ne 0) { throw "Edge exited with $($proc.ExitCode)" }
+          if (-not (Test-Path $pdf)) { throw "Edge wrote no PDF" }
+          $text = [System.IO.File]::ReadAllText($pdf, [System.Text.Encoding]::Latin1)
+          if ($text -match '/Subtype\s*/Image') { throw "the diagram was rasterised" }
+          if ($text -notmatch 'InterVariable') { throw "the diagram's label face was not embedded" }

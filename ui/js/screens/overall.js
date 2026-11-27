@@ -209,6 +209,7 @@ export function createOverallScreen(ctx) {
         {
           class: "icon-btn remove",
           title: "Remove load line",
+          "aria-label": "Remove load line",
           onClick: () =>
             store.update((s) => {
               s.load_items.splice(index, 1);
@@ -284,6 +285,7 @@ export function createOverallScreen(ctx) {
         {
           class: "icon-btn remove",
           title: "Remove tackle line",
+          "aria-label": "Remove tackle line",
           onClick: () =>
             store.update((s) => {
               s.tackle_items.splice(index, 1);

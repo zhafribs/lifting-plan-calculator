@@ -4,6 +4,7 @@
 import { el, svgIcon } from "./dom.js";
 import { api, errorText } from "./api.js";
 import { createStore } from "./store.js";
+import { createAnnouncer } from "./live-announcer.js";
 import { createScreenRegistry } from "./screen-registry.js";
 import { fmt } from "./format.js";
 import {
@@ -222,7 +223,7 @@ async function main() {
     // The chart paints on a canvas, so it cannot follow the CSS variables. Tell
     // it only when the scheme actually changed.
     if (applied.scheme !== previousScheme) {
-      window.dispatchEvent(new CustomEvent("lpc:theme", { detail: applied.scheme }));
+      window.dispatchEvent(new CustomEvent("lpc:theme"));
     }
     // Windows draws the title bar and Mica from the native window theme, so an
     // in-app override has to reach the window too or the chrome keeps the
@@ -314,22 +315,47 @@ async function main() {
 
   const liveStatus = document.getElementById("live-status");
   const liveAlert = document.getElementById("live-alert");
-
-  function announce(region, text) {
-    if (!region) return;
-    // Clear first so a repeated message is a change the AT can announce.
-    region.textContent = "";
-    requestAnimationFrame(() => {
-      region.textContent = text;
-    });
-  }
+  // Two messages in one frame are queued, not raced: each gets the region to
+  // itself for a moment so both are written.
+  const announceStatus = createAnnouncer({
+    set: (text) => {
+      if (liveStatus) liveStatus.textContent = text;
+    },
+  });
+  const announceAlert = createAnnouncer({
+    set: (text) => {
+      if (liveAlert) liveAlert.textContent = text;
+    },
+  });
 
   function toast(text, kind = "") {
+    const region = kind === "error" ? announceAlert : announceStatus;
+    // A repeated message is the same failure happening again: count it on the
+    // notice already on screen rather than adding another and pushing out one
+    // the reader has not seen.
+    const twin = [...toastBox.children].find(
+      (child) => child.dataset.kind === kind && child.dataset.text === text,
+    );
+    if (twin) {
+      const count = Number(twin.dataset.count || 1) + 1;
+      twin.dataset.count = String(count);
+      const badge = twin.querySelector(".toast-count");
+      if (badge) {
+        badge.textContent = `\u00d7${count}`;
+        badge.hidden = false;
+      }
+      region.say(text);
+      return;
+    }
+
     const returnFocus = document.activeElement;
     // The announcement goes through a region that exists before the message, so
     // the toast itself stays plain content and its close button is not read as
     // part of the alert.
     const node = el("div", { class: `toast ${kind}`.trim() });
+    node.dataset.kind = kind;
+    node.dataset.text = text;
+    node.dataset.count = "1";
     function dismiss() {
       const hadFocus = node.contains(document.activeElement);
       const sibling = node.nextElementSibling || node.previousElementSibling;
@@ -351,14 +377,18 @@ async function main() {
       },
       svgIcon("close", 12),
     );
-    node.append(el("span", { class: "toast-text", text }), close);
+    node.append(
+      el("span", { class: "toast-text", text }),
+      el("span", { class: "toast-count", hidden: true }),
+      close,
+    );
     node.addEventListener("keydown", (event) => {
       if (event.key === "Escape") dismiss();
     });
     toastBox.append(node);
-    // A failure stays until dismissed, so a repeating failure must not grow the
-    // DOM without bound. A transient notice gives way first; a success never
-    // pushes an error out, so it is the one dropped when the list is all errors.
+    // A failure stays until dismissed, and a repeated message is counted on its
+    // existing notice (above), so a failure loop cannot grow the list. Distinct
+    // notices are capped; a transient gives way before an error.
     while (toastBox.children.length > 4) {
       const others = [...toastBox.children].filter((child) => child !== node);
       const victim =
@@ -368,7 +398,7 @@ async function main() {
       if (!victim) break;
       victim.remove();
     }
-    announce(kind === "error" ? liveAlert : liveStatus, text);
+    region.say(text);
     if (kind === "error") return; // a failure stays until dismissed
     setTimeout(dismiss, 6000);
   }

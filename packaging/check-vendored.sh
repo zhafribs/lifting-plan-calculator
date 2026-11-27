@@ -23,5 +23,22 @@ for dir in ui/vendor/pdfjs ui/vendor/katex ui/fonts; do
     echo "       replace the files deliberately, then regenerate that manifest" >&2
     exit 1
   fi
+  # A file nobody listed would ship unreviewed: the manifest must name every
+  # file in the directory, not only the ones it happens to check.
+  # The auto-render wrapper is ours; it sits beside KaTeX because the report
+  # loads it from the same folder, and it is reviewed as app code. Exempt it in
+  # that one directory only: the same name anywhere else is still unlisted.
+  listed="$(awk '{ $1 = ""; sub(/^[ \t]+/, ""); sub(/^\.\//, ""); print }' "$dir/CHECKSUMS.txt" | sort)"
+  if [ "$dir" = "ui/vendor/katex" ]; then
+    actual="$(cd "$dir" && find . -type f ! -name CHECKSUMS.txt ! -name lpc-autorender.js \
+      | sed 's|^\./||' | sort)"
+  else
+    actual="$(cd "$dir" && find . -type f ! -name CHECKSUMS.txt | sed 's|^\./||' | sort)"
+  fi
+  if [ "$listed" != "$actual" ]; then
+    echo "error: $dir has files its CHECKSUMS.txt does not list, or lists missing files" >&2
+    diff <(printf '%s\n' "$listed") <(printf '%s\n' "$actual") >&2 || true
+    exit 1
+  fi
   echo "vendored $(basename "$dir"): OK"
 done

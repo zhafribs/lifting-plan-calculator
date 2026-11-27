@@ -1,0 +1,5 @@
+# The release signer's own allowlist. It shares no exceptions with the app: an
+# advisory ignored for the app must not be silently ignored here.
+
+[advisories]
+ignore = []

@@ -92,6 +92,8 @@ export function createPdfViewer({ onChange } = {}) {
   const root = document.createElement("div");
   root.className = "pdf-view";
   root.tabIndex = 0;
+  root.setAttribute("role", "region");
+  root.setAttribute("aria-label", "Report pages");
   root.appendChild(pages);
 
   let lib = null;
@@ -333,6 +335,10 @@ export function createPdfViewer({ onChange } = {}) {
     },
     get pages() {
       return doc ? doc.numPages : 0;
+    },
+    /** Give up on a show that has not settled: a late one drops its document. */
+    abandon() {
+      token += 1;
     },
     destroy() {
       token += 1;

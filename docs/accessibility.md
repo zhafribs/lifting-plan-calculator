@@ -23,9 +23,10 @@ pass that is still owed.
 
 ## What still needs a real screen reader
 
-Run Orca (Linux) or Narrator (Windows) and record the result in the next council
-record. Setup: start Orca before the app (`orca` with speech-dispatcher running),
-use the default output, and note its version and the app build in the record.
+The Windows script is [`narrator-pass.md`](narrator-pass.md): exact steps, what
+to listen for, and a results table. On Linux, run Orca (`orca` with
+speech-dispatcher running) with the default output. Note the AT version and the
+app build in the record. The scenarios are:
 
 1. **Error and success toasts.** Fire two in quick succession; both should be
    announced. Tab to a notice: the name is "Dismiss: …". Enter removes it and

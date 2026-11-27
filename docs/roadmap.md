@@ -1,96 +1,60 @@
 # Remaining work
 
-**Status:** 26 November 2026 · latest release v2.17.22 · working tree clean.
+**Status:** 27 November 2026 · v2.17.23.
 
 Verification log: the Windows 11 (VM) smoke pass passed all five checks on
-26 November 2026 — the page-1 preview and its swap, zoom panning to the left
-edge, the theme switch repainting the chart, Save as PDF (vector diagram, Inter
-labels, stamped footer), and the persistent error toast dismissed by keyboard.
-The engine-level check (headless Edge, the Windows export path) passed the same
-day: no image objects, Inter embedded, KaTeX typeset.
+26 November 2026. The headless-Edge engine check now runs on every CI push
+(`windows-check`, "Print the diagram probe with Edge").
 
-Each item below names the record where the limit was accepted, the next concrete
-step, and what "done" means. Work lands through the three-seat gate (Safety,
-Security, Design — 8/10 each) and a release with per-tag notes and an accepted
-council record.
+## Landed in 2.17.23
 
-## 1. Close the small documented gaps
+| Roadmap item | What landed | Where |
+| --- | --- | --- |
+| 1.1 Two notices in one frame | Live-region writes are serialised with a gap, so both are written; a burst is de-duplicated and bounded | `ui/js/live-announcer.js`, test |
+| 1.2 A fifth error evicts an unread one | A repeated message is counted on its existing notice (`×2`) instead of adding one, so a repeating failure evicts nothing; distinct failures are still capped at four | `ui/js/app.js`, toast count |
+| 1.3 A hung PDF parse | The page render has a 15 s deadline and falls back to Live with a message | `ui/js/async.js`, `report.js` |
+| 1.4 Chart tick contrast | Closed without a code change: keep the printed page's grey so screen and paper match. The decision was recorded in 2.17.22 | ADR-0009, `0069` |
+| 2. PDF text layer | The subset is not the cause: the full Inter face drops `=`, `(`, `)` on both engines. Recorded as a Type 3 text-mapping limit (both emit Type 3 for SVG webfont text); experiment below | this file, `0067` limit |
+| 4. Housekeeping | `check-vendored.sh` now fails on an unlisted file; the signer audits against its own empty allowlist; the embedded Inter subset is hash-pinned; the unused `paint` default and event detail are gone | `packaging/`, `tools/sign-manifest/.cargo/audit.toml`, `diagram-font.test.mjs`, `graph.js`, `app.js` |
+| 5. Durable Windows check | CI prints a diagram probe through Edge and fails if it is rasterised or the label face is dropped | `packaging/windows-diagram-probe.mjs`, `.github/workflows/ci.yml` |
+| 6. Product questions | Written as decision briefs with options and recommendations; nothing implemented | `docs/product-decisions.md` |
 
-About a day in total. Every item is already written down as a known limit.
+### The full-face experiment
 
-| # | Item | Where | Next step | Done when |
-| --- | --- | --- | --- | --- |
-| 1.1 | Two messages to one live region in the same frame collapse to the last | `0067` known limits | Queue announcements with a short gap instead of two RAFs in one frame | Two errors fired in one frame are both announced (runtime probe) |
-| 1.2 | A fifth error can still push out the oldest error | `0067`; cap in `ui/js/app.js` | Decide the policy (raise the error cap, or drop only seen notices) and implement it | A repeating failure cannot silently remove an unread error, or the bound is stated in the UI copy |
-| 1.3 | A hung pdf.js parse leaves the page-1 preview on screen | `0068` known limits | Time out `viewer.show`, toast, and fall back to Live | A stalled parse recovers with a message instead of waiting forever |
-| 1.4 | Chart tick grey is 3.77:1, below the text floor | `0069` known limits | Design call: darken `axisText` in the light set only, or keep print parity | One decision, recorded; the palette test matches it |
+The same label (`R = 21.21 m (45°) - test`) drawn in an SVG with the embedded
+subset, then with the full `ui/fonts/InterVariable.woff2`, printed by Chromium
+158 and by the app's WebKit path, then `pdftotext`:
 
-## 2. PDF text layer
+| Face | Engine | Extracted |
+| --- | --- | --- |
+| subset | Chromium | `R  21.21 m 45° - test` |
+| full | Chromium | `R  21.21 m 45° - test` |
+| full | WebKit | `R  21.21 m 45° - test` |
 
-About a day, uncertain. The Inter subset drops `=` (and sometimes `(` and `-`)
-from *extracted* diagram labels: `pdftotext` returns `R 21.21 m`. The printed
-page is correct (`0067` known limits).
+All three lose `=`, `(`, `)`. The full face shows the subset is not the cause;
+both engines write the SVG text as Type 3 fonts, and that text layer is where the
+punctuation goes missing.
 
-First experiment: print the same diagram with the full Inter face instead of the
-subset. If the full font also loses the punctuation, the cause is Skia's Type 3
-`ToUnicode` mapping, not the subset, and the limit is confirmed rather than
-fixable. Otherwise try `pyftsubset` flags (`--no-subset-tables`,
-`--glyph-names`) and re-check with `pdftotext`.
+## Still open
 
-Done when: `R = 21.21 m` extracts with the `=`, or the limit is recorded as
-engine-bound with the experiment that showed it.
+1. **A real screen-reader pass.** Orca/AT-SPI are not installed here. The code
+   audit and its fixes are in `docs/accessibility.md`, which also carries the
+   five-step Orca checklist. This is the one engineering item not finished.
+2. **Product decisions.** Saving a plan, several lifts per report, language and
+   units — each needs an answer before it becomes work; see
+   `docs/product-decisions.md`.
 
-## 3. Accessibility pass with a screen reader
+## Limits still accepted
 
-Half a day. No assistive technology has ever run against the app; the toast
-focus handoff, live regions and the page preview are verified by code and runtime
-probes only (`0067` known limits).
-
-Run Orca on Linux over: an error toast and its dismissal, the page-1 preview
-swap, the Graph tab's keyboard dragging, the report's section switches, and the
-Settings theme controls. Fix what it finds, then write the pass (steps, results,
-issues) into the next council record.
-
-Done when: a written AT pass exists and its findings are either fixed or
-recorded.
-
-## 4. Housekeeping
-
-Half a day, no user-visible change.
-
-- `packaging/check-vendored.sh` pins the files it knows but does not flag an
-  unlisted file in a vendored directory.
-- The signer's `cargo audit` uses the app's allowlist; give it its own, so an
-  exception that is only justified for the app cannot hide a signer advisory.
-- Pin the embedded Inter subset to its `pyftsubset` output by hash, so the base64
-  cannot drift from the OFL source.
-- Two seat notes: an unused default on `paint(g, palette = …)` and an unused
-  event `detail` on `lpc:theme`.
-
-## 5. Durable Windows check (optional)
-
-About a day. The Windows export path was verified by hand; nothing repeats it.
-
-Add a `windows-latest` CI job that runs the headless Edge flags from
-`render_with_browser` on a report fixture and asserts the PDF has no
-`/Subtype /Image` object and does embed `InterVariable`. The open question is the
-fixture: the repo has no report fixture that carries the diagram, so one must be
-generated in the job or committed.
-
-Done when: CI fails if the Windows document engine stops printing the diagram as
-vectors or stops embedding the label face.
-
-## 6. Product questions (no estimate)
-
-Not committed work; these need a decision before a plan.
-
-- **Saving a plan.** Nothing is stored between launches by design (the privacy
-  contract in `AGENTS.md`). Saving or reopening a plan would change that contract
-  and needs an explicit decision.
-- **Several lifts in one report.** The report is one lift; tandem is the only
-  multi-crane case.
-- **Language and units.** The UI and report are English with metric units; the
-  chart is the only capacity check and its radii are metric.
+- The chart's tick grey is 3.77:1 on the light chart: it is the printed page's
+  own value, kept so the screen matches the paper (`0069`).
+- PDF text extraction drops a few punctuation glyphs in diagram labels; the
+  printed page is correct, and the full-font experiment shows the engine, not
+  the subset, is the cause (`0067`).
+- Low-alpha overlaps in the printed diagram are the approximation recorded in
+  ADR-0007.
+- The page-1 preview briefly shows report content that the print may push whole
+  onto page 2 (`0068`).
 
 ## Picking this up
 
@@ -107,4 +71,5 @@ cd ..
 
 A release still needs `docs/releases/<tag>.md` naming the version and an accepted
 `docs/council/decisions/NNNN-*.md` naming the tag. The last records are `0067`
-(notices and Inter), `0068` (page-1 preview) and `0069` (chart palette).
+(notices and Inter), `0068` (page-1 preview), `0069` (chart palette) and `0070`
+(written with this release).

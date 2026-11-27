@@ -2,6 +2,29 @@
 
 Nothing yet.
 
+## [2.17.23] - 2026-11-27
+
+### Changed
+
+- **Repeated failures are counted, not stacked.** A message that repeats on the
+  same notice shows a count (×2) instead of adding another and pushing out one
+  you have not seen.
+- **Two notices in one moment are both written.** Each message goes to the live
+  region in turn instead of only the last one, so assistive tech can announce
+  both.
+- **A stuck page render recovers.** The preview gives up after 15 seconds,
+  says so, and returns to the Live preview instead of waiting forever.
+- **More controls have names for assistive tech.** The zoom buttons, the load
+  and tackle remove buttons, the working-range chart and the page view are
+  named rather than read as a glyph or an unnamed region.
+
+### Notes
+
+- No arithmetic, verdict, limit or report content changed.
+- The PDF text layer still drops a few punctuation glyphs in diagram labels;
+  the printed page is correct, and the full-face experiment in `docs/roadmap.md`
+  confirms the document engine, not the subset, is the cause.
+
 ## [2.17.22] - 2026-11-26
 
 ### Fixed

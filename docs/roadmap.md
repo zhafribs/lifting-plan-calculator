@@ -38,8 +38,9 @@ punctuation goes missing.
 ## Still open
 
 1. **A real screen-reader pass.** Orca/AT-SPI are not installed here. The code
-   audit and its fixes are in `docs/accessibility.md`, which also carries the
-   five-step Orca checklist. This is the one engineering item not finished.
+   audit and its fixes are in `docs/accessibility.md`; the Windows 11 script is
+   `docs/narrator-pass.md` (Narrator is built in, so the VM can run it). This is
+   the one engineering item not finished.
 2. **Product decisions.** Saving a plan, several lifts per report, language and
    units — each needs an answer before it becomes work; see
    `docs/product-decisions.md`.

@@ -2,6 +2,34 @@
 
 Nothing yet.
 
+## [2.17.24] - 2026-11-28
+
+### Added
+
+- **Save and open a plan.** The Summary screen writes the plan to a JSON file you
+  choose, and opens it again: every input, the section switches, page breaks,
+  sign-off lines, footer, margins, diagram scale, the diagram's drawing state
+  and the issue date. Results are
+  recomputed when it opens: with the same app version it prints the same figures;
+  the file records the inputs and the issue date. No plan is kept between
+  launches unless you choose Save.
+- **The file is checked before it is used.** A file with a wrong format or
+  version, a missing top-level field, a number out of range or an unknown option
+  is refused with a message, and the open plan is left untouched. Missing inner
+  values fall back to the same defaults the form uses.
+
+### Notes
+
+- No arithmetic, verdict or report content changed. A saved plan is recomputed
+  with the app that opens it, so the same version prints the same figures.
+- The workbook's table view is not saved. The chart points, boom and radius
+  lists and the chart label are, so the capacity check and the report are
+  complete; re-import the workbook to see the full sheet again.
+- The privacy promise changes in one sentence: no plan is stored between launches
+  unless you save one. The update check only reads; the startup log
+  (automatic) and the appearance file (when you change the theme) are the only
+  other writes.
+
 ## [2.17.23] - 2026-11-27
 
 ### Changed
